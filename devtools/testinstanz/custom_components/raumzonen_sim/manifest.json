@@ -1,0 +1,13 @@
+{
+  "domain": "raumzonen_sim",
+  "name": "FP400-Simulator (nur Test)",
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/Kingsteam/Raumzonen/tree/main/devtools/testinstanz",
+  "integration_type": "hub",
+  "iot_class": "local_push",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "0.1.0"
+}

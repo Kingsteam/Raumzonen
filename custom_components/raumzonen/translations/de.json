@@ -1,0 +1,161 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Raumzonen",
+        "description": "Präsenzzonen für Radarsensoren einrichten. Räume, Sensoren und Zonen kommen danach über „Konfigurieren“ dazu, Raum für Raum."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Raumzonen ist schon eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Raumzonen",
+        "menu_options": {
+          "raum_neu": "Raum hinzufügen",
+          "zonen_import": "Zonen aus dem Konverter übernehmen",
+          "zone_waehlen": "Zone einstellen",
+          "zone_loeschen": "Zone löschen",
+          "raum_loeschen": "Raum löschen"
+        }
+      },
+      "raum_neu": {
+        "title": "Raum hinzufügen",
+        "description": "Ein Raum mit einem FP400.",
+        "data": {
+          "name": "Name",
+          "device_id": "FP400-Gerät",
+          "quelle": "Quelle der Positionen"
+        },
+        "data_description": {
+          "quelle": "MQTT liefert zusätzlich Bewegung und Art jedes Ziels. Für „Entitäten“ müssen targets_xy und tracking_last_update in Home Assistant aktiviert sein."
+        }
+      },
+      "raum_mqtt": {
+        "title": "MQTT-Thema",
+        "description": "Zustandsthema des Sensors in Zigbee2MQTT. Vorgeschlagen aus dem Gerätenamen; ändern, falls das Gerät umbenannt wurde.",
+        "data": {
+          "mqtt_topic": "Thema"
+        }
+      },
+      "raum_loeschen": {
+        "title": "Raum löschen",
+        "data": {
+          "raum_id": "Raum"
+        }
+      },
+      "zonen_import": {
+        "title": "Zonen übernehmen",
+        "description": "Liest die Software-Zonen, die schon im Konverter gezeichnet sind.",
+        "data": {
+          "raum_id": "Raum"
+        }
+      },
+      "zonen_rollen": {
+        "title": "Rolle jeder Zone",
+        "description": "Gefundene Zonen im Konverter:\n{zonen}\n\n„Bett“ hält einen Schläfer, bis er nachweislich geht. „Ausgang“ ist die Tür.",
+        "data": {
+          "zone_1": "Software-Zone 1",
+          "zone_2": "Software-Zone 2",
+          "zone_3": "Software-Zone 3",
+          "zone_4": "Software-Zone 4",
+          "zone_5": "Software-Zone 5",
+          "zone_6": "Software-Zone 6",
+          "zone_7": "Software-Zone 7",
+          "zone_8": "Software-Zone 8"
+        }
+      },
+      "zone_waehlen": {
+        "title": "Zone einstellen",
+        "data": {
+          "zone": "Zone"
+        }
+      },
+      "zone_einstellen": {
+        "title": "Regeln der Zone",
+        "description": "Alle Wartezeiten stehen hier; es gibt keine versteckten.",
+        "data": {
+          "name": "Name",
+          "art": "Art",
+          "belegt_nach_s": "Belegt nach",
+          "frei_nach_s": "Frei nach",
+          "rand_cm": "Randstreifen",
+          "schlaefer_halten": "Schläfer halten",
+          "weg_rahmen": "Bewegte Rahmen draußen, bis „weg“",
+          "weg_cm": "Oder so weit draußen",
+          "max_personen": "Höchstens Personen (0 = egal)",
+          "hund_ignorieren": "Hund nicht zählen"
+        },
+        "data_description": {
+          "rand_cm": "Hinein zählt ab dem Rand, hinaus erst jenseits dieses Streifens (gegen Zittern).",
+          "schlaefer_halten": "Sprünge, Aussetzer und verlorene Ziele lassen die Zone belegt.",
+          "max_personen": "Bei 1 wird ein starrer Echo-Punkt, der beim Aufstehen zurückbleibt, verworfen.",
+          "hund_ignorieren": "Nur ein Hinweis: Ziele, die der Sensor als Tier meldet oder die lange ruhig auf einem Hundeplatz liegen."
+        }
+      },
+      "zone_loeschen": {
+        "title": "Zone löschen",
+        "data": {
+          "zone": "Zone"
+        }
+      }
+    },
+    "error": {
+      "name_fehlt": "Bitte einen Namen eingeben.",
+      "geraet_fehlt": "Gerät nicht gefunden.",
+      "thema_ungueltig": "Das Thema darf nicht leer sein, nicht auf / enden und kein + oder # enthalten.",
+      "ungueltig": "Diese Werte sind nicht erlaubt."
+    },
+    "abort": {
+      "keine_konverter_zonen": "An diesem Gerät gibt es keine Software-Zonen. Bitte zuerst mindestens eine im Konverter zeichnen."
+    }
+  },
+  "selector": {
+    "quelle": {
+      "options": {
+        "mqtt": "MQTT (empfohlen)",
+        "entitaet": "Entitäten"
+      }
+    },
+    "rolle": {
+      "options": {
+        "ueberspringen": "Überspringen",
+        "normal": "Normale Zone",
+        "bett": "Bett (Schläfer halten)",
+        "ausgang": "Ausgang / Tür",
+        "hundeplatz": "Hundeplatz (Hinweis)",
+        "stoerquelle": "Störquelle (ignorieren)",
+        "stelle": "Stelle (beobachten)",
+        "durchgang": "Durchgang"
+      }
+    },
+    "art": {
+      "options": {
+        "normal": "Normal",
+        "ausgang": "Ausgang / Tür",
+        "hundeplatz": "Hundeplatz (Hinweis)",
+        "stoerquelle": "Störquelle (ignorieren)",
+        "stelle": "Stelle (beobachten)",
+        "durchgang": "Durchgang"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "sensor_verbunden": {
+        "name": "Sensor verbunden"
+      }
+    },
+    "sensor": {
+      "personen": {
+        "name": "{zone} Personen"
+      },
+      "figuren": {
+        "name": "Figuren"
+      }
+    }
+  }
+}

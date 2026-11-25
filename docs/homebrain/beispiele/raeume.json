@@ -1,0 +1,141 @@
+[
+  {
+    "raum_id": "schlafzimmer",
+    "name": "Schlafzimmer",
+    "bereich_id": null,
+    "art": "radar",
+    "haus": null,
+    "sensor": {
+      "device_id": "geraet1",
+      "quelle": "mqtt",
+      "lage": {
+        "x": 0.0,
+        "y": 0.0,
+        "winkel": 0.0
+      },
+      "reichweite_cm": 600.0,
+      "oeffnung_grad": 120.0
+    },
+    "umriss": [],
+    "oeffnungen": [],
+    "zonen": [
+      {
+        "zone_id": "bett",
+        "name": "Bett",
+        "art": "normal",
+        "form": {
+          "art": "rechteck",
+          "mitte": [
+            -150,
+            200
+          ],
+          "breite": 200,
+          "tiefe": 160,
+          "winkel": -30
+        }
+      },
+      {
+        "zone_id": "tuer",
+        "name": "Tür",
+        "art": "ausgang",
+        "form": {
+          "art": "vieleck",
+          "punkte": [
+            [
+              0,
+              0
+            ],
+            [
+              90,
+              0
+            ],
+            [
+              90,
+              60
+            ],
+            [
+              0,
+              60
+            ]
+          ]
+        }
+      },
+      {
+        "zone_id": "hund",
+        "name": "Hundeplatz",
+        "art": "hundeplatz",
+        "form": {
+          "art": "zellen",
+          "groesse": 25,
+          "zellen": [
+            [
+              3,
+              10
+            ],
+            [
+              4,
+              10
+            ],
+            [
+              3,
+              11
+            ]
+          ]
+        }
+      }
+    ],
+    "raender": [
+      {
+        "rand_id": "tuer",
+        "name": "Tür",
+        "form": {
+          "art": "vieleck",
+          "punkte": [
+            [
+              0,
+              0
+            ],
+            [
+              90,
+              0
+            ],
+            [
+              90,
+              60
+            ],
+            [
+              0,
+              60
+            ]
+          ]
+        },
+        "fuehrt_zu": null
+      }
+    ],
+    "stellen": [
+      {
+        "stelle_id": "hund",
+        "name": "Hundeplatz",
+        "art": "hundeplatz",
+        "form": {
+          "art": "zellen",
+          "groesse": 25,
+          "zellen": [
+            [
+              3,
+              10
+            ],
+            [
+              4,
+              10
+            ],
+            [
+              3,
+              11
+            ]
+          ]
+        }
+      }
+    ]
+  }
+]

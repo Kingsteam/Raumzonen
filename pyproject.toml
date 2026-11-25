@@ -1,0 +1,47 @@
+[project]
+name = "raumzonen"
+version = "0.6.0"
+description = "Raumzonen: Präsenzzonen für Radarsensoren (Home-Assistant-Integration)"
+requires-python = ">=3.14"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+  "ASYNC", # asyncio
+  "B",     # bugbear
+  "C4",    # comprehensions
+  "D",     # docstrings
+  "E",     # pycodestyle
+  "F",     # pyflakes
+  "I",     # isort
+  "PT",    # pytest
+  "RUF",   # ruff
+  "SIM",   # simplify
+  "UP",    # pyupgrade
+  "W",     # pycodestyle warnings
+]
+ignore = [
+  "D202", # Leerzeile nach Docstring
+  "D203", # widerspricht D211
+  "D213", # widerspricht D212
+  "E501", # Zeilenlänge regelt der Formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+# In Tests sind kleine Dateizugriffe in async-Funktionen in Ordnung.
+"tests/**" = ["ASYNC240", "D100", "D101", "D102", "D103", "D107", "PT011"]
+"devtools/testinstanz/**" = ["D101", "D102", "D103", "D107"]
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+known-first-party = ["custom_components.raumzonen"]
+combine-as-imports = true

@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# virtuelle Umgebungen
+venv/
+.venv/
+.env
+
+# lokale Home-Assistant-Testinstanz
+config/
+# ... außer der Vorlage der Testinstanz (ohne Geheimnisse)
+!devtools/testinstanz/config/
+.storage/
+*.log
+home-assistant_v2.db*
+secrets.yaml
+
+# Editor / System
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,58 @@
+name: Release
+
+# Legt ein GitHub-Release an; der Marketplace von Home Assistant (früher HACS)
+# bietet dann diese Version zum Herunterladen an. Der Text kommt aus dem
+# passenden Abschnitt im CHANGELOG.
+#
+# Zwei Wege:
+# - Tag vX.Y.Z pushen, oder
+# - von Hand starten (Actions → Release → Run workflow): nimmt die Version
+#   aus manifest.json und legt Tag und Release auf dem gewählten Stand an.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version bestimmen
+        run: |
+          manifest=$(python3 -c "import json;print(json.load(open('custom_components/raumzonen/manifest.json'))['version'])")
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            if [ "${GITHUB_REF_NAME#v}" != "$manifest" ]; then
+              echo "Tag $GITHUB_REF_NAME passt nicht zur Version $manifest in manifest.json" >&2
+              exit 1
+            fi
+          fi
+          echo "VERSION=$manifest" >> "$GITHUB_ENV"
+
+      - name: Text aus dem CHANGELOG
+        run: |
+          awk -v v="$VERSION" '
+            $0 ~ "^## \\[" v "\\]" { on = 1; next }
+            on && /^## \[/ { exit }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          test -s notes.md
+
+      - name: Release anlegen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "Release v$VERSION gibt es schon" >&2
+            exit 1
+          fi
+          # Fertige ZIP-Datei für die Installation von Hand (das Repo ist privat,
+          # der Marketplace kann es nicht installieren): Inhalt ist der Ordner
+          # raumzonen, der nach /config/custom_components/ kopiert wird.
+          (cd custom_components && zip -qr "../raumzonen-$VERSION.zip" raumzonen -x "*/__pycache__/*")
+          gh release create "v$VERSION" --target "$GITHUB_SHA" --title "v$VERSION" --notes-file notes.md "raumzonen-$VERSION.zip"

@@ -1,0 +1,31 @@
+# Testinstanz für Raumzonen.
+# Komplett simuliert: keine echten Geräte, keine Cloud, keine Zugangsdaten.
+homeassistant:
+  name: Testwohnung
+  # Neutraler Beispielort, nicht der Wohnort des Besitzers.
+  latitude: 48.0
+  longitude: 16.0
+  elevation: 200
+  unit_system: metric
+  time_zone: Europe/Vienna
+  country: AT
+  language: de
+  currency: EUR
+
+# Nur das Nötigste statt default_config.
+frontend:
+config:
+history:
+logbook:
+recorder:
+  purge_keep_days: 1
+system_health:
+search:
+logger:
+  default: warning
+  logs:
+    custom_components.raumzonen: debug
+    custom_components.raumzonen_sim: info
+
+# Simulierter FP400 (spielt die anonymisierten Aufnahmen ab)
+raumzonen_sim:

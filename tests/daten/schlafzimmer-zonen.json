@@ -1,0 +1,7 @@
+{
+  "hinweis": "Software-Zonen des Konverters zur Zeit der Aufnahme (gedrehte Rechtecke, ca. cm). Nur zum Beschriften und Vergleichen.",
+  "bett": {"x_min": -300, "x_max": -110.2, "y_min": 20, "y_max": 177.4, "rotation": -32},
+  "bettrand": {"x_min": -290, "x_max": -90, "y_min": -45, "y_max": 20, "rotation": -32},
+  "tuer": {"x_min": -100, "x_max": -10, "y_min": 0, "y_max": 62},
+  "kasten": {"x_min": -5, "x_max": 125, "y_min": 0, "y_max": 75}
+}

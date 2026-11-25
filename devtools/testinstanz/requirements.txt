@@ -1,0 +1,17 @@
+# Zusätzliche Pakete für die Testinstanz (nicht für pytest nötig).
+# Versionen passend zu Home Assistant 2026.10.4 (aus dessen package_constraints).
+# Beim Anheben von pytest-homeassistant-custom-component mit anheben.
+home-assistant-frontend==20260930.5
+# Ohne diese Pakete bleibt die Oberfläche bei „Wird geladen“ stehen, weil
+# Home Assistant beim Abfragen der Dienste den Sprachassistenten lädt.
+hassil==3.12.1
+home-assistant-intents==2026.10.6
+gazetteer-matcher==1.1.0
+ha-ffmpeg==3.2.2
+PyTurboJPEG==1.8.3
+av==19.0.0
+infrared-protocols==10.1.0
+mutagen==1.48.1
+pymicro-vad==1.0.1
+pyspeex-noise==1.0.2
+rf-protocols==4.3.0

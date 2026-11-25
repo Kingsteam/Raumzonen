@@ -1,0 +1,161 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Raumzonen",
+        "description": "Set up presence zones for radar sensors. Rooms, sensors and zones are added afterwards via Configure, one room at a time."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Raumzonen is already set up."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Raumzonen",
+        "menu_options": {
+          "raum_neu": "Add room",
+          "zonen_import": "Take over zones from the converter",
+          "zone_waehlen": "Adjust zone",
+          "zone_loeschen": "Delete zone",
+          "raum_loeschen": "Delete room"
+        }
+      },
+      "raum_neu": {
+        "title": "Add room",
+        "description": "One room with one FP400 sensor.",
+        "data": {
+          "name": "Name",
+          "device_id": "FP400 device",
+          "quelle": "Source of positions"
+        },
+        "data_description": {
+          "quelle": "MQTT also delivers movement and type of each target. Entities need targets_xy and tracking_last_update enabled."
+        }
+      },
+      "raum_mqtt": {
+        "title": "MQTT topic",
+        "description": "State topic of the sensor in Zigbee2MQTT. Suggested from the device name; change it if you renamed the device.",
+        "data": {
+          "mqtt_topic": "Topic"
+        }
+      },
+      "raum_loeschen": {
+        "title": "Delete room",
+        "data": {
+          "raum_id": "Room"
+        }
+      },
+      "zonen_import": {
+        "title": "Take over zones",
+        "description": "Reads the software zones already drawn in the converter.",
+        "data": {
+          "raum_id": "Room"
+        }
+      },
+      "zonen_rollen": {
+        "title": "Role of each zone",
+        "description": "Zones found in the converter:\n{zonen}\n\nBed keeps a sleeper until they clearly leave. Exit is the door.",
+        "data": {
+          "zone_1": "Software zone 1",
+          "zone_2": "Software zone 2",
+          "zone_3": "Software zone 3",
+          "zone_4": "Software zone 4",
+          "zone_5": "Software zone 5",
+          "zone_6": "Software zone 6",
+          "zone_7": "Software zone 7",
+          "zone_8": "Software zone 8"
+        }
+      },
+      "zone_waehlen": {
+        "title": "Adjust zone",
+        "data": {
+          "zone": "Zone"
+        }
+      },
+      "zone_einstellen": {
+        "title": "Zone rules",
+        "description": "All waiting times are visible here; nothing is hidden.",
+        "data": {
+          "name": "Name",
+          "art": "Kind",
+          "belegt_nach_s": "Occupied after",
+          "frei_nach_s": "Free after",
+          "rand_cm": "Edge band",
+          "schlaefer_halten": "Keep sleeper",
+          "weg_rahmen": "Moving frames outside to count as gone",
+          "weg_cm": "Or this far outside",
+          "max_personen": "At most persons (0 = any)",
+          "hund_ignorieren": "Do not count the dog"
+        },
+        "data_description": {
+          "rand_cm": "Inside counts from the edge; outside only beyond this band (against jitter).",
+          "schlaefer_halten": "Jumps, dropouts and lost targets keep the zone occupied.",
+          "max_personen": "With 1, a frozen echo point left behind when getting up is dropped.",
+          "hund_ignorieren": "A hint only: targets the sensor marks as pet or that rest long on a dog place."
+        }
+      },
+      "zone_loeschen": {
+        "title": "Delete zone",
+        "data": {
+          "zone": "Zone"
+        }
+      }
+    },
+    "error": {
+      "name_fehlt": "Please enter a name.",
+      "geraet_fehlt": "Device not found.",
+      "thema_ungueltig": "Topic must not be empty, end with / or contain + or #.",
+      "ungueltig": "These values are not allowed."
+    },
+    "abort": {
+      "keine_konverter_zonen": "No software zones found at this device. Draw at least one in the converter first."
+    }
+  },
+  "selector": {
+    "quelle": {
+      "options": {
+        "mqtt": "MQTT (recommended)",
+        "entitaet": "Entities"
+      }
+    },
+    "rolle": {
+      "options": {
+        "ueberspringen": "Skip",
+        "normal": "Normal zone",
+        "bett": "Bed (keep sleeper)",
+        "ausgang": "Exit / door",
+        "hundeplatz": "Dog place (hint)",
+        "stoerquelle": "Interference (ignore)",
+        "stelle": "Spot to watch",
+        "durchgang": "Walkway"
+      }
+    },
+    "art": {
+      "options": {
+        "normal": "Normal",
+        "ausgang": "Exit / door",
+        "hundeplatz": "Dog place (hint)",
+        "stoerquelle": "Interference (ignore)",
+        "stelle": "Spot to watch",
+        "durchgang": "Walkway"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "sensor_verbunden": {
+        "name": "Sensor connected"
+      }
+    },
+    "sensor": {
+      "personen": {
+        "name": "{zone} people"
+      },
+      "figuren": {
+        "name": "Figures"
+      }
+    }
+  }
+}

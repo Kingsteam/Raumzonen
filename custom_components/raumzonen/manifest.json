@@ -1,0 +1,22 @@
+{
+  "domain": "raumzonen",
+  "name": "Raumzonen",
+  "after_dependencies": [
+    "mqtt"
+  ],
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": [
+    "frontend",
+    "http",
+    "panel_custom",
+    "websocket_api"
+  ],
+  "documentation": "https://github.com/Kingsteam/raumzonen",
+  "integration_type": "service",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/Kingsteam/raumzonen/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "0.6.0"
+}

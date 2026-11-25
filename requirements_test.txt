@@ -1,0 +1,9 @@
+# Testabhängigkeiten.
+# pytest-homeassistant-custom-component 0.13.375 ist die neueste Version auf PyPI
+# (Stand 15.11.2026) und bringt Home Assistant 2026.10.4 mit. Eine Version für
+# 2026.11 gibt es noch nicht; sobald sie erscheint, hier anheben.
+# Braucht Python >= 3.14.
+pytest-homeassistant-custom-component==0.13.375
+ruff==0.17.3
+# Das Panel braucht die Integration "frontend" (gleiche Version wie in HA 2026.10.4).
+home-assistant-frontend==20260930.5

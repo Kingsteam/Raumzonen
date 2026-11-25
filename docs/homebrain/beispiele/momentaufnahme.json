@@ -1,0 +1,101 @@
+{
+  "schema": "raumzonen/1",
+  "zeit": "2000-01-01T03:00:00.000+00:00",
+  "raeume": [
+    {
+      "raum_id": "schlafzimmer",
+      "daten_ok": true,
+      "spuren_seit": "2000-01-01T02:59:40.600+00:00",
+      "sensor": {
+        "device_id": "geraet1",
+        "erreichbar": true,
+        "daten_frisch": true,
+        "letzte_meldung_vor_s": 10.3,
+        "unvollstaendig": null,
+        "problem": null
+      },
+      "zonen": [
+        {
+          "zone_id": "bett",
+          "raum_id": "schlafzimmer",
+          "name": "Bett",
+          "art": "normal",
+          "belegt": false,
+          "zustand": "frei",
+          "sicherheit": null,
+          "grund": "ausgang",
+          "daten_ok": true,
+          "personen": 0,
+          "mensch": 0,
+          "hund": 0,
+          "seit": "2000-01-01T02:59:49.400+00:00"
+        },
+        {
+          "zone_id": "tuer",
+          "raum_id": "schlafzimmer",
+          "name": "Tür",
+          "art": "ausgang",
+          "belegt": true,
+          "zustand": "belegt",
+          "sicherheit": null,
+          "grund": "betreten",
+          "daten_ok": true,
+          "personen": 1,
+          "mensch": 1,
+          "hund": 0,
+          "seit": "2000-01-01T02:59:50.400+00:00"
+        },
+        {
+          "zone_id": "hund",
+          "raum_id": "schlafzimmer",
+          "name": "Hundeplatz",
+          "art": "hundeplatz",
+          "belegt": false,
+          "zustand": "frei",
+          "sicherheit": null,
+          "grund": null,
+          "daten_ok": true,
+          "personen": 0,
+          "mensch": 0,
+          "hund": 0,
+          "seit": null
+        }
+      ],
+      "stellen": [
+        {
+          "stelle_id": "hund",
+          "ziel_da": false,
+          "seit": null,
+          "bewegt": false,
+          "spuren": []
+        }
+      ],
+      "spuren": [
+        {
+          "spur_id": "schlafzimmer-1",
+          "raum_id": "schlafzimmer",
+          "neu_seit_laden": false,
+          "x": 40.0,
+          "y": 30.0,
+          "gehalten": false,
+          "bewegt": true,
+          "still_seit": null,
+          "still_s": null,
+          "geschwindigkeit": null,
+          "mikro": null,
+          "art_sensor": "person",
+          "herkunft": "unbekannt",
+          "klasse": "unklar",
+          "klasse_punkte": {},
+          "in_zonen": [
+            "tuer"
+          ],
+          "an_stellen": [],
+          "tags": [],
+          "seit": "2000-01-01T02:59:40.600+00:00",
+          "zuletzt": "2000-01-01T02:59:49.700+00:00"
+        }
+      ]
+    }
+  ]
+}

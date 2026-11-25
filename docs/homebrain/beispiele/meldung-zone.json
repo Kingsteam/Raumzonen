@@ -1,0 +1,22 @@
+{
+  "schema": "raumzonen/1",
+  "seq": 1,
+  "art": "zone",
+  "raum_id": "schlafzimmer",
+  "zeit": "2000-01-01T02:59:48.200+00:00",
+  "daten": {
+    "zone_id": "bett",
+    "raum_id": "schlafzimmer",
+    "name": "Bett",
+    "art": "normal",
+    "belegt": true,
+    "zustand": "belegt",
+    "sicherheit": null,
+    "grund": "betreten",
+    "daten_ok": true,
+    "personen": 1,
+    "mensch": 1,
+    "hund": 0,
+    "seit": "2000-01-01T02:59:43.600+00:00"
+  }
+}

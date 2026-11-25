@@ -1,0 +1,36 @@
+{
+  "schema": "raumzonen/1",
+  "seq": 8,
+  "art": "spur",
+  "raum_id": "schlafzimmer",
+  "zeit": "2000-01-01T02:59:49.700+00:00",
+  "daten": {
+    "spuren_seit": "2000-01-01T02:59:40.600+00:00",
+    "spuren": [
+      {
+        "spur_id": "schlafzimmer-1",
+        "raum_id": "schlafzimmer",
+        "neu_seit_laden": false,
+        "x": 0.0,
+        "y": 50.0,
+        "gehalten": false,
+        "bewegt": true,
+        "still_seit": null,
+        "still_s": null,
+        "geschwindigkeit": 147.4,
+        "mikro": null,
+        "art_sensor": "person",
+        "herkunft": "unbekannt",
+        "klasse": "unklar",
+        "klasse_punkte": {},
+        "in_zonen": [
+          "tuer"
+        ],
+        "an_stellen": [],
+        "tags": [],
+        "seit": "2000-01-01T02:59:40.600+00:00",
+        "zuletzt": "2000-01-01T02:59:49.400+00:00"
+      }
+    ]
+  }
+}
