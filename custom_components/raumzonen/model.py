@@ -125,6 +125,10 @@ class SensorConfig:
 
 
 OEFFNUNG_ARTEN = ("tuer", "offen")
+# Tür: Scharnier an der Ecke ``kante`` (Anfang) oder am anderen Ende, und ob
+# sie in den Raum oder nach außen aufgeht. Nur Zeichnung.
+ANSCHLAG = ("anfang", "ende")
+AUFGEHEN = ("innen", "aussen")
 
 
 @dataclass(slots=True)
@@ -137,6 +141,8 @@ class OeffnungConfig:
     von: float
     bis: float
     art: str = "tuer"
+    anschlag: str = "anfang"
+    aufgehen: str = "innen"
 
 
 @dataclass(slots=True)
@@ -275,6 +281,8 @@ def _check_oeffnungen(raum: RaumConfig) -> None:
     for o in raum.oeffnungen:
         if o.art not in OEFFNUNG_ARTEN:
             raise ValueError(f"Raum {raum.id}: unbekannte Öffnung {o.art!r}")
+        if o.anschlag not in ANSCHLAG or o.aufgehen not in AUFGEHEN:
+            raise ValueError(f"Raum {raum.id}: unbekannter Türanschlag")
         if not isinstance(o.kante, int) or not 0 <= o.kante < n:
             raise ValueError(f"Raum {raum.id}: Öffnung an unbekannter Wand")
         (x1, y1), (x2, y2) = raum.umriss[o.kante], raum.umriss[(o.kante + 1) % n]

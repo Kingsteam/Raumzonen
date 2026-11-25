@@ -913,6 +913,12 @@ export class RaumzonenPanel extends LitElement {
     this.dirty = true;
   }
 
+  private changeOpening(i: number, change: Partial<Oeffnung>): void {
+    this.remember();
+    this.oeffnungen = this.oeffnungen.map((x, k) => (k === i ? { ...x, ...change } : x));
+    this.dirty = true;
+  }
+
   private deleteOpening(i: number): void {
     if (!confirm("Diese Öffnung in der Wand löschen?")) return;
     this.remember();
@@ -1164,21 +1170,24 @@ export class RaumzonenPanel extends LitElement {
     if (o.art === "offen") {
       return svg`<g class="opening ${selected ? "selected" : ""}">${gap}<line class="opening-line" x1=${ax} y1=${ay} x2=${bx} y2=${by} /></g>`;
     }
-    // Türblatt an Ecke a, senkrecht zur Wand in den Raum, Bogen bis b.
-    const len = Math.hypot(bx - ax, by - ay) || 1;
-    let nx = -(by - ay) / len;
-    let ny = (bx - ax) / len;
+    // Türblatt am Scharnier h, senkrecht zur Wand (in den Raum oder nach
+    // außen), Bogen bis zum anderen Ende f.
+    const [hx, hy, fx, fy] = o.anschlag === "ende" ? [bx, by, ax, ay] : [ax, ay, bx, by];
+    const len = Math.hypot(fx - hx, fy - hy) || 1;
+    let nx = -(fy - hy) / len;
+    let ny = (fx - hx) / len;
     const [ix, iy] = this.toScreen(inside);
-    if ((ix - ax) * nx + (iy - ay) * ny < 0) {
+    const towardsInside = (ix - hx) * nx + (iy - hy) * ny >= 0;
+    if (towardsInside !== (o.aufgehen !== "aussen")) {
       nx = -nx;
       ny = -ny;
     }
-    const lx = ax + nx * len;
-    const ly = ay + ny * len;
-    const sweep = (bx - ax) * ny - (by - ay) * nx > 0 ? 0 : 1;
+    const lx = hx + nx * len;
+    const ly = hy + ny * len;
+    const sweep = (fx - hx) * ny - (fy - hy) * nx > 0 ? 0 : 1;
     return svg`<g class="opening ${selected ? "selected" : ""}">${gap}
-      <line class="door-leaf" x1=${ax} y1=${ay} x2=${lx} y2=${ly} />
-      <path class="door-arc" d="M ${lx} ${ly} A ${len} ${len} 0 0 ${sweep} ${bx} ${by}" /></g>`;
+      <line class="door-leaf" x1=${hx} y1=${hy} x2=${lx} y2=${ly} />
+      <path class="door-arc" d="M ${lx} ${ly} A ${len} ${len} 0 0 ${sweep} ${fx} ${fy}" /></g>`;
   }
 
   /** Kleines „+“: hier einen Punkt einfügen. */
@@ -1786,6 +1795,22 @@ export class RaumzonenPanel extends LitElement {
                           </button>`,
                         )}
                       </div>
+                      ${o.art === "tuer"
+                        ? html`<div class="actions">
+                            <button
+                              class="text small"
+                              @click=${() => this.changeOpening(i, { anschlag: o.anschlag === "ende" ? "anfang" : "ende" })}
+                            >
+                              <ha-icon icon="mdi:swap-horizontal"></ha-icon>Anschlag wechseln
+                            </button>
+                            <button
+                              class="text small"
+                              @click=${() => this.changeOpening(i, { aufgehen: o.aufgehen === "aussen" ? "innen" : "aussen" })}
+                            >
+                              <ha-icon icon="mdi:swap-vertical"></ha-icon>${o.aufgehen === "aussen" ? "Nach innen aufgehen" : "Nach außen aufgehen"}
+                            </button>
+                          </div>`
+                        : nothing}
                       <p class="hint small">
                         Nur zur Anzeige. Damit Raumzonen „betreten“ und „verlassen“ erkennt, zusätzlich eine Zone mit der Rolle „Tür“ davor
                         zeichnen.

@@ -84,7 +84,9 @@ Dasselbe gilt für die Ecken der Wände, wenn keine Zone gewählt ist.
 
 **Türen und Öffnungen in Wänden:** Werkzeug „Tür / Öffnung“ (auch im Tab
 „Sensor und Raum“ unter Wände), dann an der Wand entlang ziehen. Im Tab
-lässt sich zwischen **Tür** und **offen** umschalten. Das ist nur die
+lässt sich zwischen **Tür** und **offen** umschalten; bei einer Tür dreht
+**„Anschlag wechseln“** das Scharnier auf die andere Seite und **„Nach
+außen aufgehen“** die Richtung. Das ist nur die
 Zeichnung; damit Raumzonen „betreten“/„verlassen“ erkennt, braucht es
 zusätzlich eine Zone mit der Rolle **Tür**.
 

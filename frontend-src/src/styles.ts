@@ -841,4 +841,23 @@ export const styles = css`
   .handle.on {
     fill: var(--accent);
   }
+
+  /* Trefferflächen für Finger (GUI-Konzept 3): Handy 44 px, Wand-Tablet 56 px */
+  @media (pointer: coarse) {
+    button,
+    .levels button,
+    select,
+    input {
+      min-height: 44px;
+    }
+    .tools button.icon {
+      min-width: 44px;
+    }
+  }
+  @media (pointer: coarse) and (min-width: 1000px) {
+    button,
+    .levels button {
+      min-height: 56px;
+    }
+  }
 `;

@@ -134,7 +134,16 @@ async def test_room_save(
             "umriss": [[-300, -20], [300, -20], [300, 400], [-300, 400]],
             "aufnahme": False,
             "aufnahme_tage": 7,
-            "oeffnungen": [{"kante": 1, "von": 50, "bis": 140, "art": "tuer"}],
+            "oeffnungen": [
+                {
+                    "kante": 1,
+                    "von": 50,
+                    "bis": 140,
+                    "art": "tuer",
+                    "anschlag": "ende",
+                    "aufgehen": "aussen",
+                }
+            ],
         }
     )
     msg = await client.receive_json()
@@ -148,7 +157,16 @@ async def test_room_save(
     assert raum["zonen"][1]["fuehrt_zu"] == "aussen"
     assert raum["zonen"][0]["fuehrt_zu"] == ""
     assert (raum["aufnahme"], raum["aufnahme_tage"]) == (False, 7)
-    assert raum["oeffnungen"] == [{"kante": 1, "von": 50, "bis": 140, "art": "tuer"}]
+    assert raum["oeffnungen"] == [
+        {
+            "kante": 1,
+            "von": 50,
+            "bis": 140,
+            "art": "tuer",
+            "anschlag": "ende",
+            "aufgehen": "aussen",
+        }
+    ]
     assert raum["sensor"]["mqtt_topic"] == "zigbee2mqtt/Testsensor"  # unverändert
     # Panel bleibt beim eigenen Neuladen erhalten.
     assert PANEL_URL in hass.data[frontend.DATA_PANELS]

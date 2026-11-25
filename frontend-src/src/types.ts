@@ -48,6 +48,10 @@ export interface Oeffnung {
   von: number;
   bis: number;
   art: "tuer" | "offen";
+  /** Tür: Scharnier am Anfang (Ecke `kante`) oder am Ende der Öffnung. */
+  anschlag?: "anfang" | "ende";
+  /** Tür: geht in den Raum oder nach außen auf. */
+  aufgehen?: "innen" | "aussen";
 }
 
 export interface Raum {

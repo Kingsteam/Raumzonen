@@ -115,12 +115,21 @@ def oeffnung_from_dict(data: dict[str, Any]) -> OeffnungConfig:
         von=float(data["von"]),
         bis=float(data["bis"]),
         art=str(data.get("art", "tuer")),
+        anschlag=str(data.get("anschlag", "anfang")),
+        aufgehen=str(data.get("aufgehen", "innen")),
     )
 
 
 def oeffnung_to_dict(o: OeffnungConfig) -> dict[str, Any]:
     """Öffnung als JSON."""
-    return {"kante": o.kante, "von": o.von, "bis": o.bis, "art": o.art}
+    return {
+        "kante": o.kante,
+        "von": o.von,
+        "bis": o.bis,
+        "art": o.art,
+        "anschlag": o.anschlag,
+        "aufgehen": o.aufgehen,
+    }
 
 
 def raum_to_dict(raum: RaumConfig) -> dict[str, Any]:

@@ -92,7 +92,14 @@ def raum_info(raum: RaumConfig) -> dict[str, Any]:
         # Türen und offene Stellen in den Wänden: Wand ``kante`` (von Ecke
         # kante zu kante+1), Abschnitt ``von``/``bis`` in cm, ``art``.
         "oeffnungen": [
-            {"kante": o.kante, "von": o.von, "bis": o.bis, "art": o.art}
+            {
+                "kante": o.kante,
+                "von": o.von,
+                "bis": o.bis,
+                "art": o.art,
+                "anschlag": o.anschlag,
+                "aufgehen": o.aufgehen,
+            }
             for o in raum.oeffnungen
         ],
         "zonen": zonen,

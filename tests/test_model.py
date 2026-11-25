@@ -92,12 +92,17 @@ def test_oeffnungen_und_durchgang() -> None:
     model = model_from_dict(data)
     again = model_to_dict(model)
     assert again["raeume"][0]["oeffnungen"][1]["art"] == "offen"
+    # ältere Speicherstände: Scharnier am Anfang, geht nach innen auf
+    assert again["raeume"][0]["oeffnungen"][0]["anschlag"] == "anfang"
+    assert again["raeume"][0]["oeffnungen"][0]["aufgehen"] == "innen"
     assert model_to_dict(model_from_dict(again)) == again
     for bad, message in (
         ({"kante": 4, "von": 0, "bis": 10}, "unbekannter Wand"),
         ({"kante": 0, "von": 50, "bis": 700}, "nicht auf der Wand"),
         ({"kante": 0, "von": 90, "bis": 80}, "nicht auf der Wand"),
         ({"kante": 0, "von": 0, "bis": 10, "art": "fenster"}, "unbekannte Öffnung"),
+        ({"kante": 0, "von": 0, "bis": 10, "anschlag": "oben"}, "Türanschlag"),
+        ({"kante": 0, "von": 0, "bis": 10, "aufgehen": "hoch"}, "Türanschlag"),
     ):
         raum["oeffnungen"] = [bad]
         with pytest.raises(ValueError, match=message):

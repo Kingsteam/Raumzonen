@@ -4,6 +4,19 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.6.2] - 2026-11-26
+
+### Hinzugefügt
+
+- Türen umdrehen: „Anschlag wechseln“ (Scharnier links oder rechts) und
+  „Nach außen/innen aufgehen“; im Vertrag `raumzonen/1` die Felder
+  `anschlag` und `aufgehen` je Öffnung.
+
+### Geändert
+
+- Größere Knöpfe bei Bedienung mit dem Finger (44 px am Handy, 56 px am
+  Wand-Tablet), wie im GUI-Konzept verlangt.
+
 ## [0.6.1] - 2026-11-25
 
 ### Geändert

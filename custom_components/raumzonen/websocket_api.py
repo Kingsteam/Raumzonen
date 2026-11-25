@@ -173,6 +173,8 @@ ZONE_SCHEMA = vol.Schema(
                     vol.Required("von"): vol.Coerce(float),
                     vol.Required("bis"): vol.Coerce(float),
                     vol.Required("art"): str,
+                    vol.Optional("anschlag", default="anfang"): str,
+                    vol.Optional("aufgehen", default="innen"): str,
                 }
             )
         ],

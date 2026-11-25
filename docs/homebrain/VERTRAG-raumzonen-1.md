@@ -85,7 +85,7 @@ Nach `geladen` am besten eine neue Momentaufnahme holen.
 | `haus` | Lage des Raums im Hausplan: `x`, `y` (cm), `winkel` (Grad); `null`, solange nicht gesetzt (ab 0.5.0 im Panel unter „Haus“ einstellbar) |
 | `sensor` | `device_id`, `quelle` (`mqtt`/`entitaet`), `lage` (`x`, `y`, `winkel` im Raum), `reichweite_cm`, `oeffnung_grad` |
 | `umriss` | Wände als Punkte im Raum (cm), leer = nicht gezeichnet |
-| `oeffnungen` | ab 0.6.0: Türen und offene Stellen in den Wänden: `kante` (Wand von Ecke `kante` zu `kante`+1), `von`/`bis` (cm ab dieser Ecke), `art` `tuer` oder `offen`. Nur Zeichnung; Übergänge erkennt Raumzonen an Zonen der Art `ausgang` |
+| `oeffnungen` | ab 0.6.0: Türen und offene Stellen in den Wänden: `kante` (Wand von Ecke `kante` zu `kante`+1), `von`/`bis` (cm ab dieser Ecke), `art` `tuer` oder `offen`; ab 0.6.2 bei Türen `anschlag` (`anfang`/`ende`: Scharnier an welcher Seite) und `aufgehen` (`innen`/`aussen`). Nur Zeichnung; Übergänge erkennt Raumzonen an Zonen der Art `ausgang` |
 | `zonen` | alle Zonen: `zone_id`, `name`, `art`, `form` |
 | `raender` | Türen (`art` `ausgang`): `rand_id`, `name`, `form`, `fuehrt_zu` |
 | `stellen` | Stellen (`art` `stelle` oder `hundeplatz`): `stelle_id`, `name`, `art`, `form` |

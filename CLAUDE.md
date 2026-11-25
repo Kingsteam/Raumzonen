@@ -18,7 +18,7 @@ Zone, Spuren, die nicht plötzlich verschwinden. Konzept: `docs/KONZEPT.md`
 (allgemeine Fassung; die vollständige und die Auswertung der Aufnahmen
 liegen in `haus-privat/raumzonen/docs/`).
 
-Stand 0.6.0: **Phase 0 bis 4a, Hausplan, Türen in Wänden.** Rechenkern in reinem Python, getestet gegen
+Stand 0.6.2: **Phase 0 bis 4a, Hausplan, Türen in Wänden.** Rechenkern in reinem Python, getestet gegen
 anonymisierte Aufnahmen; Sensor-Anbindung (MQTT oder Entitäten, nur lesen),
 Entitäten je Zone und Raum, Ereignis `raumzonen_zone`, Einrichtung über den
 Options-Flow; Panel „Raumzonen“ (sehen alle, ändern nur Admins) mit
@@ -38,8 +38,12 @@ Nächstes: 4b (Herkunft, Einstufung, Sicherheit, `hinweis/1`); siehe
    eine Auswertung ausdrücklich erlaubt, und dann **nur lesen**. Ausnahme
    (Besitzer, 25.11.2026): ein **fertiges Release** über den Marketplace
    installieren oder aktualisieren (`ha_manage_hacs`), wenn der Besitzer es
-   für diese Version will. Neu starten nur nach Absprache (Haus-Sitzung oder
-   Besitzer), nie ungefragt.
+   für diese Version will. Seit 26.11.2026 (Hausregel): Updates eigener
+   Releases samt Neustart sind erlaubt; den Neustart **nicht selbst
+   auslösen**, sondern bei der Haus-Sitzung anmelden (Postfach
+   `projekte/postfach/an-haus.md` im Haus-Repo; weil dieses Repo hier nicht
+   erreichbar ist, per send_message an „Lernendes Haus“ oder „Tablets“ mit
+   der Bitte um Eintrag).
 2. **Nichts im Haus schalten.** Diese Integration meldet Zustände; sie
    schaltet kein Licht und keine Geräte. Automationen macht der Besitzer.
 3. **„Aufgestanden“ höchstens 5 s** (`MAX_AUFGESTANDEN_S` in `const.py`).
@@ -164,7 +168,8 @@ HACS-Prüfung (`.github/workflows/`).
 - Zonen werden am Plan gezeichnet. Drehen am gelben Griff (5°-Raster) oder
   mit Knöpfen 15° (vom Besitzer gewünscht, 0.6.0); Punkte über „+“ auf der
   Kante einfügen, per Rechtsklick oder Knopf löschen.
-- Wände bekommen Türen/offene Stellen (`oeffnungen`, nur Zeichnung);
+- Wände bekommen Türen/offene Stellen (`oeffnungen`, nur Zeichnung; Tür mit
+  `anschlag` anfang/ende und `aufgehen` innen/aussen);
   „betreten/verlassen“ kommt weiter von Zonen der Rolle „Tür“.
 - Alle Nutzer sehen das Panel und die Live-Punkte; nur Admins ändern.
   Die Rechte prüft Python (`require_admin`), das Panel blendet nur aus.
