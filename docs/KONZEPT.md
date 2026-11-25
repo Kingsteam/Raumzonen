@@ -76,6 +76,11 @@ Grenzen stehen in `const.py` und werden beim Speichern geprüft.
 
 ## Wissen über den FP400 (aus dem MIT-lizenzierten Konverter, nur Wissen)
 
+Quelle: der Zigbee2MQTT-Konverter aus
+[bobtekkk/aqara-fp400-zone-card](https://github.com/bobtekkk/aqara-fp400-zone-card)
+(MIT). Genutzt werden nur Feldnamen und Datenformat, kein Code
+(`THIRD-PARTY-NOTICES.md`).
+
 * Ziele kommen als `tracking_targets` (id, x, y, ggf. moving, type, posture)
   und als Text `targets_xy` (`id:x:y;...`, `none` = leer).
 * Positionen kommen nur, wenn mindestens eine Software-Zone im Konverter

@@ -4,6 +4,16 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.6.1] - 2026-11-25
+
+### Geändert
+
+- Herkunft klar ausgewiesen: Dank an bobtekkk/aqara-fp400-zone-card (MIT),
+  dessen Konverter die Positionen liefert; Raumzonen enthält keinen Code
+  daraus (README, `THIRD-PARTY-NOTICES.md`).
+- Lizenztext der mitgelieferten Bibliothek Lit (BSD-3-Clause) liegt jetzt
+  dem Panel bei (`frontend/LIZENZEN-DRITTE.txt`).
+
 ## [0.6.0] - 2026-11-25
 
 ### Hinzugefügt

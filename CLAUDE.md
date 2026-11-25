@@ -141,6 +141,9 @@ HACS-Prüfung (`.github/workflows/`).
   Besitzer über den Marketplace (`ha_manage_hacs`: `update_information`,
   dann `download` mit `version`), Neustart nur nach Absprache.
 - In `manifest.json` stehen `domain` und `name` zuerst, dann alphabetisch.
+- Kein fremder Code ohne Eintrag in `THIRD-PARTY-NOTICES.md` (und
+  Lizenztext). Vom Konverter `bobtekkk/aqara-fp400-zone-card` (MIT) nur
+  Datenformat und Feldnamen nutzen, keinen Code; Dank im README behalten.
 - Anleitungen für den Besitzer (GitHub, Home Assistant) immer mit
   klickbaren Links zu jeder Seite, die er öffnen soll.
 

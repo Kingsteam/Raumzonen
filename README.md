@@ -41,11 +41,19 @@ Einstellungen → Updates.
 
 Siehe `CLAUDE.md` (Aufbau, Tests, Regeln) und `docs/`.
 
-## Dank
+## Dank und Herkunft
 
-Das Wissen über das Datenformat des FP400 stammt aus dem MIT-lizenzierten
-Projekt *aqara-fp400-zone-card* (Konverter für Zigbee2MQTT). Es wurde kein
-Code daraus übernommen.
+Raumzonen baut auf der Arbeit von **bobtekkk** auf: dem Projekt
+[aqara-fp400-zone-card](https://github.com/bobtekkk/aqara-fp400-zone-card)
+(MIT-Lizenz). Dessen erweiterter Konverter für Zigbee2MQTT liefert die
+Positionen des FP400 (`tracking_targets`, `targets_xy`, Software-Zonen), mit
+denen Raumzonen arbeitet. Raumzonen ist eine **eigenständige Integration**:
+Sie enthält keinen Code aus diesem Projekt, liest nur die Daten, die der
+Konverter in Zigbee2MQTT veröffentlicht, und rechnet dessen Zonenformat
+nach. Raumzonen ist kein offizielles Projekt von bobtekkk; Fragen zu
+Raumzonen bitte hier stellen, nicht dort. Danke für die Vorarbeit!
+
+Weitere fremde Bestandteile: `THIRD-PARTY-NOTICES.md`.
 
 ## Installation von Hand
 
