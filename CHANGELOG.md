@@ -12,6 +12,10 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
   → Stockwerk), auch nachträglich. Ein Grundriss mit Stockwerk erscheint nur,
   wenn oben dieses Stockwerk gewählt ist; unter „Alle“ nur Grundrisse ohne
   Stockwerk, damit nichts übereinanderliegt.
+- Raum „wie im Hausplan“: Ist ein Raum im Hausplan gedreht, zeigt ihn die
+  Raumansicht jetzt genauso gedreht, mit geradem Grundriss im Hintergrund.
+  Der Knopf links (Pfeile im Kreis) schaltet zurück auf „Raum gerade“. Nur
+  Anzeige: Zonen, Sensor und Daten ändern sich nicht.
 
 ## [0.14.0] - 2026-11-26
 

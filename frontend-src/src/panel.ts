@@ -271,6 +271,8 @@ export class RaumzonenPanel extends LitElement {
   @state() private masse = lesen("raumzonen-masse", false);
   /** Gewähltes Stockwerk im Hausplan ("" = alle). */
   @state() private stockwerk = "";
+  /** Raum so gedreht zeigen wie im Hausplan (nur Anzeige, im Browser gemerkt). */
+  @state() private wieImHaus = lesen("raumzonen-wie-im-haus", true);
   /** Im Hausplan geänderte Stockwerke und Bereiche je Raum (bis zum Speichern). */
   @state() private hausExtra: Record<string, { stockwerke?: string[]; bereich_id?: string }> = {};
   /** Formular „Raum hinzufügen“ (null = zu). */
@@ -1153,9 +1155,19 @@ export class RaumzonenPanel extends LitElement {
 
   // -- Umrechnung Bildschirm ↔ Raum ----------------------------------------
 
+  /**
+   * Drehung der Ansicht (Grad, nur Anzeige): im Raum „wie im Hausplan“, damit
+   * Raum und Grundriss so liegen wie im Haus. Die Daten bleiben unverändert.
+   */
+  private get ansichtWinkel(): number {
+    if (this.page !== "raum" || !this.raum?.haus_gesetzt || !this.wieImHaus) return 0;
+    return this.raum.haus_winkel ?? 0;
+  }
+
   private toScreen([x, y]: Point): Point {
     const { cx, cy, scale } = this.view;
-    return [this.size.w / 2 + (x - cx) * scale, this.size.h / 2 - (y - cy) * scale];
+    const [dx, dy] = rotate([x - cx, y - cy], this.ansichtWinkel);
+    return [this.size.w / 2 + dx * scale, this.size.h / 2 - dy * scale];
   }
 
   private screenPoints(points: Point[]): string {
@@ -1166,7 +1178,8 @@ export class RaumzonenPanel extends LitElement {
     const svgEl = this.renderRoot.querySelector("svg.plan") as SVGSVGElement | null;
     const box = svgEl?.getBoundingClientRect() ?? { left: 0, top: 0 };
     const { cx, cy, scale } = this.view;
-    return [cx + (event.clientX - box.left - this.size.w / 2) / scale, cy - (event.clientY - box.top - this.size.h / 2) / scale];
+    const [dx, dy] = rotate([(event.clientX - box.left - this.size.w / 2) / scale, -(event.clientY - box.top - this.size.h / 2) / scale], -this.ansichtWinkel);
+    return [cx + dx, cy + dy];
   }
 
   private snapped(p: Point): Point {
@@ -1190,13 +1203,17 @@ export class RaumzonenPanel extends LitElement {
     for (const z of this.zones) pts.push(...formPoints(z.form));
     pts.push(...this.umriss);
     if (pts.length < 4 && this.page === "raum") pts.push(...sectorPoints([s.x, s.y], s.winkel, Math.min(s.reichweite_cm, 500), s.oeffnung_grad, 8));
-    const xs = pts.map((p) => p[0]);
-    const ys = pts.map((p) => p[1]);
+    // In gedrehter Ansicht im gedrehten Rahmen einpassen.
+    const a = this.ansichtWinkel;
+    const gedreht = pts.map((p) => rotate(p, a));
+    const xs = gedreht.map((p) => p[0]);
+    const ys = gedreht.map((p) => p[1]);
     const [x1, x2, y1, y2] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
     const w = Math.max(200, x2 - x1);
     const h = Math.max(200, y2 - y1);
     const scale = Math.min(this.size.w / (w * 1.2), this.size.h / (h * 1.2));
-    this.view = { cx: (x1 + x2) / 2, cy: (y1 + y2) / 2, scale: Math.max(0.05, Math.min(5, scale)) };
+    const mitte = rotate([(x1 + x2) / 2, (y1 + y2) / 2], -a);
+    this.view = { cx: mitte[0], cy: mitte[1], scale: Math.max(0.05, Math.min(5, scale)) };
   };
 
   private zoom(factor: number, around?: Point): void {
@@ -1687,9 +1704,8 @@ export class RaumzonenPanel extends LitElement {
     switch (drag.kind) {
       case "pan": {
         this.viewTouched = true;
-        const dx = (event.clientX - drag.start[0]) / this.view.scale;
-        const dy = (event.clientY - drag.start[1]) / this.view.scale;
-        this.view = { ...this.view, cx: drag.view.cx - dx, cy: drag.view.cy + dy };
+        const [dx, dy] = rotate([(event.clientX - drag.start[0]) / this.view.scale, -(event.clientY - drag.start[1]) / this.view.scale], -this.ansichtWinkel);
+        this.view = { ...this.view, cx: drag.view.cx - dx, cy: drag.view.cy - dy };
         break;
       }
       case "vertex":
@@ -1899,12 +1915,25 @@ export class RaumzonenPanel extends LitElement {
   private renderGrid(): TemplateResult {
     const { w, h } = this.size;
     const s = this.view.scale;
+    const step = s > 0.6 ? 50 : s > 0.2 ? 100 : 500;
+    const lines: TemplateResult[] = [];
+    if (this.ansichtWinkel) {
+      // Gedrehte Ansicht: Linien des Raumrasters, über die ganze Fläche.
+      const r = Math.hypot(w, h) / 2 / s;
+      const { cx, cy } = this.view;
+      const line = (a: Point, b: Point, major: boolean) => {
+        const [ax, ay] = this.toScreen(a);
+        const [bx, by] = this.toScreen(b);
+        return svg`<line class="grid ${major ? "major" : ""}" x1=${ax} y1=${ay} x2=${bx} y2=${by} />`;
+      };
+      for (let x = Math.floor((cx - r) / step) * step; x <= cx + r; x += step) lines.push(line([x, cy - r], [x, cy + r], x % 100 === 0));
+      for (let y = Math.floor((cy - r) / step) * step; y <= cy + r; y += step) lines.push(line([cx - r, y], [cx + r, y], y % 100 === 0));
+      return svg`<g>${lines}</g>`;
+    }
     const x0 = this.view.cx - w / 2 / s;
     const x1 = this.view.cx + w / 2 / s;
     const y0 = this.view.cy - h / 2 / s;
     const y1 = this.view.cy + h / 2 / s;
-    const step = s > 0.6 ? 50 : s > 0.2 ? 100 : 500;
-    const lines: TemplateResult[] = [];
     for (let x = Math.floor(x0 / step) * step; x <= x1; x += step) {
       const [sx] = this.toScreen([x, 0]);
       lines.push(svg`<line class="grid ${x % 100 === 0 ? "major" : ""}" x1=${sx} y1="0" x2=${sx} y2=${h} />`);
@@ -2297,8 +2326,13 @@ export class RaumzonenPanel extends LitElement {
     let shape: TemplateResult;
     if (zone.form.art === "zellen") {
       shape = svg`${cellRects(zone.form).map((r) => {
-        const [sx, sy] = this.toScreen([r.x, r.y + r.s]);
-        return svg`<rect class="zone-shape ${selected ? "selected" : ""}" x=${sx} y=${sy} width=${this.px(r.s)} height=${this.px(r.s)} fill=${color} fill-opacity=${fill} stroke=${color} style="stroke-width:1" />`;
+        const ecken: Point[] = [
+          [r.x, r.y],
+          [r.x + r.s, r.y],
+          [r.x + r.s, r.y + r.s],
+          [r.x, r.y + r.s],
+        ];
+        return svg`<polygon class="zone-shape ${selected ? "selected" : ""}" points=${this.screenPoints(ecken)} fill=${color} fill-opacity=${fill} stroke=${color} style="stroke-width:1" />`;
       })}`;
     } else {
       const pts = this.screenPoints(formPoints(zone.form));
@@ -2642,6 +2676,21 @@ export class RaumzonenPanel extends LitElement {
               }}
             >
               <ha-icon icon="mdi:ruler"></ha-icon>
+            </button>`
+          : nothing}
+        ${this.page === "raum" && this.raum?.haus_gesetzt && Math.abs(this.raum.haus_winkel ?? 0) > 0.01
+          ? html`<button
+              class="icon ${this.wieImHaus ? "on" : ""}"
+              title=${this.wieImHaus ? "Ansicht wie im Hausplan (tippen: Raum gerade)" : "Raum gerade (tippen: wie im Hausplan)"}
+              aria-label="Ansicht drehen"
+              @click=${() => {
+                this.wieImHaus = !this.wieImHaus;
+                merken("raumzonen-wie-im-haus", this.wieImHaus);
+                this.viewTouched = false;
+                this.fit();
+              }}
+            >
+              <ha-icon icon="mdi:rotate-3d-variant"></ha-icon>
             </button>`
           : nothing}
         <button class="icon" title="Vergrößern" aria-label="Vergrößern" @click=${() => this.zoom(1.25)}><ha-icon icon="mdi:plus"></ha-icon></button>

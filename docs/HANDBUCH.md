@@ -88,7 +88,12 @@ den runden Ecken zuschneiden, dann „Speichern“. Enthält ein PDF mehrere
 Grundrisse (einer je Seite), zeigt das Panel sie nebeneinander; du wählst
 einen und übernimmst den anderen danach genauso. Unter „Ausrichten“ ordnest du
 jeden Grundriss einem **Stockwerk** zu; er erscheint dann nur, wenn oben
-dieses Stockwerk gewählt ist (unter „Alle“ nur Grundrisse ohne Stockwerk). Stimmt die Größe nicht,
+dieses Stockwerk gewählt ist (unter „Alle“ nur Grundrisse ohne Stockwerk).
+
+Liegt ein Raum im Hausplan schräg, zeigt ihn auch die Raumansicht so, wie er
+im Haus liegt; der Grundriss im Hintergrund ist dann gerade. Der Knopf links
+in der Werkzeugleiste (Pfeile im Kreis) schaltet auf „Raum gerade“ und
+zurück. Das ist nur die Ansicht; Zonen und Sensor bleiben, wo sie sind. Stimmt die Größe nicht,
 dort mit „1 %“/„10 %“ größer oder kleiner machen, oder „Maß neu setzen“:
 zwei Punkte einer bekannten Strecke im Bild antippen (z. B. die Enden
 einer Wand), die echte Länge in Metern eingeben, „Maß übernehmen“.

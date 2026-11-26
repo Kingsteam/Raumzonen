@@ -165,8 +165,11 @@ HACS-Prüfung (`.github/workflows/`).
   Zonenkarte des Konverters.
 - Im Hausplan wird der **Raum** verschoben und gedreht (Knöpfe 90°/5°,
   keine Zahlenfelder); im Raum selbst bleibt er gerade.
-- Der Raum ist immer gerade. Ausgerichtet wird der **Sensor** (ziehen, am
-  gelben Griff drehen), nie der Raum. Keine Felder für Koordinaten/Winkel.
+- Ausgerichtet wird der **Sensor** (ziehen, am gelben Griff drehen), nie der
+  Raum. Keine Felder für Koordinaten/Winkel. Die Raumansicht ist standardmäßig
+  „wie im Hausplan“ gedreht (`ansichtWinkel`, nur Anzeige, Knopf links;
+  Besitzer 26.11.2026: gedrehter Raum und Hintergrund störten); „Raum gerade“
+  bleibt wählbar. `toScreen`/`toWorld`/Pan/`fit`/Raster beachten die Drehung.
 - Zonen werden am Plan gezeichnet. Drehen am gelben Griff (5°-Raster) oder
   mit Knöpfen 15° (vom Besitzer gewünscht, 0.6.0); Punkte über „+“ auf der
   Kante einfügen, per Rechtsklick oder Knopf löschen.
