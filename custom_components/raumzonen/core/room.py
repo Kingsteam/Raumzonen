@@ -178,8 +178,10 @@ class Room:
         )
 
     def _in_exit(self, track: Track) -> bool:
+        # Rohe Position: wer zur Tür geht, soll ohne Verzögerung durch den
+        # Filter erkannt werden.
         return any(
-            z.shape.contains(track.x, track.y)
+            z.shape.contains(track.raw_x, track.raw_y)
             for z in self.zones.values()
             if z.art == ART_AUSGANG
         )
@@ -282,17 +284,30 @@ class Room:
         elif track.type == "person" or track.dog_score == 0:
             track.tags.discard(TAG_HUND)
 
-    def _membership(self, zone: Zone, track: Track) -> bool:
+    def _membership(self, zone: Zone, track: Track, now: float) -> bool:
         key = (zone.id, track.track_id)
         before = self._inside.get(key, False)
         if track.state == HELD:
             return before
-        d = zone.shape.distance(track.x, track.y)
+        # Türen: immer die rohe Position (keine Verzögerung durch den Filter).
+        if zone.art == ART_AUSGANG:
+            d = zone.shape.distance(track.raw_x, track.raw_y)
+        else:
+            # Bleiben: geglättete Position (Zittern wirkt nicht). Hinein
+            # zusätzlich mit der rohen Position, solange die Figur sich bewegt.
+            d = zone.shape.distance(track.x, track.y)
+            if not before and d > 0 and track.moving(now, self.tracker.settings):
+                d = zone.shape.distance(track.raw_x, track.raw_y)
         if d <= 0:
             return True
         if not before:
             return False
         rule = zone.rule
+        if rule.schlaefer_halten:
+            # Hinaus aus der Schläferzone: rohe Position, damit „aufgestanden“
+            # nicht durch den Filter später kommt. Zittern allein reicht
+            # trotzdem nicht, es braucht den Beweis unten.
+            d = zone.shape.distance(track.raw_x, track.raw_y)
         if rule.schlaefer_halten and self._in_exit(track):
             # Aus dem Bett direkt in die Tür: sofort weg, auch im Randstreifen.
             return False
@@ -322,7 +337,7 @@ class Room:
             for track in tracks:
                 key = (zone.id, track.track_id)
                 was = self._inside.get(key, False)
-                now_in = self._membership(zone, track)
+                now_in = self._membership(zone, track, now)
                 self._inside[key] = now_in
                 if was and not now_in and zone.rule.schlaefer_halten:
                     self._left_sleeper[track.track_id] = (zone.id, now)

@@ -69,6 +69,20 @@ class TrackerSettings:
     # Positionsänderung unter diesem Wert zählt nicht als Bewegung
     # (Rahmen mit gleicher Position kommen in Ruhe etwa alle 10 s).
     still_cm: float = 5.0
+    # Zittern herausrechnen (One-Euro-Filter): in Ruhe stark glätten, bei
+    # Bewegung fast sofort folgen. 0 = aus. Werte gemessen an vier Nächten:
+    # die größten Sprünge im Liegen (90 %-Wert) 27 → 17 cm, „aufgestanden“,
+    # Tür und Bettrand ohne jede Verzögerung (die Raumlogik nimmt dafür die
+    # rohe Position, siehe ``Room._membership``).
+    filter_min_hz: float = 0.3
+    # Wie schnell der Filter bei Bewegung aufmacht (je cm/s mehr Hz).
+    filter_beta: float = 0.005
+    # Glättung der Geschwindigkeitsschätzung.
+    filter_d_hz: float = 1.0
+    # Längster Zeitschritt, mit dem der Filter rechnet: Nach langer Stille
+    # (FP400 schickt in Ruhe minutenlang nichts) soll ein einzelner Ausreißer
+    # nicht ungefiltert durchgehen.
+    filter_max_dt_s: float = 0.5
 
 
 @dataclass(slots=True)
@@ -91,9 +105,21 @@ class Track:
     # Für die Raumlogik (Hundehinweis, Störquelle, ...)
     tags: set[str] = field(default_factory=set)
     dog_score: float = 0.0
+    # Rohe Position vom Sensor (``x``/``y`` sind gefiltert, wenn der Filter an
+    # ist). Fangbereich und Bewegungserkennung rechnen mit der rohen Position.
+    raw_x: float = 0.0
+    raw_y: float = 0.0
+    # Zustand des One-Euro-Filters: geschätzte Geschwindigkeit (cm/s).
+    vx: float = 0.0
+    vy: float = 0.0
     history: deque[tuple[float, float, float]] = field(
         default_factory=lambda: deque(maxlen=64)
     )
+
+    def __post_init__(self) -> None:
+        """Rohe Position am Anfang wie die Position."""
+        if self.raw_x == 0.0 and self.raw_y == 0.0:
+            self.raw_x, self.raw_y = self.x, self.y
 
     @property
     def visible(self) -> bool:
@@ -155,15 +181,38 @@ class Tracker:
             base, min(self.settings.max_jump_cm, dt * self.settings.max_speed_cm_s)
         )
 
+    def _filter(self, track: Track, target: Target, now: float) -> tuple[float, float]:
+        """One-Euro-Filter: Grenzfrequenz steigt mit der Geschwindigkeit.
+
+        Steht die Figur, ist die Grenzfrequenz klein (stark geglättet); bewegt
+        sie sich, wird sie groß (fast keine Verzögerung). Rechenaufwand: ein
+        paar Multiplikationen je Rahmen.
+        """
+        s = self.settings
+        if s.filter_min_hz <= 0:
+            return target.x, target.y
+        dt = min(max(now - track.last_seen, 1e-3), s.filter_max_dt_s)
+
+        def alpha(hz: float) -> float:
+            tau = 1.0 / (2 * math.pi * hz)
+            return 1.0 / (1.0 + tau / dt)
+
+        a_d = alpha(s.filter_d_hz)
+        track.vx += a_d * ((target.x - track.x) / dt - track.vx)
+        track.vy += a_d * ((target.y - track.y) / dt - track.vy)
+        a = alpha(s.filter_min_hz + s.filter_beta * math.hypot(track.vx, track.vy))
+        return track.x + a * (target.x - track.x), track.y + a * (target.y - track.y)
+
     def _assign(self, track: Track, target: Target, now: float) -> None:
-        moved = math.hypot(target.x - track.x, target.y - track.y)
+        moved = math.hypot(target.x - track.raw_x, target.y - track.raw_y)
         if moved >= self.settings.still_cm:
             track.last_moved = now
             track.moves_in_row += 1
         else:
             track.moves_in_row = 0
         track.sensor_id = target.id
-        track.x, track.y = target.x, target.y
+        track.x, track.y = self._filter(track, target, now)
+        track.raw_x, track.raw_y = target.x, target.y
         track.last_seen = now
         track.state = ACTIVE
         track.held_since = None
@@ -207,7 +256,7 @@ class Tracker:
                     t
                     for t in sorted(free.values(), key=lambda t: t.state != ACTIVE)
                     if t.sensor_id == target.id
-                    and math.hypot(t.x - target.x, t.y - target.y)
+                    and math.hypot(t.raw_x - target.x, t.raw_y - target.y)
                     <= max(self._gate(t, now), self.settings.max_jump_cm)
                 ),
                 None,
@@ -220,7 +269,7 @@ class Tracker:
         # 2. ID gewechselt: nächste freie Spur innerhalb des Fangbereichs.
         pairs = sorted(
             (
-                (math.hypot(t.x - g.x, t.y - g.y), t.track_id, i)
+                (math.hypot(t.raw_x - g.x, t.raw_y - g.y), t.track_id, i)
                 for i, g in enumerate(pending)
                 for t in free.values()
             ),

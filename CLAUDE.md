@@ -18,7 +18,7 @@ Zone, Spuren, die nicht plötzlich verschwinden. Konzept: `docs/KONZEPT.md`
 (allgemeine Fassung; die vollständige und die Auswertung der Aufnahmen
 liegen in `haus-privat/raumzonen/docs/`).
 
-Stand 0.6.2: **Phase 0 bis 4a, Hausplan, Türen in Wänden.** Rechenkern in reinem Python, getestet gegen
+Stand 0.7.0: **Phase 0 bis 4a, Hausplan, Türen in Wänden.** Rechenkern in reinem Python, getestet gegen
 anonymisierte Aufnahmen; Sensor-Anbindung (MQTT oder Entitäten, nur lesen),
 Entitäten je Zone und Raum, Ereignis `raumzonen_zone`, Einrichtung über den
 Options-Flow; Panel „Raumzonen“ (sehen alle, ändern nur Admins) mit
@@ -181,6 +181,11 @@ HACS-Prüfung (`.github/workflows/`).
 
 - Zeitvergleiche mit Toleranz (`EPS_S`): `0.3 + 1.0 - 0.3` ist nicht genau
   `1.0`; ohne Toleranz hängt `advance()` an einer fälligen Zeit.
+- Zwei Positionen je Figur: `x`/`y` geglättet (One-Euro-Filter, für Bleiben
+  in Zonen, Anzeige, Bewegungskarte, Vertrag), `raw_x`/`raw_y` roh (für
+  Fangbereich, Bewegung, Türen, Hineingehen in Bewegung und Hinaus aus der
+  Schläferzone). Neue Zeit-Regeln nur mit `raw_*`, sonst kommt
+  „aufgestanden“ später. Wirkung immer mit den Aufnahmen messen.
 - Bei Sensor-Ausfall enden keine Spuren; `next_deadline()` darf dann keine
   Haltezeiten melden.
 - Der FP400 schickt in Ruhe minutenlang nichts. Zeitregeln allein reichen im

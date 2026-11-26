@@ -4,6 +4,18 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.7.0] - 2026-11-26
+
+### Hinzugefügt
+
+- Filter gegen Zittern (One-Euro-Filter je Figur): In Ruhe wird stark
+  geglättet, bei Bewegung folgt die Figur fast sofort. Gemessen an vier
+  aufgenommenen Nächten: die großen Sprünge im Liegen (90 %-Wert) von 27 auf
+  17 cm. „Aufgestanden“, Tür und Bettrand melden sich genau so schnell wie
+  vorher, weil die Raumlogik dafür die rohe Position nimmt; Rechenzeit
+  unverändert. Ruhigere Live-Punkte, Bewegungskarte und Spuren für das
+  Homebrain.
+
 ## [0.6.2] - 2026-11-26
 
 ### Hinzugefügt

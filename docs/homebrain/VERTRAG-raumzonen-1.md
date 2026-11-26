@@ -145,7 +145,7 @@ Raumkoordinaten (cm).
 |---|---|
 | `spur_id` | `<raum_id>-<nummer>`, gültig bis zum Neuladen |
 | `neu_seit_laden` | `true`: kam nach dem ersten Rahmen nach dem Laden dazu. `false`: war schon im ersten Rahmen da, hat nur eine neue Nummer bekommen (der Mensch war vermutlich schon vorher im Raum) |
-| `x`, `y` | Position im Raum (cm) |
+| `x`, `y` | Position im Raum (cm); ab 0.7.0 gegen Zittern geglättet (in Ruhe stark, bei Bewegung kaum) |
 | `gehalten` | der Sensor sieht sie gerade nicht, Raumzonen hält sie |
 | `bewegt` | bewegt sich gerade (nach Raumzonen, nicht nach dem Sensor) |
 | `still_seit`, `still_s` | seit wann bzw. wie lange ruhig; `null` während Bewegung |
