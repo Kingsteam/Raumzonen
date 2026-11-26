@@ -46,6 +46,15 @@ Nächstes: 4b (Herkunft, Einstufung, Sicherheit, `hinweis/1`); siehe
    der Bitte um Eintrag).
 2. **Nichts im Haus schalten.** Diese Integration meldet Zustände; sie
    schaltet kein Licht und keine Geräte. Automationen macht der Besitzer.
+   Ausnahme (Besitzer, 26.11.2026: „dass Raumzonen die Sensoren, die in
+   Raumzonen definiert sind, auch konfigurieren darf … Dann kann der Benutzer
+   entscheiden, ob er das übernehmen will“): Einstellungen der Sensoren und
+   Melder, die einem Raum zugeordnet sind (z. B. Reichweite, Nachlauf),
+   darf Raumzonen am Gerät ändern, **nur** als vom Besitzer im Panel
+   angenommener Vorschlag, nur innerhalb der Grenzen des Geräts, mit
+   gemerktem alten Wert und „Zurück“. Vorschläge kommen über das Lernende
+   Haus (Konzept: `haus-privat/raumzonen/docs/KONZEPT-VORSCHLAEGE.md`, noch
+   in Abstimmung). Noch nicht gebaut.
 3. **„Aufgestanden“ höchstens 5 s** (`MAX_AUFGESTANDEN_S` in `const.py`).
    Die Tests in `tests/test_traces.py` prüfen das an echten Aufnahmen. Die
    Aufnahmen liegen privat (`haus-privat/raumzonen/aufnahmen`); ohne sie
