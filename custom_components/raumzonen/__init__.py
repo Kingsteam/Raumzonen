@@ -15,7 +15,11 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryError
-from homeassistant.helpers import config_validation as cv, device_registry as dr
+from homeassistant.helpers import (
+    area_registry as ar,
+    config_validation as cv,
+    device_registry as dr,
+)
 from homeassistant.helpers.typing import ConfigType
 
 from .api import async_get_api
@@ -79,8 +83,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: RaumzonenConfigEntry) ->
         ids = {i for d, i in device.identifiers if d == DOMAIN}
         if ids and entry.entry_id not in ids and not ids & keys:
             registry.async_remove_device(device.id)
+    areas = ar.async_get(hass)
     for raum in store.model.raeume:
-        registry.async_get_or_create(
+        device = registry.async_get_or_create(
             config_entry_id=entry.entry_id,
             identifiers={(DOMAIN, room_device_key(entry.entry_id, raum.id))},
             name=raum.name,
@@ -88,6 +93,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: RaumzonenConfigEntry) ->
             model="Raum",
             via_device_id=main.id,
         )
+        # Bereich des Raums übernehmen, damit die Anzeigen dort erscheinen;
+        # einen Bereich, den jemand selbst gesetzt hat, nie überschreiben.
+        # Ohne eingetragenen Bereich: der Bereich mit gleichem Namen.
+        bereich = (
+            areas.async_get_area(raum.bereich_id)
+            if raum.bereich_id
+            else areas.async_get_area_by_name(raum.name)
+        )
+        if bereich is not None and device.area_id is None:
+            registry.async_update_device(device.id, area_id=bereich.id)
         data.controllers[raum.id] = RoomController(hass, raum, build_room(raum))
     entry.runtime_data = data
 

@@ -4,6 +4,15 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.20.0] - 2026-11-26
+
+### Geändert
+
+- Jedes Raum-Gerät von Raumzonen bekommt den Bereich des Raums in Home
+  Assistant (ohne eingetragenen Bereich: den Bereich mit gleichem Namen).
+  Damit erscheinen die Anzeigen (Anwesenheit, Zonen) im richtigen Bereich.
+  Ein Bereich, den jemand selbst gesetzt hat, bleibt.
+
 ## [0.19.0] - 2026-11-26
 
 ### Hinzugefügt

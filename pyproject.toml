@@ -1,6 +1,6 @@
 [project]
 name = "raumzonen"
-version = "0.19.0"
+version = "0.20.0"
 description = "Raumzonen: Präsenzzonen für Radarsensoren (Home-Assistant-Integration)"
 requires-python = ">=3.14"
 

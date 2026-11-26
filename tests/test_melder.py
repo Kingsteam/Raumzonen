@@ -158,6 +158,11 @@ async def test_melder_raum_anlegen_und_belegen(
     )
     assert state_id is not None
     assert hass.states.get(state_id).state == "off"
+    # Das Raum-Gerät liegt im Bereich des Raums (damit auch seine Anzeigen).
+    geraet = dr.async_get(hass).async_get(
+        er.async_get(hass).async_get(state_id).device_id
+    )
+    assert geraet.area_id == flur.id
     # Keine Personen-Zählung bei Meldern.
     assert (
         er.async_get(hass).async_get_entity_id(
