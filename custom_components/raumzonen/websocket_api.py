@@ -49,6 +49,7 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import (
     area_registry as ar,
     device_registry as dr,
@@ -56,6 +57,7 @@ from homeassistant.helpers import (
     floor_registry as fr,
 )
 from homeassistant.helpers.event import async_call_later
+from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util, slugify
 import voluptuous as vol
 
@@ -81,6 +83,12 @@ from .const import (
 )
 from .core.room import ZONE_ARTEN
 from .discovery import converter_zones, find_fp400_entities, suggest_topic
+from .ki import (
+    anweisung as ki_anweisung,
+    regel_aenderung as ki_regel_aenderung,
+    vorschlaege_lesen as ki_vorschlaege_lesen,
+)
+from .ki_daten import beschreibung as ki_beschreibung
 from .model import (
     REGEL_VORLAGEN,
     PlanConfig,
@@ -144,6 +152,10 @@ def async_register(hass: HomeAssistant) -> None:
         ws_room_umwandeln,
         ws_wege_get,
         ws_handy_ziele,
+        ws_ki_status,
+        ws_ki_beschreibung,
+        ws_ki_laufen,
+        ws_ki_entscheiden,
         ws_handy_senden,
         ws_plan_import,
         ws_plan_bild_get,
@@ -860,6 +872,182 @@ def kandidaten(hass: HomeAssistant, raeume: list[RaumConfig]) -> dict[str, Any]:
         "bereiche": bereiche,
         "vorschlaege": vorschlaege,
     }
+
+
+KI_SPEICHER = f"{DOMAIN}_ki"
+KI_DIENST = ("ai_task", "generate_data")
+
+
+async def _ki_speicher(hass: HomeAssistant) -> tuple[Store, dict[str, Any]]:
+    """Gemerkte Vorschläge (offen, angenommen, verworfen); einmal geladen."""
+    if KI_SPEICHER not in hass.data:
+        store: Store = Store(hass, 1, f"{DOMAIN}.ki")
+        daten = await store.async_load() or {}
+        daten.setdefault("offen", [])
+        daten.setdefault("angenommen", [])
+        daten.setdefault("verworfen", {})
+        daten.setdefault("letzter_lauf", None)
+        hass.data[KI_SPEICHER] = (store, daten)
+    return hass.data[KI_SPEICHER]
+
+
+def _ki_entitaeten(hass: HomeAssistant) -> list[dict[str, str]]:
+    return [
+        {"entity_id": st.entity_id, "name": st.name}
+        for st in hass.states.async_all("ai_task")
+    ]
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/ki/status"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_ki_status(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Ob eine KI da ist, und die gemerkten Vorschläge."""
+    _, daten = await _ki_speicher(hass)
+    connection.send_result(
+        msg["id"],
+        {
+            "verfuegbar": hass.services.has_service(*KI_DIENST),
+            "ki": _ki_entitaeten(hass),
+            "offen": daten["offen"],
+            "angenommen": daten["angenommen"][-20:],
+            "verworfen": len(daten["verworfen"]),
+            "letzter_lauf": daten["letzter_lauf"],
+        },
+    )
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/ki/beschreibung"})
+@websocket_api.require_admin
+@callback
+def ws_ki_beschreibung(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Die Beschreibung, die an die KI geht (zum Ansehen)."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Raumzonen ist nicht geladen")
+        return
+    connection.send_result(
+        msg["id"],
+        ki_beschreibung(
+            hass,
+            entry.entry_id,
+            entry.runtime_data.store.model,
+            entry.runtime_data.controllers,
+        ),
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/ki/laufen",
+        vol.Optional("entity_id"): vol.Any(None, str),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_ki_laufen(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Beschreibung an die KI schicken und neue Vorschläge holen (nur Knopfdruck)."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Raumzonen ist nicht geladen")
+        return
+    if not hass.services.has_service(*KI_DIENST):
+        connection.send_error(
+            msg["id"],
+            "keine_ki",
+            "In Home Assistant ist keine KI für Aufgaben eingerichtet",
+        )
+        return
+    store, daten = await _ki_speicher(hass)
+    model = entry.runtime_data.store.model
+    besch = ki_beschreibung(hass, entry.entry_id, model, entry.runtime_data.controllers)
+    verworfen_titel = [v.get("titel", "") for v in daten["verworfen"].values()]
+    angenommen_ids = {v["id"] for v in daten["angenommen"]}
+    aufruf: dict[str, Any] = {
+        "task_name": "Raumzonen: Verbesserungsvorschläge",
+        "instructions": ki_anweisung(besch, verworfen_titel),
+    }
+    if msg.get("entity_id"):
+        aufruf["entity_id"] = msg["entity_id"]
+    try:
+        antwort = await hass.services.async_call(
+            *KI_DIENST, aufruf, blocking=True, return_response=True
+        )
+        vorschlaege = ki_vorschlaege_lesen(
+            (antwort or {}).get("data", ""),
+            [r.id for r in model.raeume],
+            set(daten["verworfen"]) | angenommen_ids,
+        )
+    except (HomeAssistantError, ValueError) as err:
+        connection.send_error(msg["id"], "ki_fehler", str(err))
+        return
+    daten["offen"] = vorschlaege
+    daten["letzter_lauf"] = dt_util.utcnow().isoformat(timespec="seconds")
+    await store.async_save(daten)
+    connection.send_result(msg["id"], {"offen": vorschlaege})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/ki/entscheiden",
+        vol.Required("id"): str,
+        vol.Required("annehmen"): bool,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_ki_entscheiden(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Vorschlag annehmen (Zonen-Regel: gleich umsetzen) oder verwerfen (merken)."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Raumzonen ist nicht geladen")
+        return
+    store, daten = await _ki_speicher(hass)
+    vorschlag = next((v for v in daten["offen"] if v["id"] == msg["id"]), None)
+    if vorschlag is None:
+        connection.send_error(msg["id"], "not_found", "Vorschlag nicht gefunden")
+        return
+    jetzt = dt_util.utcnow().isoformat(timespec="seconds")
+    umgesetzt = False
+    if msg["annehmen"] and vorschlag.get("selbst"):
+        werte = ki_regel_aenderung(vorschlag)
+        modell = copy.deepcopy(entry.runtime_data.store.model)
+        try:
+            raum = modell.raum(vorschlag["raum"])
+            zone = next(z for z in raum.zonen if z.id == vorschlag["ziel"])
+        except KeyError, StopIteration:
+            connection.send_error(msg["id"], "not_found", "Zone nicht gefunden")
+            return
+        for feld, wert in werte.items():
+            setattr(zone.regel, feld, wert)
+        try:
+            modell.validate()
+        except ValueError as err:
+            connection.send_error(msg["id"], "invalid", str(err))
+            return
+        entry.runtime_data.store.model = modell
+        await entry.runtime_data.store.async_save()
+        async_reload_keep_panel(hass, entry.entry_id)
+        umgesetzt = True
+    daten["offen"] = [v for v in daten["offen"] if v["id"] != msg["id"]]
+    if msg["annehmen"]:
+        daten["angenommen"].append({**vorschlag, "zeit": jetzt, "umgesetzt": umgesetzt})
+        daten["angenommen"] = daten["angenommen"][-100:]
+    else:
+        daten["verworfen"][vorschlag["id"]] = {
+            "titel": vorschlag["titel"],
+            "zeit": jetzt,
+        }
+    await store.async_save(daten)
+    connection.send_result(msg["id"], {"umgesetzt": umgesetzt})
 
 
 HANDY_PRAEFIX = "mobile_app_"

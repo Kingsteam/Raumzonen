@@ -2,6 +2,8 @@
   "domain": "raumzonen",
   "name": "Raumzonen",
   "after_dependencies": [
+    "ai_task",
+    "automation",
     "mqtt"
   ],
   "codeowners": [],
