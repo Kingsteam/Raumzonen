@@ -252,6 +252,8 @@ export class RaumzonenPanel extends LitElement {
   @state() private wiz: Wizard | null = null;
   /** Assistent in der Handy-Ansicht (großer Plan, ein Schritt unten). */
   @state() private handyVoll = false;
+  @state() private handyZiele?: { dienst: string; name: string }[];
+  @state() private handyDienst = "";
   private startParam = new URLSearchParams(window.location.search).get("assistent");
   /** Grundriss übernehmen (null = zu). */
   @state() private plan: {
@@ -781,14 +783,27 @@ export class RaumzonenPanel extends LitElement {
     return this.page === "raum" && this.kannAendern && !this.istMelder && (this.handyVoll || (this.narrow && !!this.wiz));
   }
 
-  /** Link zum Assistenten dieses Raums (für die App am Handy). */
-  private async handyLink(): Promise<void> {
-    const url = `${window.location.origin}/raumzonen?assistent=${encodeURIComponent(this.raumId)}`;
+  /** Nachricht in die Home-Assistant-App: Antippen öffnet den Assistenten dieses Raums. */
+  private async aufsHandy(): Promise<void> {
+    if (!this._hass) return;
     try {
-      await navigator.clipboard.writeText(url);
-      this.showToast("Link kopiert. Am Handy öffnen (z. B. als Nachricht an dich schicken).");
-    } catch {
-      window.prompt("Diesen Link am Handy öffnen:", url);
+      if (!this.handyZiele) {
+        this.handyZiele = (await this._hass.callWS<{ ziele: { dienst: string; name: string }[] }>({ type: `${DOMAIN}/handy/ziele` })).ziele;
+        this.handyDienst = this.handyZiele[0]?.dienst ?? "";
+        if (this.handyZiele.length > 1) {
+          this.showToast("Handy wählen, dann noch einmal „Aufs Handy schicken“.");
+          return;
+        }
+      }
+      if (!this.handyDienst) {
+        this.showToast("Kein Handy mit der Home-Assistant-App gefunden. Am Handy die App installieren und anmelden.");
+        return;
+      }
+      await this._hass.callWS({ type: `${DOMAIN}/handy/senden`, raum_id: this.raumId, dienst: this.handyDienst });
+      const name = this.handyZiele.find((z) => z.dienst === this.handyDienst)?.name ?? "Handy";
+      this.showToast(`Nachricht an „${name}“ geschickt. Am Handy antippen.`);
+    } catch (err) {
+      this.showToast(`Nicht geschickt: ${fehlerText(err)}`);
     }
   }
 
@@ -3351,9 +3366,16 @@ export class RaumzonenPanel extends LitElement {
         </div>
         ${this.handyVoll
           ? nothing
-          : html`<p class="hint small">Am besten mit dem Handy im Raum: in der Home-Assistant-App öffnen, dann kommt eine eigene Ansicht mit großem Plan.</p>
+          : html`<p class="hint small">Am besten mit dem Handy im Raum: Raumzonen schickt dir eine Nachricht in die Home-Assistant-App; Antippen öffnet den Assistenten mit großem Plan.</p>
+              ${this.handyZiele && this.handyZiele.length > 1
+                ? html`<label class="field"
+                    >Handy<select @change=${(e: Event) => (this.handyDienst = (e.target as HTMLSelectElement).value)}>
+                      ${this.handyZiele.map((z) => html`<option value=${z.dienst} ?selected=${z.dienst === this.handyDienst}>${z.name}</option>`)}
+                    </select></label
+                  >`
+                : nothing}
               <div class="actions">
-                <button class="text small" @click=${() => void this.handyLink()}><ha-icon icon="mdi:cellphone-link"></ha-icon>Link fürs Handy kopieren</button>
+                <button class="text small" @click=${() => void this.aufsHandy()}><ha-icon icon="mdi:cellphone-arrow-down"></ha-icon>Aufs Handy schicken</button>
                 <button class="text small" @click=${() => (this.handyVoll = true)}><ha-icon icon="mdi:fullscreen"></ha-icon>Große Ansicht</button>
               </div>`}`;
     }

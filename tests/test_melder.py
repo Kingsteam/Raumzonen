@@ -866,3 +866,39 @@ def test_radar_raum_hat_anwesenheit_von_selbst() -> None:
         )
     )
     assert build_room(raum).zones["anwesenheit"].name == "Ganzer Raum"
+
+
+async def test_assistent_aufs_handy(
+    hass: HomeAssistant, loaded: MockConfigEntry, hass_ws_client
+) -> None:
+    """Nachricht an die App: Antippen öffnet den Assistenten des Raums."""
+    from pytest_homeassistant_custom_component.common import async_mock_service
+
+    MockConfigEntry(
+        domain="mobile_app", title="Test Handy", data={"device_name": "Test Handy"}
+    ).add_to_hass(hass)
+    calls = async_mock_service(hass, "notify", "mobile_app_test_handy")
+    async_mock_service(hass, "notify", "anderer_dienst")
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id({"type": f"{DOMAIN}/handy/ziele"})
+    ziele = (await client.receive_json())["result"]["ziele"]
+    assert ziele == [{"dienst": "mobile_app_test_handy", "name": "Test Handy"}]
+    raum_id = loaded.runtime_data.store.model.raeume[0].id
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/handy/senden",
+            "raum_id": raum_id,
+            "dienst": "mobile_app_test_handy",
+        }
+    )
+    assert (await client.receive_json())["success"]
+    assert calls[0].data["data"]["url"] == f"/raumzonen?assistent={raum_id}"
+    # Andere Dienste gehen nicht.
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/handy/senden",
+            "raum_id": raum_id,
+            "dienst": "anderer_dienst",
+        }
+    )
+    assert (await client.receive_json())["error"]["code"] == "invalid"

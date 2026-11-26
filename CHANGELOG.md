@@ -15,6 +15,10 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
   Einstellungen: `raum` (`haus` oder Kennung), `stockwerk`, `titel`,
   `hintergrund`, `figuren`, `hoehe`. Raumzonen lädt die Karte selbst, eine
   Ressource muss man nicht anlegen.
+- Assistent „Sensor einmessen“: „Aufs Handy schicken“ schickt eine Nachricht
+  in die Home-Assistant-App; Antippen öffnet den Assistenten des Raums
+  (ersetzt „Link fürs Handy kopieren“). Nur Handys mit der App, nur auf
+  Knopfdruck.
 
 ## [0.18.0] - 2026-11-26
 

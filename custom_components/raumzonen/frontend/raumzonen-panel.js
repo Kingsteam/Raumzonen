@@ -264,7 +264,7 @@ ne.elementStyles = [], ne.shadowRootOptions = { mode: "open" }, ne[me("elementPr
  */
 const Ye = globalThis, lt = (e) => e, Te = Ye.trustedTypes, ht = Te ? Te.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, Ot = "$lit$", C = `lit$${Math.random().toFixed(9).slice(2)}$`, Nt = "?" + C, on = `<${Nt}>`, J = document, be = () => J.createComment(""), $e = (e) => e === null || typeof e != "object" && typeof e != "function", Qe = Array.isArray, ln = (e) => Qe(e) || typeof e?.[Symbol.iterator] == "function", Ie = `[ 	
 \f\r]`, le = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, ct = /-->/g, ut = />/g, q = RegExp(`>|${Ie}(?:([^\\s"'>=/]+)(${Ie}*=${Ie}*(?:[^ 	
-\f\r"'\`<>=]|("|')|))|$)`, "g"), dt = /'/g, pt = /"/g, Bt = /^(?:script|style|textarea|title)$/i, Dt = (e) => (t, ...n) => ({ _$litType$: e, strings: t, values: n }), u = Dt(1), v = Dt(2), ie = Symbol.for("lit-noChange"), m = Symbol.for("lit-nothing"), mt = /* @__PURE__ */ new WeakMap(), X = J.createTreeWalker(J, 129);
+\f\r"'\`<>=]|("|')|))|$)`, "g"), dt = /'/g, pt = /"/g, Dt = /^(?:script|style|textarea|title)$/i, Bt = (e) => (t, ...n) => ({ _$litType$: e, strings: t, values: n }), u = Bt(1), v = Bt(2), ie = Symbol.for("lit-noChange"), m = Symbol.for("lit-nothing"), mt = /* @__PURE__ */ new WeakMap(), X = J.createTreeWalker(J, 129);
 function Wt(e, t) {
   if (!Qe(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
   return ht !== void 0 ? ht.createHTML(t) : t;
@@ -275,7 +275,7 @@ const hn = (e, t) => {
   for (let o = 0; o < n; o++) {
     const h = e[o];
     let l, c, d = -1, f = 0;
-    for (; f < h.length && (a.lastIndex = f, c = a.exec(h), c !== null); ) f = a.lastIndex, a === le ? c[1] === "!--" ? a = ct : c[1] !== void 0 ? a = ut : c[2] !== void 0 ? (Bt.test(c[2]) && (i = RegExp("</" + c[2], "g")), a = q) : c[3] !== void 0 && (a = q) : a === q ? c[0] === ">" ? (a = i ?? le, d = -1) : c[1] === void 0 ? d = -2 : (d = a.lastIndex - c[2].length, l = c[1], a = c[3] === void 0 ? q : c[3] === '"' ? pt : dt) : a === pt || a === dt ? a = q : a === ct || a === ut ? a = le : (a = q, i = void 0);
+    for (; f < h.length && (a.lastIndex = f, c = a.exec(h), c !== null); ) f = a.lastIndex, a === le ? c[1] === "!--" ? a = ct : c[1] !== void 0 ? a = ut : c[2] !== void 0 ? (Dt.test(c[2]) && (i = RegExp("</" + c[2], "g")), a = q) : c[3] !== void 0 && (a = q) : a === q ? c[0] === ">" ? (a = i ?? le, d = -1) : c[1] === void 0 ? d = -2 : (d = a.lastIndex - c[2].length, l = c[1], a = c[3] === void 0 ? q : c[3] === '"' ? pt : dt) : a === pt || a === dt ? a = q : a === ct || a === ut ? a = le : (a = q, i = void 0);
     const p = a === q && e[o + 1].startsWith("/>") ? " " : "";
     r += a === le ? h + on : d >= 0 ? (s.push(l), h.slice(0, d) + Ot + h.slice(d) + C + p) : h + C + (d === -2 ? o : p);
   }
@@ -297,7 +297,7 @@ class ke {
           const f = c[a++], p = i.getAttribute(d).split(C), g = /([.?@])?(.*)/.exec(f);
           h.push({ type: 1, index: r, name: g[2], strings: p, ctor: g[1] === "." ? un : g[1] === "?" ? dn : g[1] === "@" ? pn : Ze }), i.removeAttribute(d);
         } else d.startsWith(C) && (h.push({ type: 6, index: r }), i.removeAttribute(d));
-        if (Bt.test(i.tagName)) {
+        if (Dt.test(i.tagName)) {
           const d = i.textContent.split(C), f = d.length - 1;
           if (f > 0) {
             i.textContent = Te ? Te.emptyScript : "";
@@ -566,7 +566,7 @@ function jt(e) {
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-function z(e) {
+function y(e) {
   return jt({ ...e, state: !0, attribute: !1 });
 }
 const wn = 25;
@@ -639,7 +639,7 @@ function yn(e) {
   }
   return Math.abs(t) < 1e-9 ? [e.reduce((i, r) => i + r[0], 0) / e.length, e.reduce((i, r) => i + r[1], 0) / e.length] : [n / (3 * t), s / (3 * t)];
 }
-function T(e) {
+function E(e) {
   if (e.art === "rechteck") return e.mitte;
   if (e.art === "zellen") {
     const t = tt(e), n = t.length || 1;
@@ -697,7 +697,7 @@ function ye(e, t) {
   const n = Math.atan2(-(t[0] - e[0]), t[1] - e[1]) * 180 / Math.PI;
   return Math.round(n * 10) / 10;
 }
-function Be(e, t, n) {
+function De(e, t, n) {
   const s = n[0] - t[0], i = n[1] - t[1], r = s * s + i * i;
   if (r === 0) return Fe(e, t);
   const a = Math.max(0, Math.min(1, ((e[0] - t[0]) * s + (e[1] - t[1]) * i) / r));
@@ -777,7 +777,7 @@ class En {
     this.stack = [];
   }
 }
-function Gt(e, t) {
+function Kt(e, t) {
   const n = new Set(t.map((i) => i.name));
   if (!n.has(e)) return e;
   let s = 2;
@@ -786,7 +786,7 @@ function Gt(e, t) {
 }
 function ft(e, t, n, s = "normal") {
   return {
-    name: Gt("Zone", t),
+    name: Kt("Zone", t),
     art: s,
     form: e,
     regel: { ...n[Vt[s]] }
@@ -829,13 +829,13 @@ function kt(e) {
 function Zn(e, t, n) {
   const s = e.name.toLowerCase(), i = s.includes("bett"), a = s.includes("tür") || s.includes("tuer") || s.includes("door") ? "ausgang" : "normal";
   return {
-    name: Gt(e.name, t),
+    name: Kt(e.name, t),
     art: a,
     form: e.form,
     regel: { ...n[i ? "bett" : Vt[a]] }
   };
 }
-const Ge = [
+const Ke = [
   {
     rolle: "bett",
     name: "Bett",
@@ -894,7 +894,7 @@ const Ge = [
   }
 ];
 function Ae(e) {
-  return Ge.find((t) => t.rolle === e) ?? Ge[1];
+  return Ke.find((t) => t.rolle === e) ?? Ke[1];
 }
 function he(e) {
   return e.art === "ausgang" ? "tuer" : e.art === "hundeplatz" ? "hund" : e.art === "stelle" ? "stelle" : e.art === "durchgang" ? "durchgang" : e.art === "stoerquelle" ? "ignorieren" : e.regel.schlaefer_halten ? "bett" : "bereich";
@@ -935,9 +935,9 @@ function On(e) {
   let t = (e % 360 + 540) % 360 - 180;
   return t === -180 && (t = 180), t;
 }
-const De = (e) => Math.round(e * 10) / 10 + 0;
+const Be = (e) => Math.round(e * 10) / 10 + 0;
 function yt(e, t, n) {
-  return e.art === "vieleck" ? { ...e, punkte: e.punkte.map((s) => P(s, n, t).map((i) => De(i))) } : e.art === "rechteck" ? { ...e, mitte: P(e.mitte, n, t).map((s) => De(s)), winkel: De(On(e.winkel + n)) } : e;
+  return e.art === "vieleck" ? { ...e, punkte: e.punkte.map((s) => P(s, n, t).map((i) => Be(i))) } : e.art === "rechteck" ? { ...e, mitte: P(e.mitte, n, t).map((s) => Be(s)), winkel: Be(On(e.winkel + n)) } : e;
 }
 function te(e) {
   return e.map((t, n) => {
@@ -976,7 +976,7 @@ function zt(e, t, n) {
     }
   return s;
 }
-function Bn(e, t, n = 20) {
+function Dn(e, t, n = 20) {
   const s = [];
   for (const i of t) {
     if (i.kante >= e.length) continue;
@@ -985,7 +985,7 @@ function Bn(e, t, n = 20) {
   }
   return s;
 }
-const Dn = Xt`
+const Bn = Xt`
   :host {
     display: flex;
     flex-direction: column;
@@ -2234,17 +2234,17 @@ function Mt(e, t, n = 8) {
   s -= l, r -= l;
   const c = Math.min(_t, i - s + 1 + l), d = Math.min(_t, a - r + 1 + l), f = new Float32Array(c * d);
   for (const [$, k, _] of e) {
-    const y = $ - s, M = k - r;
-    y >= 0 && y < c && M >= 0 && M < d && _ > 0 && (f[M * c + y] += _);
+    const z = $ - s, M = k - r;
+    z >= 0 && z < c && M >= 0 && M < d && _ > 0 && (f[M * c + z] += _);
   }
   const p = new Float32Array(c * d);
   for (let $ = 0; $ < d; $++)
     for (let k = 0; k < c; k++) {
       const _ = f[$ * c + k];
       if (_)
-        for (let y = -l; y <= l; y++) {
-          const M = k + y;
-          M >= 0 && M < c && (p[$ * c + M] += _ * h[y + l]);
+        for (let z = -l; z <= l; z++) {
+          const M = k + z;
+          M >= 0 && M < c && (p[$ * c + M] += _ * h[z + l]);
         }
     }
   const g = new Float32Array(c * d);
@@ -2253,9 +2253,9 @@ function Mt(e, t, n = 8) {
     for (let k = 0; k < c; k++) {
       const _ = p[$ * c + k];
       if (_)
-        for (let y = -l; y <= l; y++) {
-          const M = $ + y;
-          M >= 0 && M < d && (g[M * c + k] += _ * h[y + l]);
+        for (let z = -l; z <= l; z++) {
+          const M = $ + z;
+          M >= 0 && M < d && (g[M * c + k] += _ * h[z + l]);
         }
     }
   for (let $ = 0; $ < g.length; $++) b = Math.max(b, g[$]);
@@ -2301,9 +2301,9 @@ function Fn(e, t = 300, n = 0.2, s = 15) {
     h[c] = 1;
     let [f, p, g, b, $] = [1 / 0, -1 / 0, 1 / 0, -1 / 0, 0];
     for (; d.length; ) {
-      const y = d.pop(), M = y % i, A = y / i | 0;
-      f = Math.min(f, M), p = Math.max(p, M), g = Math.min(g, A), b = Math.max(b, A), $ += a[y];
-      for (const S of [M > 0 ? y - 1 : -1, M < i - 1 ? y + 1 : -1, y - i, y + i])
+      const z = d.pop(), M = z % i, A = z / i | 0;
+      f = Math.min(f, M), p = Math.max(p, M), g = Math.min(g, A), b = Math.max(b, A), $ += a[z];
+      for (const S of [M > 0 ? z - 1 : -1, M < i - 1 ? z + 1 : -1, z - i, z + i])
         S < 0 || S >= i * r || h[S] || a[S] < o || (h[S] = 1, d.push(S));
     }
     if ($ < t) continue;
@@ -2317,7 +2317,7 @@ function Fn(e, t = 300, n = 0.2, s = 15) {
   }
   return l.sort((c, d) => d.sekunden - c.sekunden);
 }
-function E(e) {
+function T(e) {
   const t = e;
   return t?.code === "unknown_command" ? Un : t?.message ?? String(e);
 }
@@ -2352,13 +2352,13 @@ function Ee(e, t) {
 function N(e) {
   const t = [];
   for (const n of e.zonen)
-    n.art !== "ausgang" || !n.id || t.push({ key: `${e.id}/${n.id}`, raumId: e.id, name: n.name, punkt: T(n.form), ziel: n.fuehrt_zu ?? "", gegenstueck: n.gegenstueck ?? "", zoneId: n.id });
+    n.art !== "ausgang" || !n.id || t.push({ key: `${e.id}/${n.id}`, raumId: e.id, name: n.name, punkt: E(n.form), ziel: n.fuehrt_zu ?? "", gegenstueck: n.gegenstueck ?? "", zoneId: n.id });
   return (e.oeffnungen ?? []).forEach((n, s) => {
     const i = Ee(e.umriss, n);
     i && t.push({ key: Vn(e.id, n, s), raumId: e.id, name: pe(n, s), punkt: i, ziel: n.fuehrt_zu ?? "", gegenstueck: n.gegenstueck ?? "", oeffnung: s });
   }), t;
 }
-function Gn(e, t = 60) {
+function Kn(e, t = 60) {
   const n = e.flat().filter(([i, r]) => r > i).sort((i, r) => i[0] - r[0]), s = [];
   for (const [i, r] of n) {
     const a = s[s.length - 1];
@@ -2366,7 +2366,7 @@ function Gn(e, t = 60) {
   }
   return s;
 }
-function Kn(e) {
+function Gn(e) {
   return e.reduce((t, [n, s]) => t + (s - n), 0);
 }
 function qn(e, t = 30) {
@@ -2401,9 +2401,9 @@ function Xn(e, t, n = 60) {
 }
 function Jn(e, t, n = 80) {
   const s = Ee(e.umriss, t);
-  return s ? e.zonen.some((i) => i.art === "ausgang" && F(i.form).length && Math.hypot(T(i.form)[0] - s[0], T(i.form)[1] - s[1]) <= n) : !0;
+  return s ? e.zonen.some((i) => i.art === "ausgang" && F(i.form).length && Math.hypot(E(i.form)[0] - s[0], E(i.form)[1] - s[1]) <= n) : !0;
 }
-function Ke(e) {
+function Ge(e) {
   if (e.length < 3) return "Es braucht drei Stellen.";
   let t = 1 / 0;
   for (let a = 0; a < e.length; a++)
@@ -2417,8 +2417,8 @@ function Yn(e, t) {
   const s = (b) => [b.reduce(($, k) => $ + k[0], 0) / n, b.reduce(($, k) => $ + k[1], 0) / n], i = s(e.slice(0, n)), r = s(t.slice(0, n));
   let a = 0, o = 0;
   for (let b = 0; b < n; b++) {
-    const [$, k] = [e[b][0] - i[0], e[b][1] - i[1]], [_, y] = [t[b][0] - r[0], t[b][1] - r[1]];
-    a += $ * y - k * _, o += $ * _ + k * y;
+    const [$, k] = [e[b][0] - i[0], e[b][1] - i[1]], [_, z] = [t[b][0] - r[0], t[b][1] - r[1]];
+    a += $ * z - k * _, o += $ * _ + k * z;
   }
   if (!a && !o) return null;
   const h = Math.atan2(a, o), [l, c] = [Math.cos(h), Math.sin(h)], d = r[0] - (i[0] * l - i[1] * c), f = r[1] - (i[0] * c + i[1] * l);
@@ -2481,7 +2481,7 @@ function At(e) {
     for (let i = s + 1; i < e.length; i++)
       for (let r = i + 1; r < e.length; r++) {
         const a = [e[s].punkt, e[i].punkt, e[r].punkt];
-        if (Ke(a)) continue;
+        if (Ge(a)) continue;
         const [o, h, l] = a, c = Math.abs((h[0] - o[0]) * (l[1] - o[1]) - (l[0] - o[0]) * (h[1] - o[1]));
         c > n && ([t, n] = [[s, i, r], c]);
       }
@@ -2569,7 +2569,7 @@ function is(e, t, n, s) {
   }
   return h;
 }
-function Kt(e, t, n) {
+function Gt(e, t, n) {
   const [s, i] = [n[0] - t[0], n[1] - t[1]], r = s * s + i * i, a = r ? Math.max(0, Math.min(1, ((e[0] - t[0]) * s + (e[1] - t[1]) * i) / r)) : 0;
   return Math.hypot(e[0] - t[0] - a * s, e[1] - t[1] - a * i);
 }
@@ -2577,7 +2577,7 @@ function Pe(e, t) {
   if (e.length < 3) return e;
   let n = 0, s = 0;
   for (let a = 1; a < e.length - 1; a++) {
-    const o = Kt(e[a], e[0], e[e.length - 1]);
+    const o = Gt(e[a], e[0], e[e.length - 1]);
     o > n && (n = o, s = a);
   }
   if (n <= t) return [e[0], e[e.length - 1]];
@@ -2597,7 +2597,7 @@ function rs(e, t) {
     o = !1;
     for (let h = 0; h < a.length; h++) {
       const l = a[(h - 1 + a.length) % a.length], c = a[(h + 1) % a.length];
-      if (Math.hypot(l[0] - c[0], l[1] - c[1]) < t * 3 && Math.hypot(a[h][0] - l[0], a[h][1] - l[1]) > t * 3 || Kt(a[h], l, c) < t) {
+      if (Math.hypot(l[0] - c[0], l[1] - c[1]) < t * 3 && Math.hypot(a[h][0] - l[0], a[h][1] - l[1]) > t * 3 || Gt(a[h], l, c) < t) {
         a = a.filter((f, p) => p !== h), o = !0;
         break;
       }
@@ -2615,52 +2615,52 @@ function as(e) {
 }
 function os(e, t = 2) {
   const n = ns(e, t), { w: s, h: i } = n, { label: r, anzahl: a } = ss(n), o = new Int32Array(a), h = new Uint8Array(a), l = new Int32Array(a);
-  for (let y = 0; y < s * i; y++) {
-    const M = r[y];
+  for (let z = 0; z < s * i; z++) {
+    const M = r[z];
     if (M < 0) continue;
-    o[M]++, n.dunkel[y] && l[M]++;
-    const A = y % s, S = y / s | 0;
+    o[M]++, n.dunkel[z] && l[M]++;
+    const A = z % s, S = z / s | 0;
     (A === 0 || S === 0 || A === s - 1 || S === i - 1) && (h[M] = 1);
   }
   const c = s * i * 0.015, d = [];
-  for (let y = 0; y < a; y++)
-    h[y] || o[y] < c || l[y] > o[y] * 0.3 || d.push(y);
+  for (let z = 0; z < a; z++)
+    h[z] || o[z] < c || l[z] > o[z] * 0.3 || d.push(z);
   const f = Math.max(2, Math.hypot(s, i) * 6e-3), p = [], g = /* @__PURE__ */ new Map();
-  for (const y of d) {
-    const M = rs(is(r, s, i, y), f);
-    M.length < 3 || (g.set(y, p.length), p.push({ punkte: M.map(([A, S]) => [(A + 0.5) * t, (S + 0.5) * t]), flaeche_px: as(M) * t * t }));
+  for (const z of d) {
+    const M = rs(is(r, s, i, z), f);
+    M.length < 3 || (g.set(z, p.length), p.push({ punkte: M.map(([A, S]) => [(A + 0.5) * t, (S + 0.5) * t]), flaeche_px: as(M) * t * t }));
   }
   const b = Math.max(4, Math.round(16 / t)), $ = Math.max(6, Math.round(40 / t)), k = Math.max(2, Math.round(6 / t)), _ = [];
-  return p.forEach((y, M) => {
-    const A = y.punkte.map(([S, L]) => [S / t, L / t]);
+  return p.forEach((z, M) => {
+    const A = z.punkte.map(([S, L]) => [S / t, L / t]);
     A.forEach((S, L) => {
-      const I = A[(L + 1) % A.length], B = Math.hypot(I[0] - S[0], I[1] - S[1]);
-      if (B < $) return;
-      const [ae, Q] = [(I[0] - S[0]) / B, (I[1] - S[1]) / B], [oe, D] = [-Q, ae];
+      const I = A[(L + 1) % A.length], D = Math.hypot(I[0] - S[0], I[1] - S[1]);
+      if (D < $) return;
+      const [ae, Q] = [(I[0] - S[0]) / D, (I[1] - S[1]) / D], [oe, B] = [-Q, ae];
       let W = -1;
       const st = (O) => {
-        if (W >= 0 && O - W >= $ && W > 2 && O < B - 2) {
+        if (W >= 0 && O - W >= $ && W > 2 && O < D - 2) {
           const U = (W + O) / 2;
           let ee = null;
           for (const V of [1, -1]) {
-            const G = Math.round(S[0] + ae * U + oe * V * b * 2.5), K = Math.round(S[1] + Q * U + D * V * b * 2.5);
-            if (G < 0 || K < 0 || G >= s || K >= i) continue;
-            const we = g.get(r[K * s + G]);
+            const K = Math.round(S[0] + ae * U + oe * V * b * 2.5), G = Math.round(S[1] + Q * U + B * V * b * 2.5);
+            if (K < 0 || G < 0 || K >= s || G >= i) continue;
+            const we = g.get(r[G * s + K]);
             we !== void 0 && we !== M && (ee = we);
           }
           _.push({ raum: M, kante: L, von_px: W * t, bis_px: O * t, partner: ee });
         }
         W = -1;
       };
-      for (let O = 0; O <= B; O++) {
+      for (let O = 0; O <= D; O++) {
         let U = !1, ee = 0;
         for (let V = -b; V <= b && !U; V++) {
-          const G = Math.round(S[0] + ae * O + oe * V), K = Math.round(S[1] + Q * O + D * V);
-          ee = G >= 0 && K >= 0 && G < s && K < i && n.dunkel[K * s + G] ? ee + 1 : 0, ee >= k && (U = !0);
+          const K = Math.round(S[0] + ae * O + oe * V), G = Math.round(S[1] + Q * O + B * V);
+          ee = K >= 0 && G >= 0 && K < s && G < i && n.dunkel[G * s + K] ? ee + 1 : 0, ee >= k && (U = !0);
         }
         !U && W < 0 && (W = O), U && W >= 0 && st(O);
       }
-      st(B);
+      st(D);
     });
   }), { breite: e.width, hoehe: e.height, raeume: p, luecken: _ };
 }
@@ -2681,7 +2681,7 @@ function Rt(e, t, n, s = [0, 0]) {
     if (g.raum !== t) return;
     const $ = c.indexOf(g.kante);
     if ($ < 0) return;
-    const k = o[$], _ = o[($ + 1) % d], y = Math.hypot(_[0] - k[0], _[1] - k[1]), M = Math.max(0, Math.round(g.von_px * n)), A = Math.min(Math.floor(y), Math.round(g.bis_px * n));
+    const k = o[$], _ = o[($ + 1) % d], z = Math.hypot(_[0] - k[0], _[1] - k[1]), M = Math.max(0, Math.round(g.von_px * n)), A = Math.min(Math.floor(z), Math.round(g.bis_px * n));
     A - M >= 30 && f.push({ kante: $, von: M, bis: A, luecke: b });
   });
   const p = { x: Math.round(r.x0 * n - s[0]), y: Math.round((e.hoehe - r.y1) * n - s[1]), winkel: 0 };
@@ -2739,7 +2739,7 @@ function ms(e) {
 }
 let w = class extends fe {
   constructor() {
-    super(...arguments), this.narrow = !1, this.raumId = "", this.zones = [], this.sensor = { x: 0, y: 0, winkel: 0, reichweite_cm: 600, oeffnung_grad: 120 }, this.umriss = [], this.oeffnungen = [], this.selVertex = -1, this.selOpening = -1, this.openingDraft = null, this.selected = -1, this.sensorOpen = !1, this.tab = "zonen", this.tool = "auswahl", this.draft = [], this.rectDraft = null, this.hover = null, this.view = { cx: 0, cy: 250, scale: 0.8 }, this.size = { w: 800, h: 600 }, this.heatMin = 0, this.auswStunden = 8, this.auswLaedt = !1, this.auswFehler = "", this.wiz = null, this.handyVoll = !1, this.startParam = new URLSearchParams(window.location.search).get("assistent"), this.plan = null, this.planLaedt = !1, this.planAuswahl = null, this.planBilder = {}, this.planEdit = "", this.planAenderung = {}, this.planMessen = null, this.zeigePlan = je("raumzonen-zeige-plan", !0), this.masse = je("raumzonen-masse", !1), this.stockwerk = "", this.wieImHaus = je("raumzonen-wie-im-haus", !0), this.hausExtra = {}, this.neuRaum = null, this.profilStunden = 0, this.profilLaedt = !1, this.auswFigur = "", this.layersOpen = !1, this.layers = { figuren: !0, spuren: !0, ziele: !1, abdeckung: !0 }, this.dirty = !1, this.zonesFollow = !0, this.saving = !1, this.error = "", this.toast = "", this.page = "raum", this.lagen = {}, this.tueren = {}, this.tuerNamen = {}, this.hausLive = {}, this.hausSel = "", this.aufnahme = !0, this.melder = [], this.nurBereich = !0, this.nachlauf = 0, this.melderLagen = {}, this.zoneFuerMelder = "", this.aufnahmeTage = 30, this.history = new En(), this.drag = null, this.liveRoom = "", this.viewTouched = !1, this.sensorAnchor = null, this.hausUnsubs = [], this.fit = () => {
+    super(...arguments), this.narrow = !1, this.raumId = "", this.zones = [], this.sensor = { x: 0, y: 0, winkel: 0, reichweite_cm: 600, oeffnung_grad: 120 }, this.umriss = [], this.oeffnungen = [], this.selVertex = -1, this.selOpening = -1, this.openingDraft = null, this.selected = -1, this.sensorOpen = !1, this.tab = "zonen", this.tool = "auswahl", this.draft = [], this.rectDraft = null, this.hover = null, this.view = { cx: 0, cy: 250, scale: 0.8 }, this.size = { w: 800, h: 600 }, this.heatMin = 0, this.auswStunden = 8, this.auswLaedt = !1, this.auswFehler = "", this.wiz = null, this.handyVoll = !1, this.handyDienst = "", this.startParam = new URLSearchParams(window.location.search).get("assistent"), this.plan = null, this.planLaedt = !1, this.planAuswahl = null, this.planBilder = {}, this.planEdit = "", this.planAenderung = {}, this.planMessen = null, this.zeigePlan = je("raumzonen-zeige-plan", !0), this.masse = je("raumzonen-masse", !1), this.stockwerk = "", this.wieImHaus = je("raumzonen-wie-im-haus", !0), this.hausExtra = {}, this.neuRaum = null, this.profilStunden = 0, this.profilLaedt = !1, this.auswFigur = "", this.layersOpen = !1, this.layers = { figuren: !0, spuren: !0, ziele: !1, abdeckung: !0 }, this.dirty = !1, this.zonesFollow = !0, this.saving = !1, this.error = "", this.toast = "", this.page = "raum", this.lagen = {}, this.tueren = {}, this.tuerNamen = {}, this.hausLive = {}, this.hausSel = "", this.aufnahme = !0, this.melder = [], this.nurBereich = !0, this.nachlauf = 0, this.melderLagen = {}, this.zoneFuerMelder = "", this.aufnahmeTage = 30, this.history = new En(), this.drag = null, this.liveRoom = "", this.viewTouched = !1, this.sensorAnchor = null, this.hausUnsubs = [], this.fit = () => {
       const e = this.sensor, t = [[e.x, e.y]];
       if (this.page === "haus" && this.data) {
         t.length = 0;
@@ -2797,7 +2797,7 @@ let w = class extends fe {
         const t = e.raeume.some((n) => n.id === this.raumId);
         this.page === "haus" && e.raeume.length ? (this.raumId = t ? this.raumId : e.raeume[0].id, this.openHaus(!0)) : this.selectRoom(t ? this.raumId : e.raeume[0]?.id ?? "", !0);
       } catch (e) {
-        this.error = `Laden fehlgeschlagen: ${E(e)}`;
+        this.error = `Laden fehlgeschlagen: ${T(e)}`;
       }
   }
   /** Nur Admins dürfen ändern; alle anderen sehen nur zu. */
@@ -2855,7 +2855,7 @@ let w = class extends fe {
     } catch (n) {
       if (e !== this.raumId) return;
       const s = n;
-      this.ausw = void 0, this.auswFehler = s.code === "off" ? "off" : `Auswertung fehlgeschlagen: ${E(n)}`;
+      this.ausw = void 0, this.auswFehler = s.code === "off" ? "off" : `Auswertung fehlgeschlagen: ${T(n)}`;
     } finally {
       this.auswLaedt = !1;
     }
@@ -2890,12 +2890,12 @@ let w = class extends fe {
           melder_lagen: Object.fromEntries(Object.entries(this.melderLagen).filter(([s]) => this.melder.includes(s)))
         } : { sensor: this.sensor },
         umriss: this.umriss,
-        oeffnungen: Bn(this.umriss, this.oeffnungen),
+        oeffnungen: Dn(this.umriss, this.oeffnungen),
         aufnahme: this.aufnahme,
         aufnahme_tage: this.aufnahmeTage
       }), this.dirty = !1, this.showToast("Gespeichert."), await this.unsubscribeLive(), await new Promise((s) => window.setTimeout(s, 1500)), await this.load();
     } catch (s) {
-      this.showToast(`Nicht gespeichert: ${E(s)}`);
+      this.showToast(`Nicht gespeichert: ${T(s)}`);
     } finally {
       this.saving = !1;
     }
@@ -2923,7 +2923,7 @@ let w = class extends fe {
         for (const n of e.zonen) t.push(Zn(n, t, this.data.vorlagen));
         this.zones = t, this.dirty = !0, this.showToast(`${e.zonen.length} Zonen übernommen. Rollen prüfen und speichern.`);
       } catch (e) {
-        this.showToast(`Konverter-Zonen nicht lesbar: ${E(e)}`);
+        this.showToast(`Konverter-Zonen nicht lesbar: ${T(e)}`);
       }
   }
   // -- Hausplan -------------------------------------------------------------
@@ -3042,7 +3042,7 @@ let w = class extends fe {
     if (!t || !n) return;
     const s = t.aktiv;
     if (t.schritt === "vorher") {
-      const i = t.raum.map((o, h) => h === s ? e : o), r = i.every(Boolean), a = r ? Ke(i) : "";
+      const i = t.raum.map((o, h) => h === s ? e : o), r = i.every(Boolean), a = r ? Ge(i) : "";
       this.wiz = { ...t, raum: i, messung: void 0, aktiv: r ? 0 : s + 1, schritt: r && !a ? "umhaengen" : "vorher", fehler: a || void 0 }, a && (this.wiz = { ...this.wiz, raum: [null, null, null], aktiv: 0 });
     } else {
       const i = t.sensor.map((r, a) => a === s ? Ut(e, n) : r);
@@ -3054,14 +3054,24 @@ let w = class extends fe {
   get handyAktiv() {
     return this.page === "raum" && this.kannAendern && !this.istMelder && (this.handyVoll || this.narrow && !!this.wiz);
   }
-  /** Link zum Assistenten dieses Raums (für die App am Handy). */
-  async handyLink() {
-    const e = `${window.location.origin}/raumzonen?assistent=${encodeURIComponent(this.raumId)}`;
-    try {
-      await navigator.clipboard.writeText(e), this.showToast("Link kopiert. Am Handy öffnen (z. B. als Nachricht an dich schicken).");
-    } catch {
-      window.prompt("Diesen Link am Handy öffnen:", e);
-    }
+  /** Nachricht in die Home-Assistant-App: Antippen öffnet den Assistenten dieses Raums. */
+  async aufsHandy() {
+    if (this._hass)
+      try {
+        if (!this.handyZiele && (this.handyZiele = (await this._hass.callWS({ type: `${R}/handy/ziele` })).ziele, this.handyDienst = this.handyZiele[0]?.dienst ?? "", this.handyZiele.length > 1)) {
+          this.showToast("Handy wählen, dann noch einmal „Aufs Handy schicken“.");
+          return;
+        }
+        if (!this.handyDienst) {
+          this.showToast("Kein Handy mit der Home-Assistant-App gefunden. Am Handy die App installieren und anmelden.");
+          return;
+        }
+        await this._hass.callWS({ type: `${R}/handy/senden`, raum_id: this.raumId, dienst: this.handyDienst });
+        const e = this.handyZiele.find((t) => t.dienst === this.handyDienst)?.name ?? "Handy";
+        this.showToast(`Nachricht an „${e}“ geschickt. Am Handy antippen.`);
+      } catch (e) {
+        this.showToast(`Nicht geschickt: ${T(e)}`);
+      }
   }
   /** Feste Stellen zum Hinstellen: Ecken und vor den Türen. */
   wizAnker() {
@@ -3097,7 +3107,7 @@ let w = class extends fe {
       this.wiz = { ...e, aktiv: t + 1 };
       return;
     }
-    const n = e.raum, s = Ke(n), i = Yn(e.sensor, n);
+    const n = e.raum, s = Ge(n), i = Yn(e.sensor, n);
     if (!i || s) {
       this.wiz = { ...e, schritt: "nachher", aktiv: 0, sensor: [null, null, null], raum: e.modus === "einmessen" ? [null, null, null] : e.raum, fehler: s || "Konnte nicht rechnen. Noch einmal." };
       return;
@@ -3130,7 +3140,7 @@ let w = class extends fe {
       }
       await this.planBildLaden(e, t);
     } catch (n) {
-      this.showToast(`Grundriss nicht gelesen: ${E(n)}`);
+      this.showToast(`Grundriss nicht gelesen: ${T(n)}`);
     } finally {
       this.planLaedt = !1;
     }
@@ -3164,7 +3174,7 @@ let w = class extends fe {
     try {
       await this.planBildLaden(n, s);
     } catch (i) {
-      this.showToast(`Grundriss nicht gelesen: ${E(i)}`);
+      this.showToast(`Grundriss nicht gelesen: ${T(i)}`);
     } finally {
       this.planLaedt = !1;
     }
@@ -3230,7 +3240,7 @@ let w = class extends fe {
         plan: { name: e.name, mime: "image/jpeg", bild: e.jpeg, cm_pro_px: t, breite_px: e.g.breite, hoehe_px: e.g.hoehe, x: a, y: 0, stockwerk: this.stockwerk }
       }), this.planZu(), this.showToast(o.length ? `${o.length} ${o.length === 1 ? "Raum" : "Räume"} und der Grundriss übernommen.` : "Grundriss als Hintergrund übernommen."), await this.unsubscribeHaus(), await new Promise((h) => window.setTimeout(h, 1500)), await this.load(), this.viewTouched = !1, this.fit();
     } catch (h) {
-      this.showToast(`Nicht übernommen: ${E(h)}`);
+      this.showToast(`Nicht übernommen: ${T(h)}`);
     } finally {
       this.saving = !1;
     }
@@ -3240,7 +3250,7 @@ let w = class extends fe {
       try {
         this.kandidaten = await this._hass.callWS({ type: `${R}/kandidaten/get` });
       } catch (e) {
-        this.showToast(`Geräte nicht geladen: ${E(e)}`);
+        this.showToast(`Geräte nicht geladen: ${T(e)}`);
       }
   }
   /** Melder für die Auswahl: nur aus dem Bereich (wenn gewünscht); gewählte immer. */
@@ -3273,7 +3283,7 @@ let w = class extends fe {
         const t = { type: `${R}/room/create`, name: e.name.trim(), art: e.art };
         e.bereich_id && (t.bereich_id = e.bereich_id), e.art === "melder" ? t.melder = e.melder ?? [] : t.device_id = e.device_id, await this._hass.callWS(t), this.neuRaum = null, this.showToast(`Raum „${e.name.trim()}“ angelegt. Jetzt im Plan an seinen Platz ziehen.`), await this.unsubscribeHaus(), await new Promise((n) => window.setTimeout(n, 1500)), await this.load(), this.viewTouched = !1, this.fit(), await this.loadKandidaten();
       } catch (t) {
-        this.showToast(`Nicht angelegt: ${E(t)}`);
+        this.showToast(`Nicht angelegt: ${T(t)}`);
       } finally {
         this.saving = !1;
       }
@@ -3284,7 +3294,7 @@ let w = class extends fe {
       try {
         this.wege = await this._hass.callWS({ type: `${R}/wege/get` });
       } catch (e) {
-        this.showToast(`Wege nicht geladen: ${E(e)}`);
+        this.showToast(`Wege nicht geladen: ${T(e)}`);
       }
   }
   /** Die letzten Wege durchs Haus: wer ging wann durch welche Tür wohin. */
@@ -3326,7 +3336,7 @@ let w = class extends fe {
         try {
           await this._hass.callWS({ type: `${R}/room/umwandeln`, raum_id: n.id, device_id: e }), this.showToast("Jetzt Radar-Raum. Unter „Zonen“: „Aus dem Konverter übernehmen“; den Sensor an seinen Platz ziehen."), await this.unsubscribeLive(), await new Promise((s) => window.setTimeout(s, 1500)), await this.load(), this.selectRoom(n.id, !0), this.openTab("zonen"), await this.loadKandidaten();
         } catch (s) {
-          this.showToast(`Nicht umgewandelt: ${E(s)}`);
+          this.showToast(`Nicht umgewandelt: ${T(s)}`);
         } finally {
           this.saving = !1;
         }
@@ -3353,7 +3363,7 @@ let w = class extends fe {
       try {
         await this._hass.callWS({ type: `${R}/room/delete`, raum_id: e.id }), this.dirty = !1, this.showToast(`Raum „${e.name}“ gelöscht.`), await this.unsubscribeLive(), await new Promise((t) => window.setTimeout(t, 1500)), this.page = "haus", await this.load();
       } catch (t) {
-        this.showToast(`Nicht gelöscht: ${E(t)}`);
+        this.showToast(`Nicht gelöscht: ${T(t)}`);
       } finally {
         this.saving = !1;
       }
@@ -3372,7 +3382,7 @@ let w = class extends fe {
       this.data.raeume.map(async (i) => {
         try {
           const r = await this._hass.callWS({ type: `${R}/auswertung/get`, raum_id: i.id, stunden: e });
-          t[i.id] = Gn(r.figuren.filter((a) => !a.hund).map((a) => a.abschnitte)), n = r.von, s = r.bis;
+          t[i.id] = Kn(r.figuren.filter((a) => !a.hund).map((a) => a.abschnitte)), n = r.von, s = r.bis;
         } catch {
         }
       })
@@ -3393,7 +3403,7 @@ let w = class extends fe {
           tueren: s
         }), this.dirty = !1, this.hausExtra = {}, this.planAenderung = {}, this.tuerNamen = {}, this.planEdit = "", this.showToast("Hausplan gespeichert."), await this.unsubscribeHaus(), await new Promise((i) => window.setTimeout(i, 1500)), await this.load();
       } catch (e) {
-        this.showToast(`Nicht gespeichert: ${E(e)}`);
+        this.showToast(`Nicht gespeichert: ${T(e)}`);
       } finally {
         this.saving = !1;
       }
@@ -3526,7 +3536,7 @@ let w = class extends fe {
           [f, d],
           [f, p],
           [c, p]
-        ].findIndex(([_, y]) => this.near(n, this.planZuHaus(l, _, y), H + 4));
+        ].findIndex(([_, z]) => this.near(n, this.planZuHaus(l, _, z), H + 4));
         if (b >= 0) {
           this.drag = { kind: "plan-crop", id: l.id, ecke: b };
           return;
@@ -3603,7 +3613,7 @@ let w = class extends fe {
     const a = this.zones[this.selected];
     if (a && a.form.art !== "zellen" && this.near(n, this.zoneRotateHandle(a.form))) {
       this.remember();
-      const l = T(a.form);
+      const l = E(a.form);
       this.drag = { kind: "rotate-zone", center: l, start: ye(l, n), anchor: a.form };
       return;
     }
@@ -3688,7 +3698,7 @@ let w = class extends fe {
   }
   turnZone(e, t) {
     const n = this.zones[e];
-    !n || n.form.art === "zellen" || (this.remember(), this.updateZone(e, { form: yt(n.form, T(n.form), t) }));
+    !n || n.form.art === "zellen" || (this.remember(), this.updateZone(e, { form: yt(n.form, E(n.form), t) }));
   }
   /** Wand unter dem Punkt (Abstand in Pixeln), sonst -1. */
   wallAt(e, t = H) {
@@ -3696,7 +3706,7 @@ let w = class extends fe {
     if (n < 3) return -1;
     let s = -1, i = t;
     for (let r = 0; r < n; r++) {
-      const a = Be(this.toScreen(e), this.toScreen(this.umriss[r]), this.toScreen(this.umriss[(r + 1) % n]));
+      const a = De(this.toScreen(e), this.toScreen(this.umriss[r]), this.toScreen(this.umriss[(r + 1) % n]));
       a <= i && (s = r, i = a);
     }
     return s;
@@ -3704,12 +3714,12 @@ let w = class extends fe {
   openingAt(e) {
     return this.oeffnungen.findIndex((t) => {
       const [n, s] = ce(this.umriss, t);
-      return Be(this.toScreen(e), this.toScreen(n), this.toScreen(s)) <= H;
+      return De(this.toScreen(e), this.toScreen(n), this.toScreen(s)) <= H;
     });
   }
   /** Dreh-Griff einer Zone: über ihrer Mitte, oberhalb der Form. */
   zoneRotateHandle(e) {
-    const t = T(e), n = Math.max(...F(e).map((s) => s[1]));
+    const t = E(e), n = Math.max(...F(e).map((s) => s[1]));
     return [t[0], n + 36 / this.view.scale];
   }
   openSensor() {
@@ -3861,7 +3871,7 @@ let w = class extends fe {
     if (this.tool !== "auswahl" || t?.form.art !== "vieleck") return;
     const n = this.toWorld(e), s = t.form.punkte;
     for (let i = 0; i < s.length; i++)
-      if (Be(this.toScreen(n), this.toScreen(s[i]), this.toScreen(s[(i + 1) % s.length])) <= H) {
+      if (De(this.toScreen(n), this.toScreen(s[i]), this.toScreen(s[(i + 1) % s.length])) <= H) {
         this.remember(), this.updateZone(this.selected, { form: gt(t.form, i, this.snapped(n)) });
         return;
       }
@@ -3874,8 +3884,8 @@ let w = class extends fe {
     const { w: e, h: t } = this.size, n = this.view.scale, s = n > 0.6 ? 50 : n > 0.2 ? 100 : 500, i = [];
     if (this.ansichtWinkel) {
       const l = Math.hypot(e, t) / 2 / n, { cx: c, cy: d } = this.view, f = (p, g, b) => {
-        const [$, k] = this.toScreen(p), [_, y] = this.toScreen(g);
-        return v`<line class="grid ${b ? "major" : ""}" x1=${$} y1=${k} x2=${_} y2=${y} />`;
+        const [$, k] = this.toScreen(p), [_, z] = this.toScreen(g);
+        return v`<line class="grid ${b ? "major" : ""}" x1=${$} y1=${k} x2=${_} y2=${z} />`;
       };
       for (let p = Math.floor((c - l) / s) * s; p <= c + l; p += s) i.push(f([p, d - l], [p, d + l], p % 100 === 0));
       for (let p = Math.floor((d - l) / s) * s; p <= d + l; p += s) i.push(f([c - l, p], [c + l, p], p % 100 === 0));
@@ -3894,7 +3904,7 @@ let w = class extends fe {
   }
   renderRoom() {
     if (this.umriss.length < 3) return m;
-    const e = this.screenPoints(this.umriss), t = this.kannAendern && this.tool === "auswahl" && this.selected < 0 && !this.sensorOpen, n = this.openingDraft ? [...this.oeffnungen, this.openingDraft] : this.oeffnungen, s = T({ art: "vieleck", punkte: this.umriss }), i = this.istMelder && !!this.live?.zonen[j]?.belegt;
+    const e = this.screenPoints(this.umriss), t = this.kannAendern && this.tool === "auswahl" && this.selected < 0 && !this.sensorOpen, n = this.openingDraft ? [...this.oeffnungen, this.openingDraft] : this.oeffnungen, s = E({ art: "vieleck", punkte: this.umriss }), i = this.istMelder && !!this.live?.zonen[j]?.belegt;
     return v`<polygon class="floor ${i ? "belegt" : ""}" points=${e} />
       <polygon class="wall" points=${e} />
       ${n.map((r, a) => this.renderOpening(r, a === this.selOpening || r === this.openingDraft, s))}
@@ -4057,8 +4067,8 @@ let w = class extends fe {
         [d, f],
         [l, f]
       ].map(([$, k]) => {
-        const [_, y] = i($, k);
-        return v`<circle class="handle plan-griff" cx=${_} cy=${y} r="9" />`;
+        const [_, z] = i($, k);
+        return v`<circle class="handle plan-griff" cx=${_} cy=${z} r="9" />`;
       }) : m, b = p ? v`<polygon class="plan-rahmen" points=${Ht([i(l, c), i(d, c), i(d, f), i(l, f)])} />` : m;
       return v`<g transform="matrix(${h})">
           <clipPath id=${`zuschnitt-${s.id}`}><rect x=${l} y=${c} width=${d - l} height=${f - c} /></clipPath>
@@ -4070,7 +4080,7 @@ let w = class extends fe {
   /** Maße der Wände (und Öffnungen), wenn eingeschaltet. */
   renderMasse() {
     if (!this.masse || this.umriss.length < 3) return m;
-    const e = this.umriss.length, t = T({ art: "vieleck", punkte: this.umriss }), n = this.umriss.map((i, r) => {
+    const e = this.umriss.length, t = E({ art: "vieleck", punkte: this.umriss }), n = this.umriss.map((i, r) => {
       const a = this.umriss[(r + 1) % e], o = Math.hypot(a[0] - i[0], a[1] - i[1]);
       if (o < 20) return m;
       const h = [(i[0] + a[0]) / 2, (i[1] + a[1]) / 2];
@@ -4086,7 +4096,7 @@ let w = class extends fe {
   }
   melderPlatzieren(e) {
     this.remember();
-    const t = this.umriss.length >= 3 ? T({ art: "vieleck", punkte: this.umriss }) : [0, 0], n = Object.keys(this.melderLagen).length;
+    const t = this.umriss.length >= 3 ? E({ art: "vieleck", punkte: this.umriss }) : [0, 0], n = Object.keys(this.melderLagen).length;
     this.melderLagen = { ...this.melderLagen, [e]: { x: Math.round(t[0] + n * 40), y: Math.round(t[1]), winkel: 0, reichweite_cm: 500, oeffnung_grad: 100 } }, this.dirty = !0, this.showToast("Melder in die Raummitte gesetzt: an seinen Platz ziehen und am Griff drehen.");
   }
   /** Anzeigename eines Melders (aus der Liste der Kandidaten, sonst die Kennung). */
@@ -4151,7 +4161,7 @@ let w = class extends fe {
   }
   /** Melder-Raum: in der Mitte steht, ob jemand da ist. */
   renderMelderLabel() {
-    const e = this.live, t = !!e && e.verfuegbar && !e.problem, n = !!e?.zonen[j]?.belegt, s = this.umriss.length >= 3 ? T({ art: "vieleck", punkte: this.umriss }) : [0, 0], [i, r] = this.toScreen(s);
+    const e = this.live, t = !!e && e.verfuegbar && !e.problem, n = !!e?.zonen[j]?.belegt, s = this.umriss.length >= 3 ? E({ art: "vieleck", punkte: this.umriss }) : [0, 0], [i, r] = this.toScreen(s);
     return v`<text class="label room" x=${i} y=${r}>${t ? n ? "jemand da" : "niemand" : "Melder nicht erreichbar"}</text>
       ${this.umriss.length < 3 ? v`<text class="label sub" x=${i} y=${r + 18}>Wände zeichnen: Werkzeug links</text>` : m}`;
   }
@@ -4187,7 +4197,7 @@ let w = class extends fe {
   }
   /** Beschriftung der Zone; wird nach den Figuren gezeichnet, damit sie lesbar bleibt. */
   renderZoneLabel(e) {
-    const t = e.id ? this.live?.zonen[e.id] : void 0, [n, s] = this.toScreen(T(e.form)), i = t ? t.belegt ? `belegt${t.personen > 1 ? ` · ${t.personen}` : ""}` : "frei" : "neu";
+    const t = e.id ? this.live?.zonen[e.id] : void 0, [n, s] = this.toScreen(E(e.form)), i = t ? t.belegt ? `belegt${t.personen > 1 ? ` · ${t.personen}` : ""}` : "frei" : "neu";
     return v`<text class="label" x=${n} y=${s - 2}>${e.name}</text>
       <text class="label sub" x=${n} y=${s + 14}>${i}</text>`;
   }
@@ -4198,7 +4208,7 @@ let w = class extends fe {
     e.form.art === "vieleck" ? t = e.form.punkte : e.form.art === "rechteck" && (t = Me(e.form.mitte, e.form.breite, e.form.tiefe, e.form.winkel));
     let n = m;
     if (e.form.art !== "zellen") {
-      const [s, i] = this.toScreen(T(e.form)), [r, a] = this.toScreen(this.zoneRotateHandle(e.form));
+      const [s, i] = this.toScreen(E(e.form)), [r, a] = this.toScreen(this.zoneRotateHandle(e.form));
       n = v`<line class="sensor-line" x1=${s} y1=${i} x2=${r} y2=${a} /><circle class="handle angle" cx=${r} cy=${a} r="8"><title>Drehen</title></circle>`;
     }
     return v`${n}
@@ -4289,32 +4299,32 @@ let w = class extends fe {
       for (const k of o.zonen) {
         const _ = he(k);
         if (_ === "ignorieren") continue;
-        const y = (k.id ? d?.zonen[k.id]?.belegt : !1) ?? !1, M = F(k.form).map((A) => Z(A, h));
-        t.push(v`<polygon class="zone-shape" points=${this.screenPoints(M)} fill=${de(_)} fill-opacity=${y ? 0.5 : 0.18} stroke=${de(_)} />`);
+        const z = (k.id ? d?.zonen[k.id]?.belegt : !1) ?? !1, M = F(k.form).map((A) => Z(A, h));
+        t.push(v`<polygon class="zone-shape" points=${this.screenPoints(M)} fill=${de(_)} fill-opacity=${z ? 0.5 : 0.18} stroke=${de(_)} />`);
       }
       for (const k of N(o)) {
-        const _ = this.tueren[k.key] ?? "", y = _.startsWith("tuer:") ? _.slice(5) : "", M = y ? y.split("/")[0] : _, [A, S] = this.toScreen(Z(k.punkt, h));
+        const _ = this.tueren[k.key] ?? "", z = _.startsWith("tuer:") ? _.slice(5) : "", M = z ? z.split("/")[0] : _, [A, S] = this.toScreen(Z(k.punkt, h));
         if (M === "aussen")
           s.push(v`<text class="label sub" x=${A} y=${S - 10}>nach draußen</text>`);
         else if (M) {
-          const L = e.find((D) => D.id === M);
+          const L = e.find((B) => B.id === M);
           if (!L) continue;
-          const I = y ? N(L).find((D) => D.key === y) : N(L).find((D) => this.tueren[D.key] === o.id || this.tueren[D.key] === `tuer:${k.key}`);
+          const I = z ? N(L).find((B) => B.key === z) : N(L).find((B) => this.tueren[B.key] === o.id || this.tueren[B.key] === `tuer:${k.key}`);
           if (I && o.id > L.id) continue;
-          const B = this.lagen[L.id];
-          if (!B) continue;
-          const ae = Z(I ? I.punkt : T({ art: "vieleck", punkte: this.outlineOf(L) }), B), [Q, oe] = this.toScreen(ae);
+          const D = this.lagen[L.id];
+          if (!D) continue;
+          const ae = Z(I ? I.punkt : E({ art: "vieleck", punkte: this.outlineOf(L) }), D), [Q, oe] = this.toScreen(ae);
           n.push(v`<line class="link" x1=${A} y1=${S} x2=${Q} y2=${oe} />
             <circle class="link-dot" cx=${A} cy=${S} r="5" /><circle class="link-dot" cx=${Q} cy=${oe} r="5" />`);
         }
       }
-      const [p, g] = this.toScreen(T({ art: "vieleck", punkte: l })), b = d ? d.figuren.filter((k) => !k.tags.includes("wiederhergestellt") && !k.tags.includes("stoerung")).length : 0, $ = !d || d.problem || !d.verfuegbar ? "nicht erreichbar" : o.art === "melder" ? f ? "jemand da" : "niemand" : b ? `${b} ${b === 1 ? "Person" : "Personen"}` : "niemand";
+      const [p, g] = this.toScreen(E({ art: "vieleck", punkte: l })), b = d ? d.figuren.filter((k) => !k.tags.includes("wiederhergestellt") && !k.tags.includes("stoerung")).length : 0, $ = !d || d.problem || !d.verfuegbar ? "nicht erreichbar" : o.art === "melder" ? f ? "jemand da" : "niemand" : b ? `${b} ${b === 1 ? "Person" : "Personen"}` : "niemand";
       if (s.push(v`<text class="label room" x=${p} y=${g}>${o.name}</text>
         <text class="label sub" x=${p} y=${g + 16}>${$}</text>`), o.art !== "melder")
         for (const k of d?.figuren ?? []) {
           if (k.tags.includes("wiederhergestellt") || k.tags.includes("stoerung")) continue;
-          const y = k.tags.includes("hund") || k.art === "pet" ? "var(--rz-tier)" : "var(--rz-person)", [M, A] = this.toScreen(Z([k.x, k.y], h)), S = Math.max(6, this.px(14));
-          i.push(v`<circle class="figure ${k.gehalten ? "held" : ""}" cx=${M} cy=${A} r=${S} fill=${y} stroke=${k.gehalten ? y : "var(--card)"} />`);
+          const z = k.tags.includes("hund") || k.art === "pet" ? "var(--rz-tier)" : "var(--rz-person)", [M, A] = this.toScreen(Z([k.x, k.y], h)), S = Math.max(6, this.px(14));
+          i.push(v`<circle class="figure ${k.gehalten ? "held" : ""}" cx=${M} cy=${A} r=${S} fill=${z} stroke=${k.gehalten ? z : "var(--card)"} />`);
         }
     }
     const r = this.planMessen?.punkte ?? [], a = v`${r.length === 2 ? v`<line class="plan-strecke-linie" x1=${this.toScreen(r[0])[0]} y1=${this.toScreen(r[0])[1]} x2=${this.toScreen(r[1])[0]} y2=${this.toScreen(r[1])[1]} />` : m}${r.map((o) => {
@@ -4509,7 +4519,7 @@ let w = class extends fe {
       /></label>
       <div class="label-text">Wofür ist die Zone?</div>
       <div class="levels">
-        ${Ge.map(
+        ${Ke.map(
       (c) => u`<button class=${c.rolle === s ? "active" : ""} @click=${() => this.setRolle(t, c.rolle)}>
             <ha-icon icon=${c.icon}></ha-icon>${c.name}
           </button>`
@@ -4780,9 +4790,14 @@ let w = class extends fe {
           <button class="text small" @click=${() => this.wizStart("umsetzen")}><ha-icon icon="mdi:map-marker-path"></ha-icon>Vor dem Umhängen starten</button>
           <button class="text small" @click=${() => this.wizStart("einmessen")}><ha-icon icon="mdi:crosshairs-gps"></ha-icon>Sensor hängt schon: einmessen</button>
         </div>
-        ${this.handyVoll ? m : u`<p class="hint small">Am besten mit dem Handy im Raum: in der Home-Assistant-App öffnen, dann kommt eine eigene Ansicht mit großem Plan.</p>
+        ${this.handyVoll ? m : u`<p class="hint small">Am besten mit dem Handy im Raum: Raumzonen schickt dir eine Nachricht in die Home-Assistant-App; Antippen öffnet den Assistenten mit großem Plan.</p>
+              ${this.handyZiele && this.handyZiele.length > 1 ? u`<label class="field"
+                    >Handy<select @change=${(o) => this.handyDienst = o.target.value}>
+                      ${this.handyZiele.map((o) => u`<option value=${o.dienst} ?selected=${o.dienst === this.handyDienst}>${o.name}</option>`)}
+                    </select></label
+                  >` : m}
               <div class="actions">
-                <button class="text small" @click=${() => void this.handyLink()}><ha-icon icon="mdi:cellphone-link"></ha-icon>Link fürs Handy kopieren</button>
+                <button class="text small" @click=${() => void this.aufsHandy()}><ha-icon icon="mdi:cellphone-arrow-down"></ha-icon>Aufs Handy schicken</button>
                 <button class="text small" @click=${() => this.handyVoll = !0}><ha-icon icon="mdi:fullscreen"></ha-icon>Große Ansicht</button>
               </div>`}`;
     const t = e.aktiv + 1, n = e.messung, s = n ? Math.max(0, Math.ceil((n.bis - Date.now()) / 1e3)) : 0, i = (o) => n ? u`<div class="note">Bitte ruhig stehen … noch ${s} s${n.hinweis ? u`<br />${n.hinweis}` : m}</div>` : u`<div class="actions"><span class="spacer"></span><button class="primary" ?disabled=${this.dirty} @click=${this.wizMessen}><ha-icon icon="mdi:human-handsdown"></ha-icon>${o}</button></div>`, r = u`<ol class="wiz-stellen">
@@ -5205,7 +5220,7 @@ let w = class extends fe {
         const { [e.id]: n, ...s } = this.planBilder;
         this.planBilder = s, this.showToast("Grundriss gelöscht."), await new Promise((i) => window.setTimeout(i, 1500)), await this.load();
       } catch (t) {
-        this.showToast(`Nicht gelöscht: ${E(t)}`);
+        this.showToast(`Nicht gelöscht: ${T(t)}`);
       } finally {
         this.saving = !1;
       }
@@ -5245,7 +5260,7 @@ let w = class extends fe {
       if (!n) return "Größe: erst ein Maß eingeben";
       const g = se(e.g.raeume[p].punkte), b = ($) => ($ / 100).toFixed(1).replace(".", ",");
       return `ca. ${b((g.x1 - g.x0) * n)} × ${b((g.y1 - g.y0) * n)} m`;
-    }, r = (p) => this.plan = { ...e, ...p }, a = (p) => T({ art: "vieleck", punkte: p }), o = (p) => {
+    }, r = (p) => this.plan = { ...e, ...p }, a = (p) => E({ art: "vieleck", punkte: p }), o = (p) => {
       const g = p.currentTarget.getBoundingClientRect(), b = [(p.clientX - g.left) / g.width * e.g.breite, (p.clientY - g.top) / g.height * e.g.hoehe];
       r({ strecke: e.strecke.length >= 2 ? [b] : [...e.strecke, b] });
     }, h = e.g.breite / 120, l = v`${e.strecke.length === 2 ? v`<line class="plan-strecke" x1=${e.strecke[0][0]} y1=${e.strecke[0][1]} x2=${e.strecke[1][0]} y2=${e.strecke[1][1]} stroke-width=${h / 1.5} />` : m}${e.strecke.map(([p, g]) => v`<circle class="plan-strecke" cx=${p} cy=${g} r=${h} />`)}`, c = v`<svg class="plan-vorschau" viewBox="0 0 ${e.g.breite} ${e.g.hoehe}" @click=${o}>
@@ -5256,7 +5271,7 @@ let w = class extends fe {
           <circle class="plan-nr" cx=${b} cy=${$} r=${e.g.breite / 40} /><text class="plan-nr" x=${b} y=${$} dy="0.35em" font-size=${e.g.breite / 30}>${g + 1}</text>`;
     })}
       ${e.g.luecken.map((p, g) => {
-      const b = e.g.raeume[p.raum].punkte, $ = b[p.kante], k = b[(p.kante + 1) % b.length], _ = Math.hypot(k[0] - $[0], k[1] - $[1]) || 1, y = (I) => [$[0] + (k[0] - $[0]) * I / _, $[1] + (k[1] - $[1]) * I / _], [M, A] = y(p.von_px), [S, L] = y(p.bis_px);
+      const b = e.g.raeume[p.raum].punkte, $ = b[p.kante], k = b[(p.kante + 1) % b.length], _ = Math.hypot(k[0] - $[0], k[1] - $[1]) || 1, z = (I) => [$[0] + (k[0] - $[0]) * I / _, $[1] + (k[1] - $[1]) * I / _], [M, A] = z(p.von_px), [S, L] = z(p.bis_px);
       return v`<line class="plan-luecke ${e.art[g]}" x1=${M} y1=${A} x2=${S} y2=${L} stroke-width=${e.g.breite / 150} />`;
     })}
       ${l}
@@ -5518,7 +5533,7 @@ let w = class extends fe {
       return u`<li class="item" style="--zone:var(--rz-bereich)">
                     <div class="row static">
                       <span class="name">${r.name}<small>${a ? a.length ? `${a.length}-mal` : "niemand" : "keine Aufnahme"}</small></span>
-                      <span class="dauer">${a?.length ? ue(Kn(a)) : ""}</span>
+                      <span class="dauer">${a?.length ? ue(Gn(a)) : ""}</span>
                     </div>
                     ${a ? s(a) : m}
                   </li>`;
@@ -5696,204 +5711,210 @@ let w = class extends fe {
         </div>` : u`${this.renderHeader()}<div class="empty">${this.error ? u`<ha-icon icon="mdi:alert-circle-outline"></ha-icon><p>${this.error}</p>` : u`<p>Lädt …</p>`}</div>`;
   }
 };
-w.styles = Dn;
+w.styles = Bn;
 x([
   jt({ type: Boolean, reflect: !0 })
 ], w.prototype, "narrow", 2);
 x([
-  z()
+  y()
 ], w.prototype, "data", 2);
 x([
-  z()
+  y()
 ], w.prototype, "raumId", 2);
 x([
-  z()
+  y()
 ], w.prototype, "zones", 2);
 x([
-  z()
+  y()
 ], w.prototype, "sensor", 2);
 x([
-  z()
+  y()
 ], w.prototype, "umriss", 2);
 x([
-  z()
+  y()
 ], w.prototype, "oeffnungen", 2);
 x([
-  z()
+  y()
 ], w.prototype, "selVertex", 2);
 x([
-  z()
+  y()
 ], w.prototype, "selOpening", 2);
 x([
-  z()
+  y()
 ], w.prototype, "openingDraft", 2);
 x([
-  z()
+  y()
 ], w.prototype, "selected", 2);
 x([
-  z()
+  y()
 ], w.prototype, "sensorOpen", 2);
 x([
-  z()
+  y()
 ], w.prototype, "tab", 2);
 x([
-  z()
+  y()
 ], w.prototype, "tool", 2);
 x([
-  z()
+  y()
 ], w.prototype, "draft", 2);
 x([
-  z()
+  y()
 ], w.prototype, "rectDraft", 2);
 x([
-  z()
+  y()
 ], w.prototype, "hover", 2);
 x([
-  z()
+  y()
 ], w.prototype, "view", 2);
 x([
-  z()
+  y()
 ], w.prototype, "size", 2);
 x([
-  z()
+  y()
 ], w.prototype, "live", 2);
 x([
-  z()
+  y()
 ], w.prototype, "heat", 2);
 x([
-  z()
+  y()
 ], w.prototype, "heatMin", 2);
 x([
-  z()
+  y()
 ], w.prototype, "ausw", 2);
 x([
-  z()
+  y()
 ], w.prototype, "auswStunden", 2);
 x([
-  z()
+  y()
 ], w.prototype, "auswLaedt", 2);
 x([
-  z()
+  y()
 ], w.prototype, "auswFehler", 2);
 x([
-  z()
+  y()
 ], w.prototype, "kandidaten", 2);
 x([
-  z()
+  y()
 ], w.prototype, "wiz", 2);
 x([
-  z()
+  y()
 ], w.prototype, "handyVoll", 2);
 x([
-  z()
+  y()
+], w.prototype, "handyZiele", 2);
+x([
+  y()
+], w.prototype, "handyDienst", 2);
+x([
+  y()
 ], w.prototype, "plan", 2);
 x([
-  z()
+  y()
 ], w.prototype, "planLaedt", 2);
 x([
-  z()
+  y()
 ], w.prototype, "planAuswahl", 2);
 x([
-  z()
+  y()
 ], w.prototype, "planBilder", 2);
 x([
-  z()
+  y()
 ], w.prototype, "planEdit", 2);
 x([
-  z()
+  y()
 ], w.prototype, "planAenderung", 2);
 x([
-  z()
+  y()
 ], w.prototype, "planMessen", 2);
 x([
-  z()
+  y()
 ], w.prototype, "zeigePlan", 2);
 x([
-  z()
+  y()
 ], w.prototype, "masse", 2);
 x([
-  z()
+  y()
 ], w.prototype, "stockwerk", 2);
 x([
-  z()
+  y()
 ], w.prototype, "wieImHaus", 2);
 x([
-  z()
+  y()
 ], w.prototype, "hausExtra", 2);
 x([
-  z()
+  y()
 ], w.prototype, "neuRaum", 2);
 x([
-  z()
+  y()
 ], w.prototype, "profil", 2);
 x([
-  z()
+  y()
 ], w.prototype, "profilStunden", 2);
 x([
-  z()
+  y()
 ], w.prototype, "profilLaedt", 2);
 x([
-  z()
+  y()
 ], w.prototype, "auswFigur", 2);
 x([
-  z()
+  y()
 ], w.prototype, "layersOpen", 2);
 x([
-  z()
+  y()
 ], w.prototype, "layers", 2);
 x([
-  z()
+  y()
 ], w.prototype, "dirty", 2);
 x([
-  z()
+  y()
 ], w.prototype, "zonesFollow", 2);
 x([
-  z()
+  y()
 ], w.prototype, "saving", 2);
 x([
-  z()
+  y()
 ], w.prototype, "error", 2);
 x([
-  z()
+  y()
 ], w.prototype, "toast", 2);
 x([
-  z()
+  y()
 ], w.prototype, "page", 2);
 x([
-  z()
+  y()
 ], w.prototype, "lagen", 2);
 x([
-  z()
+  y()
 ], w.prototype, "tueren", 2);
 x([
-  z()
+  y()
 ], w.prototype, "wege", 2);
 x([
-  z()
+  y()
 ], w.prototype, "tuerNamen", 2);
 x([
-  z()
+  y()
 ], w.prototype, "hausLive", 2);
 x([
-  z()
+  y()
 ], w.prototype, "hausSel", 2);
 x([
-  z()
+  y()
 ], w.prototype, "aufnahme", 2);
 x([
-  z()
+  y()
 ], w.prototype, "melder", 2);
 x([
-  z()
+  y()
 ], w.prototype, "nurBereich", 2);
 x([
-  z()
+  y()
 ], w.prototype, "nachlauf", 2);
 x([
-  z()
+  y()
 ], w.prototype, "melderLagen", 2);
 x([
-  z()
+  y()
 ], w.prototype, "aufnahmeTage", 2);
 w = x([
   $n("raumzonen-panel")

@@ -143,6 +143,8 @@ def async_register(hass: HomeAssistant) -> None:
         ws_room_delete,
         ws_room_umwandeln,
         ws_wege_get,
+        ws_handy_ziele,
+        ws_handy_senden,
         ws_plan_import,
         ws_plan_bild_get,
         ws_plan_delete,
@@ -858,6 +860,78 @@ def kandidaten(hass: HomeAssistant, raeume: list[RaumConfig]) -> dict[str, Any]:
         "bereiche": bereiche,
         "vorschlaege": vorschlaege,
     }
+
+
+HANDY_PRAEFIX = "mobile_app_"
+
+
+def handy_ziele(hass: HomeAssistant) -> list[dict[str, str]]:
+    """Handys mit der Home-Assistant-App (Benachrichtigungsdienste der App)."""
+    namen = {
+        f"{HANDY_PRAEFIX}{slugify(e.data.get('device_name') or e.title)}": e.title
+        for e in hass.config_entries.async_entries("mobile_app")
+    }
+    return [
+        {
+            "dienst": dienst,
+            "name": namen.get(dienst, dienst.removeprefix(HANDY_PRAEFIX)),
+        }
+        for dienst in sorted(hass.services.async_services_for_domain("notify"))
+        if dienst.startswith(HANDY_PRAEFIX)
+    ]
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/handy/ziele"})
+@websocket_api.require_admin
+@callback
+def ws_handy_ziele(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Handys, an die der Assistent geschickt werden kann."""
+    connection.send_result(msg["id"], {"ziele": handy_ziele(hass)})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/handy/senden",
+        vol.Required("raum_id"): str,
+        vol.Required("dienst"): str,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_handy_senden(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Nachricht ans Handy: Antippen öffnet den Assistenten dieses Raums.
+
+    Nur auf Knopfdruck im Panel und nur an Handys mit der App (keine anderen
+    Dienste); Raumzonen schaltet damit nichts im Haus.
+    """
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Raumzonen ist nicht geladen")
+        return
+    try:
+        raum = entry.runtime_data.store.model.raum(msg["raum_id"])
+    except KeyError:
+        connection.send_error(msg["id"], "not_found", "Raum nicht gefunden")
+        return
+    if msg["dienst"] not in {z["dienst"] for z in handy_ziele(hass)}:
+        connection.send_error(msg["id"], "invalid", "Kein Handy mit der App")
+        return
+    pfad = f"/raumzonen?assistent={raum.id}"
+    await hass.services.async_call(
+        "notify",
+        msg["dienst"],
+        {
+            "title": "Raumzonen",
+            "message": f"Sensor im Raum „{raum.name}“ einmessen: tippen zum Öffnen.",
+            "data": {"url": pfad, "clickAction": pfad, "tag": f"raumzonen_{raum.id}"},
+        },
+        blocking=True,
+    )
+    connection.send_result(msg["id"])
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/wege/get"})
