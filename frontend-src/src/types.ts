@@ -201,6 +201,12 @@ export interface KandidatMelder {
   benutzt_von: string | null;
   /** Gerät, zu dem der Melder gehört (zum Gruppieren). */
   geraet: string | null;
+  /** Art in Worten: „Radar (Anwesenheit)“, „Bewegungsmelder“, „Kamera“ … */
+  typ?: string;
+  /** Hersteller und Modell des Geräts. */
+  modell?: string | null;
+  /** false: gehört zu einem Radarsensor, nur noch zum Abwählen da. */
+  angeboten?: boolean;
 }
 
 export interface Kandidaten {

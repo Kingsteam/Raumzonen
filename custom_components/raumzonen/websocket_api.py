@@ -670,6 +670,42 @@ def _area_of(entry: er.RegistryEntry, devices: dr.DeviceRegistry) -> str | None:
     return None
 
 
+# Integrationen, deren Melder keine Bewegungs- oder Präsenzmelder im Raum sind.
+_TYP_PLATTFORM = {
+    "unifiprotect": "Kamera",
+    "reolink": "Kamera",
+    "frigate": "Kamera",
+    "browser_mod": "Tablet (Browser)",
+    "fully_kiosk": "Tablet",
+    "template": "Vorlage",
+    "group": "Gruppe",
+    "bayesian": "Vorlage",
+}
+_RADAR_WORTE = ("radar", "mmwave", "presence", "breathe", "human", "fp1", "fp2", "fp3")
+
+
+def melder_typ(
+    entry: er.RegistryEntry, device: dr.DeviceEntry | None, klasse: str
+) -> str:
+    """Art des Melders in Worten: Radar, Bewegungsmelder, Kamera, Tablet ..."""
+    if entry.platform in _TYP_PLATTFORM:
+        return _TYP_PLATTFORM[entry.platform]
+    modell = " ".join(
+        x for x in (device.model if device else "", device.name if device else "") if x
+    ).lower()
+    if "camera" in modell or "cam " in f"{modell} ":
+        return "Kamera"
+    if "door" in modell or "window" in modell or "contact" in modell:
+        return "Kontakt (Tür/Fenster)"
+    if any(w in modell for w in _RADAR_WORTE):
+        return "Radar (Anwesenheit)"
+    if klasse == "motion":
+        return "Bewegungsmelder"
+    if device is None:
+        return "Anwesenheit (ohne Gerät)"
+    return "Anwesenheit"
+
+
 def kandidaten(hass: HomeAssistant, raeume: list[RaumConfig]) -> dict[str, Any]:
     """Was sich als Raum anlegen lässt; bereits benutzte Melder sind markiert."""
     entities = er.async_get(hass)
@@ -695,8 +731,12 @@ def kandidaten(hass: HomeAssistant, raeume: list[RaumConfig]) -> dict[str, Any]:
             continue
         if entry.platform == DOMAIN:
             continue  # eigene Entitäten nicht als Melder anbieten
-        if entry.device_id in fp400_ids:
-            continue  # gehört zu einem Radarsensor: der wird als Radar-Raum angelegt
+        von = benutzt.get(entry.id) or benutzt.get(entry.entity_id)
+        # Gehört zu einem Radarsensor: der wird als Radar-Raum angelegt. Schon
+        # benutzte bleiben in der Liste (mit Namen), damit man sie abwählen kann.
+        angeboten = entry.device_id not in fp400_ids
+        if not angeboten and not von:
+            continue
         state = hass.states.get(entry.entity_id)
         device = devices.async_get(entry.device_id) if entry.device_id else None
         melder.append(
@@ -709,8 +749,15 @@ def kandidaten(hass: HomeAssistant, raeume: list[RaumConfig]) -> dict[str, Any]:
                 or entry.entity_id,
                 "klasse": klasse,
                 "bereich_id": _area_of(entry, devices),
-                "benutzt_von": benutzt.get(entry.id) or benutzt.get(entry.entity_id),
+                "benutzt_von": von,
                 "geraet": (device.name_by_user or device.name) if device else None,
+                "typ": "Radarsensor (Zone)"
+                if not angeboten
+                else melder_typ(entry, device, klasse),
+                "modell": " ".join(x for x in (device.manufacturer, device.model) if x)
+                if device
+                else None,
+                "angeboten": angeboten,
             }
         )
     melder.sort(key=lambda m: (m["bereich_id"] or "~", m["name"]))
@@ -739,7 +786,9 @@ def kandidaten(hass: HomeAssistant, raeume: list[RaumConfig]) -> dict[str, Any]:
         frei = [
             m["id"]
             for m in melder
-            if m["bereich_id"] == b["bereich_id"] and not m["benutzt_von"]
+            if m["bereich_id"] == b["bereich_id"]
+            and not m["benutzt_von"]
+            and m["typ"] not in ("Kamera", "Tablet", "Tablet (Browser)")
         ]
         radar = [
             g for g in fp400 if g["bereich_id"] == b["bereich_id"] and not g["benutzt"]

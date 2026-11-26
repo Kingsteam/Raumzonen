@@ -20,8 +20,14 @@ from pytest_homeassistant_custom_component.common import (
     async_fire_time_changed,
 )
 
-from custom_components.raumzonen.const import DOMAIN, NAME, STORAGE_KEY
-from custom_components.raumzonen.model import RaumzonenModel
+from custom_components.raumzonen.const import (
+    DOMAIN,
+    NAME,
+    QUELLE_ENTITAET,
+    RAUM_MELDER,
+    STORAGE_KEY,
+)
+from custom_components.raumzonen.model import RaumConfig, RaumzonenModel, SensorConfig
 from custom_components.raumzonen.serialize import model_from_dict
 
 from .test_entity_source import sim_device
@@ -667,3 +673,63 @@ async def test_grundriss_nachtraeglich_skalieren(
         }
     )
     assert (await client.receive_json())["error"]["code"] == "invalid"
+
+
+async def test_melder_typ_und_benutzte_radar_anzeige(
+    hass: HomeAssistant, loaded: MockConfigEntry, hass_ws_client
+) -> None:
+    """Typ steht dabei; eine schon benutzte Radar-Anzeige bleibt mit Namen sichtbar."""
+    mqtt_entry = MockConfigEntry(domain="mqtt")
+    mqtt_entry.add_to_hass(hass)
+    devices = dr.async_get(hass)
+    reg = er.async_get(hass)
+    radar = devices.async_get_or_create(
+        config_entry_id=mqtt_entry.entry_id,
+        identifiers={("mqtt", "zigbee2mqtt_0xdrei")},
+        name="Radar Flur",
+    )
+    reg.async_get_or_create(
+        "sensor", "mqtt", "0xdrei_targets_xy_zigbee2mqtt", device_id=radar.id
+    )
+    belegt = reg.async_get_or_create(
+        "binary_sensor",
+        "mqtt",
+        "0xdrei_occupancy_1",
+        device_id=radar.id,
+        original_device_class="occupancy",
+        original_name="Belegung",
+    )
+    mm = devices.async_get_or_create(
+        config_entry_id=mqtt_entry.entry_id,
+        identifiers={("mqtt", "zigbee2mqtt_0xvier")},
+        name="Belegung Bad",
+        manufacturer="Hersteller",
+        model="Mini human breathe sensor",
+    )
+    praesenz = reg.async_get_or_create(
+        "binary_sensor",
+        "mqtt",
+        "0xvier_presence",
+        device_id=mm.id,
+        original_device_class="presence",
+    )
+    eins = melder(hass, "eins")
+    model = loaded.runtime_data.store.model
+    model.raeume.append(
+        RaumConfig(
+            id="flur",
+            name="Flur",
+            art=RAUM_MELDER,
+            melder=[belegt.id],
+            sensor=SensorConfig(quelle=QUELLE_ENTITAET),
+        )
+    )
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id({"type": f"{DOMAIN}/kandidaten/get"})
+    k = {m["entity_id"]: m for m in (await client.receive_json())["result"]["melder"]}
+    assert k[eins.entity_id]["typ"] == "Bewegungsmelder"
+    assert k[praesenz.entity_id]["typ"] == "Radar (Anwesenheit)"
+    assert k[praesenz.entity_id]["modell"] == "Hersteller Mini human breathe sensor"
+    alt = k[belegt.entity_id]
+    assert (alt["angeboten"], alt["benutzt_von"]) == (False, "flur")
+    assert alt["name"] != belegt.id

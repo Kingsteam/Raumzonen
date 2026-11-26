@@ -297,6 +297,8 @@ export class RaumzonenPanel extends LitElement {
   @state() private aufnahme = true;
   /** Nur Melder-Räume: Melder und Nachlauf (bearbeitbar). */
   @state() private melder: string[] = [];
+  /** Nur Melder aus dem Bereich des Raums zeigen. */
+  @state() private nurBereich = true;
   @state() private nachlauf = 0;
   @state() private melderLagen: Record<string, MelderLage> = {};
   /** Nächste gezeichnete Zone gehört zu diesem Melder (aus „+ Zone“). */
@@ -908,6 +910,32 @@ export class RaumzonenPanel extends LitElement {
     } catch (err) {
       this.showToast(`Geräte nicht geladen: ${fehlerText(err)}`);
     }
+  }
+
+  /** Melder für die Auswahl: nur aus dem Bereich (wenn gewünscht); gewählte immer. */
+  private melderAuswahl<T extends { id: string; entity_id: string; bereich_id: string | null; angeboten?: boolean }>(
+    liste: T[],
+    bereich: string | null | undefined,
+    gewaehlt: string[],
+  ): T[] {
+    const an = (m: T) => gewaehlt.includes(m.id) || gewaehlt.includes(m.entity_id);
+    return liste.filter((m) => an(m) || (m.angeboten !== false && (!this.nurBereich || !bereich || m.bereich_id === bereich)));
+  }
+
+  /** Zweite Zeile eines Melders: Art, Gerät, Bereich. */
+  private melderInfo(m: { typ?: string; modell?: string | null; klasse: string; bereich_id: string | null; angeboten?: boolean }): string {
+    if (m.angeboten === false) return "Zone eines Radarsensors (FP400): besser abwählen und den Raum als Radar-Raum anlegen";
+    const typ = m.typ ?? (m.klasse === "motion" ? "Bewegungsmelder" : "Anwesenheit");
+    return [typ, m.modell, this.bereichName(m.bereich_id)].filter(Boolean).join(" · ");
+  }
+
+  private renderNurBereich(bereich: string | null | undefined): TemplateResult | typeof nothing {
+    if (!bereich) return nothing;
+    return html`<label class="check"
+      ><input type="checkbox" .checked=${this.nurBereich} @change=${(e: Event) => (this.nurBereich = (e.target as HTMLInputElement).checked)} /><span
+        >Nur Melder aus „${this.bereichName(bereich)}“</span
+      ></label
+    >`;
   }
 
   private bereichName(id: string | null | undefined): string {
@@ -2112,7 +2140,7 @@ export class RaumzonenPanel extends LitElement {
   /** Anzeigename eines Melders (aus der Liste der Kandidaten, sonst die Kennung). */
   private melderName(key: string): string {
     const m = this.kandidaten?.melder.find((x) => x.id === key || x.entity_id === key);
-    return m?.name ?? key;
+    return m?.name ?? "Unbekannter Melder";
   }
 
   private melderGriff(lage: MelderLage): Point {
@@ -2727,8 +2755,8 @@ export class RaumzonenPanel extends LitElement {
     // Melder des Raums, die nicht (mehr) in der Liste stehen, z. B. Anzeigen eines Radarsensors.
     const fehlend = this.melder
       .filter((id) => !bekannt.some((m) => m.id === id || m.entity_id === id))
-      .map((id) => ({ id, entity_id: id, name: id, klasse: "", bereich_id: null, benutzt_von: this.raumId, geraet: "nicht mehr angeboten" }));
-    const auswahl = [...bekannt, ...fehlend];
+      .map((id) => ({ id, entity_id: id, name: "Unbekannter Melder", klasse: "", bereich_id: null, benutzt_von: this.raumId, geraet: null, typ: "nicht mehr in Home Assistant (gelöscht oder abgeschaltet), bitte abwählen" }));
+    const auswahl = this.melderAuswahl([...bekannt, ...fehlend], this.raum?.bereich_id, this.melder);
     return html`<h3>Melder</h3>
       <ul class="list">
         <li class="item">
@@ -2741,7 +2769,7 @@ export class RaumzonenPanel extends LitElement {
       </ul>
       ${this.kannAendern
         ? html`${k
-              ? html`<ul class="melder-liste">
+              ? html`${this.renderNurBereich(this.raum?.bereich_id)}<ul class="melder-liste">
                   ${auswahl.map((m) => {
                     const an = this.melder.includes(m.id) || this.melder.includes(m.entity_id);
                     return html`<li>
@@ -2760,7 +2788,7 @@ export class RaumzonenPanel extends LitElement {
                             }
                             this.dirty = true;
                           }}
-                        /><span>${m.name}<small>${this.bereichName(m.bereich_id)}</small></span></label
+                        /><span>${m.name}<small>${this.melderInfo(m)}</small></span></label
                       >
                       ${an
                         ? html`<div class="actions melder-aktionen">
@@ -3557,7 +3585,7 @@ export class RaumzonenPanel extends LitElement {
             }}
           /><span
             >${m.name}<small
-              >${this.bereichName(m.bereich_id)} · ${m.klasse === "motion" ? "Bewegung" : "Anwesenheit"}${m.benutzt_von
+              >${this.melderInfo(m)}${m.benutzt_von
                 ? ` · schon in „${this.data?.raeume.find((r) => r.id === m.benutzt_von)?.name ?? m.benutzt_von}“`
                 : ""}</small
             ></span
@@ -3606,10 +3634,16 @@ export class RaumzonenPanel extends LitElement {
               <button class=${f.art === "melder" ? "active" : ""} @click=${() => set({ art: "melder" })}><ha-icon icon="mdi:motion-sensor"></ha-icon>Bewegungsmelder</button>
               <button class=${f.art === "radar" ? "active" : ""} @click=${() => set({ art: "radar" })}><ha-icon icon="mdi:radar"></ha-icon>Radarsensor FP400</button>
             </div>
+            <label class="field"
+              >Bereich in Home Assistant<select @change=${(e: Event) => set({ bereich_id: (e.target as HTMLSelectElement).value })}>
+                <option value="" ?selected=${!f.bereich_id}>keiner</option>
+                ${k.bereiche.map((b) => html`<option value=${b.bereich_id} ?selected=${f.bereich_id === b.bereich_id}>${b.name}</option>`)}
+              </select></label
+            >
             ${f.art === "melder"
               ? k.melder.length
-                ? html`<ul class="melder-liste">
-                    ${this.melderGruppen(k.melder).map(
+                ? html`${this.renderNurBereich(f.bereich_id)}<ul class="melder-liste">
+                    ${this.melderGruppen(this.melderAuswahl(k.melder, f.bereich_id, f.melder)).map(
                       ([geraet, liste]) => html`<li class="gruppe">${geraet}</li>
                         ${liste.map(melderZeile)}`,
                     )}
@@ -3623,12 +3657,6 @@ export class RaumzonenPanel extends LitElement {
                     </select></label
                   >`
                 : html`<p class="hint small">Kein freier FP400 gefunden (alle sind schon einem Raum zugeordnet).</p>`}
-            <label class="field"
-              >Bereich in Home Assistant<select @change=${(e: Event) => set({ bereich_id: (e.target as HTMLSelectElement).value })}>
-                <option value="" ?selected=${!f.bereich_id}>keiner</option>
-                ${k.bereiche.map((b) => html`<option value=${b.bereich_id} ?selected=${f.bereich_id === b.bereich_id}>${b.name}</option>`)}
-              </select></label
-            >
             ${this.dirty ? html`<p class="note warn">Erst den Hausplan speichern oder verwerfen.</p>` : nothing}`}
       <div class="actions">
         <button class="text small" @click=${() => (this.neuRaum = null)}>Abbrechen</button>

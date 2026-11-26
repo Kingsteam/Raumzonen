@@ -4,6 +4,23 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.13.1] - 2026-11-26
+
+### Geändert
+
+- Melder-Auswahl: unter jedem Melder steht jetzt die Art (Radar,
+  Bewegungsmelder, Kamera, Tablet, Kontakt …), Hersteller und Modell und der
+  Bereich. Kameras und Tablets werden nicht mehr als Melder vorgeschlagen.
+- „Nur Melder aus <Bereich>“: zeigt beim Raum und beim Anlegen nur die
+  Melder aus dem Bereich des Raums (abschaltbar). Beim Anlegen steht der
+  Bereich jetzt über der Liste.
+
+### Behoben
+
+- Zonen eines FP400, die vor 0.13.0 als Melder gewählt wurden, erschienen
+  nur noch als lange Kennung. Jetzt stehen sie mit Namen und dem Hinweis,
+  sie abzuwählen und den Raum als Radar-Raum anzulegen.
+
 ## [0.13.0] - 2026-11-26
 
 ### Hinzugefügt

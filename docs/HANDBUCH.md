@@ -123,7 +123,10 @@ Im Hausplan (oben **Haus**) unter **Raum hinzufügen** (nur Admins):
   Präsenzmelder hängen, stehen als Vorschlag da. Ein Klick legt den Raum mit
   diesen Meldern an.
 * **Selbst anlegen:** Name, Art (Bewegungsmelder oder Radarsensor FP400),
-  Melder oder Gerät wählen, optional den Bereich.
+  Bereich, dann Melder oder Gerät wählen. Unter jedem Melder steht seine
+  Art (Radar, Bewegungsmelder, Kamera, Tablet …), Hersteller und Modell.
+  Ist ein Bereich gewählt, zeigt die Liste nur dessen Melder; „Nur Melder
+  aus …“ abschalten zeigt alle.
 
 Ein **Melder-Raum** zeigt „jemand da“ oder „niemand“ für den ganzen Raum.
 Unter „Melder und Raum“ lässt sich jeder Melder **im Plan platzieren**
