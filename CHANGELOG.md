@@ -4,6 +4,23 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.16.0] - 2026-11-26
+
+### Hinzugefügt
+
+- Melder-Raum in Radar-Raum umwandeln: Nutzt ein Melder-Raum Belegt-Anzeigen
+  eines FP400 (oder hängt im Bereich ein freier FP400), steht unter „Melder
+  und Raum“ der Knopf „In Radar-Raum umwandeln“. Name, Bereich, Stockwerke,
+  Wände, Türen, Lage im Haus und gezeichnete Zonen bleiben; „Anwesenheit“
+  bleibt als Zone über den ganzen Raum (gleiche Anzeige in Home Assistant).
+  Danach lassen sich die Zonen der Zonen-Karte mit „Aus dem Konverter
+  übernehmen“ holen.
+
+### Geändert
+
+- Die Belegt-Anzeigen eines FP400 heißen in der Melder-Liste jetzt „…
+  (Bereich 3 des Sensors)“ statt alle gleich.
+
 ## [0.15.0] - 2026-11-26
 
 ### Hinzugefügt

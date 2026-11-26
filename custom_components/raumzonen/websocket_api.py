@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import copy
 from datetime import timedelta
+import re
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components import websocket_api
@@ -73,6 +74,7 @@ from .const import (
     MAX_WEG_RAHMEN,
     MAX_ZONEN_JE_RAUM,
     MELDER_KLASSEN,
+    MELDER_ZONE_ID,
     QUELLE_ENTITAET,
     QUELLE_MQTT,
     RAUM_MELDER,
@@ -140,6 +142,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_kandidaten_get,
         ws_room_create,
         ws_room_delete,
+        ws_room_umwandeln,
         ws_plan_import,
         ws_plan_bild_get,
         ws_plan_delete,
@@ -722,6 +725,7 @@ _TYP_PLATTFORM = {
     "group": "Gruppe",
     "bayesian": "Vorlage",
 }
+_BEREICH_NR = re.compile(r"_occupancy_(\d+)(?:_|$)")
 _RADAR_WORTE = ("radar", "mmwave", "presence", "breathe", "human", "fp1", "fp2", "fp3")
 
 
@@ -780,15 +784,22 @@ def kandidaten(hass: HomeAssistant, raeume: list[RaumConfig]) -> dict[str, Any]:
             continue
         state = hass.states.get(entry.entity_id)
         device = devices.async_get(entry.device_id) if entry.device_id else None
+        name = (
+            (state.name if state else None)
+            or entry.name
+            or entry.original_name
+            or entry.entity_id
+        )
+        if not angeboten and (m := _BEREICH_NR.search(entry.unique_id or "")):
+            # Alle heißen „… Belegung“; die Nummer des Bereichs macht sie unterscheidbar.
+            name = f"{name} (Bereich {m.group(1)} des Sensors)"
         melder.append(
             {
                 "id": entry.id,
                 "entity_id": entry.entity_id,
-                "name": (state.name if state else None)
-                or entry.name
-                or entry.original_name
-                or entry.entity_id,
+                "name": name,
                 "klasse": klasse,
+                "device_id": entry.device_id,
                 "bereich_id": _area_of(entry, devices),
                 "benutzt_von": von,
                 "geraet": (device.name_by_user or device.name) if device else None,
@@ -925,6 +936,96 @@ async def ws_room_create(
             ),
         )
     model.raeume.append(raum)
+    try:
+        model.validate()
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid", str(err))
+        return
+    store.model = model
+    await store.async_save()
+    async_reload_keep_panel(hass, entry.entry_id)
+    connection.send_result(msg["id"], {"raum": raum_to_dict(raum)})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/room/umwandeln",
+        vol.Required("raum_id"): str,
+        vol.Required("device_id"): str,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_room_umwandeln(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Melder-Raum in einen Radar-Raum umwandeln (FP400 statt Melder).
+
+    Name, Bereich, Stockwerke, Wände, Türen, Lage im Haus und gezeichnete
+    Zonen bleiben. „Anwesenheit“ bleibt als Zone über den ganzen Raum, damit
+    die Anzeige in Home Assistant weiter dieselbe ist.
+    """
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Raumzonen ist nicht geladen")
+        return
+    store = entry.runtime_data.store
+    model = copy.deepcopy(store.model)
+    try:
+        raum = model.raum(msg["raum_id"])
+    except KeyError:
+        connection.send_error(msg["id"], "not_found", "Raum nicht gefunden")
+        return
+    device_id = msg["device_id"]
+    if not raum.ist_melder:
+        connection.send_error(msg["id"], "invalid", "Der Raum hat schon einen Sensor")
+        return
+    found = find_fp400_entities(hass, device_id)
+    if dr.async_get(hass).async_get(device_id) is None or (
+        found.targets_xy is None and found.last_update is None
+    ):
+        connection.send_error(msg["id"], "invalid", "Kein Radarsensor (FP400)")
+        return
+    if any(r.sensor.device_id == device_id for r in model.raeume if not r.ist_melder):
+        connection.send_error(
+            msg["id"], "invalid", "Dieser Sensor gehört schon zu einem anderen Raum"
+        )
+        return
+    mitte = (
+        [
+            sum(p[0] for p in raum.umriss) / len(raum.umriss),
+            sum(p[1] for p in raum.umriss) / len(raum.umriss),
+        ]
+        if raum.umriss
+        else [0.0, 0.0]
+    )
+    raum.art = RAUM_RADAR
+    raum.sensor = SensorConfig(
+        device_id=device_id,
+        quelle=QUELLE_MQTT,
+        mqtt_topic=suggest_topic(hass, device_id),
+        x=round(mitte[0]),
+        y=round(mitte[1]),
+    )
+    raum.melder = []
+    raum.melder_lagen = {}
+    for zone in raum.zonen:
+        zone.melder = []
+    if len(raum.umriss) >= 3:
+        raum.zonen.insert(
+            0,
+            zone_from_dict(
+                {
+                    "id": MELDER_ZONE_ID,
+                    "name": "Anwesenheit",
+                    "form": {
+                        "art": "vieleck",
+                        "punkte": [list(p) for p in raum.umriss],
+                    },
+                    "art": "normal",
+                }
+            ),
+        )
     try:
         model.validate()
     except ValueError as err:

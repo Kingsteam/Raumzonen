@@ -1032,6 +1032,53 @@ export class RaumzonenPanel extends LitElement {
     }
   }
 
+  /** Melder-Raum mit Anzeigen eines FP400 → Radar-Raum (Wände, Türen, Lage bleiben). */
+  private async umwandeln(device_id: string, geraet: string): Promise<void> {
+    const raum = this.raum;
+    if (!this._hass || !raum || !this.kannAendern) return;
+    if (this.dirty) {
+      this.showToast("Erst speichern oder verwerfen.");
+      return;
+    }
+    if (
+      !confirm(
+        `„${raum.name}“ als Radar-Raum mit „${geraet}“ einrichten? Wände, Türen, Lage im Haus und „Anwesenheit“ bleiben; die Melder-Zuordnung entfällt. Danach die Zonen aus der Zonen-Karte übernehmen und den Sensor an seinen Platz ziehen.`,
+      )
+    )
+      return;
+    this.saving = true;
+    try {
+      await this._hass.callWS({ type: `${DOMAIN}/room/umwandeln`, raum_id: raum.id, device_id });
+      this.showToast("Jetzt Radar-Raum. Unter „Zonen“: „Aus dem Konverter übernehmen“; den Sensor an seinen Platz ziehen.");
+      await this.unsubscribeLive();
+      await new Promise((res) => window.setTimeout(res, 1500));
+      await this.load();
+      this.selectRoom(raum.id, true);
+      this.openTab("zonen");
+      await this.loadKandidaten();
+    } catch (err) {
+      this.showToast(`Nicht umgewandelt: ${fehlerText(err)}`);
+    } finally {
+      this.saving = false;
+    }
+  }
+
+  /** Radarsensor, dessen Anzeigen dieser Melder-Raum nutzt (oder der im selben Bereich hängt). */
+  private radarFuerRaum(): { device_id: string; name: string } | null {
+    const k = this.kandidaten;
+    const raum = this.raum;
+    if (!k || !raum || !this.istMelder) return null;
+    const frei = k.fp400.filter((g) => !g.benutzt);
+    for (const m of k.melder) {
+      if (m.angeboten !== false || !m.device_id) continue;
+      if (!this.melder.includes(m.id) && !this.melder.includes(m.entity_id)) continue;
+      const g = frei.find((x) => x.device_id === m.device_id);
+      if (g) return { device_id: g.device_id, name: g.name };
+    }
+    const g = raum.bereich_id ? frei.find((x) => x.bereich_id === raum.bereich_id) : undefined;
+    return g ? { device_id: g.device_id, name: g.name } : null;
+  }
+
   private async deleteRoom(): Promise<void> {
     const raum = this.raum;
     if (!this._hass || !raum || !this.kannAendern) return;
@@ -2961,7 +3008,22 @@ export class RaumzonenPanel extends LitElement {
       .filter((id) => !bekannt.some((m) => m.id === id || m.entity_id === id))
       .map((id) => ({ id, entity_id: id, name: "Unbekannter Melder", klasse: "", bereich_id: null, benutzt_von: this.raumId, geraet: null, typ: "nicht mehr in Home Assistant (gelöscht oder abgeschaltet), bitte abwählen" }));
     const auswahl = this.melderAuswahl([...bekannt, ...fehlend], this.raum?.bereich_id, this.melder);
-    return html`<h3>Melder</h3>
+    const radar = this.kannAendern ? this.radarFuerRaum() : null;
+    return html`${radar
+        ? html`<div class="note">
+            <p>
+              Hier hängt der Radarsensor „${radar.name}“. Als <b>Radar-Raum</b> sieht Raumzonen, wo genau jemand ist, und übernimmt die Zonen aus der
+              Zonen-Karte. Wände, Türen, Lage im Haus und „Anwesenheit“ bleiben.
+            </p>
+            <div class="actions">
+              <span class="spacer"></span>
+              <button class="text small" ?disabled=${this.saving} @click=${() => void this.umwandeln(radar.device_id, radar.name)}>
+                <ha-icon icon="mdi:radar"></ha-icon>In Radar-Raum umwandeln
+              </button>
+            </div>
+          </div>`
+        : nothing}
+      <h3>Melder</h3>
       <ul class="list">
         <li class="item">
           <div class="row static">

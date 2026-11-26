@@ -103,6 +103,15 @@ Hausplan steht bei jeder Tür ohne Ziel ein Vorschlag („Nächste Tür: …“)
 „Türen automatisch verbinden“ übernimmt alle Vorschläge auf einmal. Danach
 „Speichern“. Eine Verbindung gilt immer in beide Richtungen.
 
+**Melder-Raum mit FP400 umwandeln:** Hast du einen Raum mit den
+Belegt-Anzeigen eines FP400 als Melder angelegt, steht unter „Melder und
+Raum“ der Knopf **„In Radar-Raum umwandeln“**. Wände, Türen, Lage im Haus,
+Zonen und „Anwesenheit“ bleiben. Danach unter „Zonen“ **„Aus dem Konverter
+übernehmen“** (holt die Zonen der Zonen-Karte) und den Sensor im Plan an
+seinen Platz ziehen und drehen. Der Konverter in Zigbee2MQTT bleibt nötig:
+Raumzonen liest von ihm die Positionen. Nur seine Software-Zonen und die
+Zonen-Karte braucht es danach nicht mehr.
+
 **Zellen-Zone ändern:** Zone in der Liste öffnen, „Zellen bearbeiten“, dann
 leere Zellen antippen (dazu) oder volle (weg), zum Schluss „Fertig“. Stimmt die Größe nicht,
 dort mit „1 %“/„10 %“ größer oder kleiner machen, oder „Maß neu setzen“:

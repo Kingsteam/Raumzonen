@@ -213,6 +213,7 @@ export interface KandidatMelder {
   modell?: string | null;
   /** false: gehört zu einem Radarsensor, nur noch zum Abwählen da. */
   angeboten?: boolean;
+  device_id?: string | null;
 }
 
 export interface Kandidaten {

@@ -27,7 +27,12 @@ from custom_components.raumzonen.const import (
     RAUM_MELDER,
     STORAGE_KEY,
 )
-from custom_components.raumzonen.model import RaumConfig, RaumzonenModel, SensorConfig
+from custom_components.raumzonen.model import (
+    OeffnungConfig,
+    RaumConfig,
+    RaumzonenModel,
+    SensorConfig,
+)
 from custom_components.raumzonen.serialize import model_from_dict
 
 from .test_entity_source import sim_device
@@ -746,3 +751,65 @@ async def test_melder_typ_und_benutzte_radar_anzeige(
     alt = k[belegt.entity_id]
     assert (alt["angeboten"], alt["benutzt_von"]) == (False, "flur")
     assert alt["name"] != belegt.id
+
+
+async def test_melder_raum_in_radar_raum_umwandeln(
+    hass: HomeAssistant, loaded: MockConfigEntry, hass_ws_client
+) -> None:
+    """Melder-Raum mit Anzeigen eines FP400 wird Radar-Raum; Wände, Türen bleiben."""
+    mqtt_entry = MockConfigEntry(domain="mqtt")
+    mqtt_entry.add_to_hass(hass)
+    reg = er.async_get(hass)
+    radar = dr.async_get(hass).async_get_or_create(
+        config_entry_id=mqtt_entry.entry_id,
+        identifiers={("mqtt", "zigbee2mqtt_0xfuenf")},
+        name="Radar Stube",
+    )
+    reg.async_get_or_create(
+        "sensor", "mqtt", "0xfuenf_targets_xy_zigbee2mqtt", device_id=radar.id
+    )
+    belegt = reg.async_get_or_create(
+        "binary_sensor",
+        "mqtt",
+        "0xfuenf_occupancy_3_zigbee2mqtt",
+        device_id=radar.id,
+        original_device_class="occupancy",
+        original_name="Belegung",
+    )
+    model = loaded.runtime_data.store.model
+    model.raeume.append(
+        RaumConfig(
+            id="stube",
+            name="Stube",
+            art=RAUM_MELDER,
+            melder=[belegt.id],
+            sensor=SensorConfig(quelle=QUELLE_ENTITAET),
+            umriss=[[0.0, 0.0], [400.0, 0.0], [400.0, 300.0], [0.0, 300.0]],
+            oeffnungen=[OeffnungConfig(kante=0, von=50, bis=130, id="o1")],
+        )
+    )
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id({"type": f"{DOMAIN}/kandidaten/get"})
+    k = {m["entity_id"]: m for m in (await client.receive_json())["result"]["melder"]}
+    assert k[belegt.entity_id]["name"].endswith("(Bereich 3 des Sensors)")
+    assert k[belegt.entity_id]["device_id"] == radar.id
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/room/umwandeln", "raum_id": "stube", "device_id": radar.id}
+    )
+    msg = await client.receive_json()
+    assert msg["success"], msg
+    await hass.async_block_till_done()
+    raum = loaded.runtime_data.store.model.raum("stube")
+    assert (raum.ist_melder, raum.sensor.device_id, raum.melder) == (
+        False,
+        radar.id,
+        [],
+    )
+    assert [z.id for z in raum.zonen] == ["anwesenheit"]
+    assert raum.oeffnungen[0].id == "o1"
+    assert (raum.sensor.x, raum.sensor.y) == (200, 150)
+    # Zweimal geht nicht: der Raum hat jetzt einen Sensor.
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/room/umwandeln", "raum_id": "stube", "device_id": radar.id}
+    )
+    assert (await client.receive_json())["error"]["code"] == "invalid"
