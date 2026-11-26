@@ -52,12 +52,19 @@ export interface Oeffnung {
   anschlag?: "anfang" | "ende";
   /** Tür: geht in den Raum oder nach außen auf. */
   aufgehen?: "innen" | "aussen";
+  /** Wohin sie führt: Raum-ID, "aussen" oder leer (weiß nicht). */
+  fuehrt_zu?: string;
 }
 
 export interface Raum {
   id: string;
   name: string;
+  /** "radar" (FP400 mit Zonen) oder "melder" (nur Bewegungs-/Präsenzmelder). */
   art: string;
+  /** Nur Melder-Räume: Melder (feste Kennung im Entitätsregister). */
+  melder?: string[];
+  melder_nachlauf_s?: number;
+  bereich_id?: string;
   sensor: Sensor;
   zonen: Zone[];
   ansicht_winkel: number;
@@ -139,6 +146,23 @@ export interface Auswertung {
   zeilen: number;
   zonen: AuswertungZone[];
   figuren: AuswertungFigur[];
+}
+
+/** Was sich als Raum anlegen lässt (WebSocket ``raumzonen/kandidaten/get``). */
+export interface KandidatMelder {
+  id: string;
+  entity_id: string;
+  name: string;
+  klasse: string;
+  bereich_id: string | null;
+  benutzt_von: string | null;
+}
+
+export interface Kandidaten {
+  melder: KandidatMelder[];
+  fp400: { device_id: string; name: string; bereich_id: string | null; mqtt_topic: string; benutzt: boolean }[];
+  bereiche: { bereich_id: string; name: string }[];
+  vorschlaege: { bereich_id: string; name: string; melder: string[] }[];
 }
 
 export interface Hass {

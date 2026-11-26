@@ -120,8 +120,12 @@ class RaumzonenOptionsFlow(OptionsFlow):
         self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
         return self.async_create_entry(data={})
 
-    def _raum_options(self) -> list[dict[str, str]]:
-        return [{"value": r.id, "label": r.name} for r in self._model.raeume]
+    def _raum_options(self, radar: bool = False) -> list[dict[str, str]]:
+        return [
+            {"value": r.id, "label": r.name}
+            for r in self._model.raeume
+            if not (radar and r.ist_melder)
+        ]
 
     def _zone_options(self) -> list[dict[str, str]]:
         return [
@@ -224,7 +228,7 @@ class RaumzonenOptionsFlow(OptionsFlow):
         """Raum mit allen Zonen löschen."""
         if user_input is not None:
             model = copy.deepcopy(self._model)
-            model.raeume = [r for r in model.raeume if r.id != user_input["raum_id"]]
+            model.remove(user_input["raum_id"])
             return await self._async_save(model)
         return self.async_show_form(
             step_id="raum_loeschen",
@@ -257,7 +261,7 @@ class RaumzonenOptionsFlow(OptionsFlow):
             data_schema=vol.Schema(
                 {
                     vol.Required("raum_id"): SelectSelector(
-                        SelectSelectorConfig(options=self._raum_options())
+                        SelectSelectorConfig(options=self._raum_options(radar=True))
                     )
                 }
             ),

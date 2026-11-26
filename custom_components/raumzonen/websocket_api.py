@@ -29,6 +29,10 @@ Vertrag ``raumzonen/1`` (``vertrag.py``, ``api.py``):
   Stück. Nur Admins.
 * ``raumzonen/auswertung/get``: aus der Aufnahme der letzten Stunden: wer war
   wann in welcher Zone, feine Bewegungskarte je Figur. Nur Admins.
+* ``raumzonen/kandidaten/get``: was sich als Raum anlegen lässt (FP400-Geräte,
+  Bewegungs- und Präsenzmelder, Bereiche mit Meldern als Vorschlag). Nur Admins.
+* ``raumzonen/room/create``, ``raumzonen/room/delete``: Raum anlegen oder
+  löschen (Kopie, prüfen, speichern, neu laden). Nur Admins.
 """
 
 from __future__ import annotations
@@ -39,6 +43,11 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import (
+    area_registry as ar,
+    device_registry as dr,
+    entity_registry as er,
+)
 from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util, slugify
 import voluptuous as vol
@@ -49,15 +58,22 @@ from .const import (
     MAX_AUFNAHME_TAGE,
     MAX_BELEGT_NACH_S,
     MAX_FREI_NACH_S,
+    MAX_MELDER,
+    MAX_NACHLAUF_S,
     MAX_PERSONEN,
     MAX_RAND_CM,
     MAX_WEG_CM,
     MAX_WEG_RAHMEN,
     MAX_ZONEN_JE_RAUM,
+    MELDER_KLASSEN,
+    QUELLE_ENTITAET,
+    QUELLE_MQTT,
+    RAUM_MELDER,
+    RAUM_RADAR,
 )
 from .core.room import ZONE_ARTEN
-from .discovery import converter_zones
-from .model import REGEL_VORLAGEN
+from .discovery import converter_zones, find_fp400_entities, suggest_topic
+from .model import REGEL_VORLAGEN, RaumConfig, SensorConfig
 from .panel import async_reload_keep_panel
 from .serialize import (
     oeffnung_from_dict,
@@ -106,6 +122,9 @@ def async_register(hass: HomeAssistant) -> None:
         ws_v1_subscribe,
         ws_aufnahme_get,
         ws_auswertung_get,
+        ws_kandidaten_get,
+        ws_room_create,
+        ws_room_delete,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -136,6 +155,8 @@ def ws_rooms_get(
                 "max_personen": MAX_PERSONEN,
                 "zonen_je_raum": MAX_ZONEN_JE_RAUM,
                 "aufnahme_tage": MAX_AUFNAHME_TAGE,
+                "melder": MAX_MELDER,
+                "melder_nachlauf_s": MAX_NACHLAUF_S,
             },
         },
     )
@@ -182,9 +203,13 @@ ZONE_SCHEMA = vol.Schema(
                     vol.Required("art"): str,
                     vol.Optional("anschlag", default="anfang"): str,
                     vol.Optional("aufgehen", default="innen"): str,
+                    vol.Optional("fuehrt_zu", default=""): vol.Any(None, str),
                 }
             )
         ],
+        # Nur Melder-Räume
+        vol.Optional("melder"): [str],
+        vol.Optional("melder_nachlauf_s"): vol.Coerce(float),
     }
 )
 @websocket_api.require_admin
@@ -230,8 +255,13 @@ async def ws_room_save(
         if "umriss" in msg:
             raum.umriss = [list(p) for p in msg["umriss"]]
         if "oeffnungen" in msg:
-            raum.oeffnungen = [oeffnung_from_dict(o) for o in msg["oeffnungen"]]
-        for key in ("aufnahme", "aufnahme_tage"):
+            raum.oeffnungen = [
+                oeffnung_from_dict({**o, "fuehrt_zu": o.get("fuehrt_zu") or ""})
+                for o in msg["oeffnungen"]
+            ]
+        if "melder" in msg:
+            raum.melder = [_melder_key(hass, m) for m in msg["melder"]]
+        for key in ("aufnahme", "aufnahme_tage", "melder_nachlauf_s"):
             if key in msg:
                 setattr(raum, key, msg[key])
         model.validate()
@@ -361,7 +391,9 @@ def ws_converter_zones(
             vol.Schema(
                 {
                     vol.Required("raum_id"): str,
-                    vol.Required("zone_id"): str,
+                    # Tür-Zone (Radar-Räume) oder Öffnung in der Wand (Index).
+                    vol.Exclusive("zone_id", "tuer"): str,
+                    vol.Exclusive("oeffnung", "tuer"): int,
                     vol.Required("fuehrt_zu"): vol.Any(None, str),
                 }
             )
@@ -389,10 +421,17 @@ async def ws_haus_save(
             raum.haus_winkel = 180.0 if winkel == -180 else winkel
             raum.haus_gesetzt = True
         for tuer in msg["tueren"]:
-            zone = next(
-                z for z in model.raum(tuer["raum_id"]).zonen if z.id == tuer["zone_id"]
-            )
-            zone.fuehrt_zu = tuer["fuehrt_zu"] or ""
+            raum = model.raum(tuer["raum_id"])
+            ziel = tuer["fuehrt_zu"] or ""
+            if "oeffnung" in tuer:
+                if not 0 <= tuer["oeffnung"] < len(raum.oeffnungen):
+                    raise KeyError(tuer["oeffnung"])
+                raum.oeffnungen[tuer["oeffnung"]].fuehrt_zu = ziel
+            elif "zone_id" in tuer:
+                zone = next(z for z in raum.zonen if z.id == tuer["zone_id"])
+                zone.fuehrt_zu = ziel
+            else:
+                raise KeyError("tuer")
         model.validate()
     except KeyError, StopIteration:
         connection.send_error(msg["id"], "not_found", "Raum oder Tür nicht gefunden")
@@ -533,3 +572,207 @@ async def ws_auswertung_get(
     result["stunden"] = stunden
     controller.auswertung_cache[stunden] = (now, result)
     connection.send_result(msg["id"], result)
+
+
+# -- Räume anlegen und löschen ---------------------------------------------------
+
+
+def _melder_key(hass: HomeAssistant, value: str) -> str:
+    """Feste Kennung im Entitätsregister (überlebt Umbenennen), sonst entity_id."""
+    entry = er.async_get(hass).async_get(value)
+    return entry.id if entry is not None else value
+
+
+def _area_of(entry: er.RegistryEntry, devices: dr.DeviceRegistry) -> str | None:
+    if entry.area_id:
+        return entry.area_id
+    if entry.device_id and (device := devices.async_get(entry.device_id)):
+        return device.area_id
+    return None
+
+
+def kandidaten(hass: HomeAssistant, raeume: list[RaumConfig]) -> dict[str, Any]:
+    """Was sich als Raum anlegen lässt; bereits benutzte Melder sind markiert."""
+    entities = er.async_get(hass)
+    devices = dr.async_get(hass)
+    areas = ar.async_get(hass)
+    benutzt: dict[str, str] = {}
+    for raum in raeume:
+        for key in raum.melder:
+            benutzt[key] = raum.id
+    geraete_benutzt = {r.sensor.device_id for r in raeume if not r.ist_melder}
+    melder = []
+    for entry in entities.entities.values():
+        if entry.domain != "binary_sensor" or entry.disabled_by is not None:
+            continue
+        klasse = entry.device_class or entry.original_device_class
+        if klasse not in MELDER_KLASSEN:
+            continue
+        if entry.platform == DOMAIN:
+            continue  # eigene Entitäten nicht als Melder anbieten
+        state = hass.states.get(entry.entity_id)
+        melder.append(
+            {
+                "id": entry.id,
+                "entity_id": entry.entity_id,
+                "name": (state.name if state else None)
+                or entry.name
+                or entry.original_name
+                or entry.entity_id,
+                "klasse": klasse,
+                "bereich_id": _area_of(entry, devices),
+                "benutzt_von": benutzt.get(entry.id) or benutzt.get(entry.entity_id),
+            }
+        )
+    melder.sort(key=lambda m: (m["bereich_id"] or "~", m["name"]))
+    fp400 = []
+    for device in devices.devices.values():
+        found = find_fp400_entities(hass, device.id)
+        if found.targets_xy is None and found.last_update is None:
+            continue
+        fp400.append(
+            {
+                "device_id": device.id,
+                "name": device.name_by_user or device.name or device.id,
+                "bereich_id": device.area_id,
+                "mqtt_topic": suggest_topic(hass, device.id),
+                "benutzt": device.id in geraete_benutzt,
+            }
+        )
+    bereiche = [
+        {"bereich_id": a.id, "name": a.name}
+        for a in sorted(areas.async_list_areas(), key=lambda a: a.name)
+    ]
+    raum_bereiche = {r.bereich_id for r in raeume if r.bereich_id}
+    vorschlaege = []
+    for b in bereiche:
+        if b["bereich_id"] in raum_bereiche:
+            continue
+        frei = [
+            m["id"]
+            for m in melder
+            if m["bereich_id"] == b["bereich_id"] and not m["benutzt_von"]
+        ]
+        if frei:
+            vorschlaege.append({**b, "melder": frei[:MAX_MELDER]})
+    return {
+        "melder": melder,
+        "fp400": fp400,
+        "bereiche": bereiche,
+        "vorschlaege": vorschlaege,
+    }
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/kandidaten/get"})
+@websocket_api.require_admin
+@callback
+def ws_kandidaten_get(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Geräte, Melder und Bereiche, aus denen sich Räume anlegen lassen."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Raumzonen ist nicht geladen")
+        return
+    connection.send_result(
+        msg["id"], kandidaten(hass, entry.runtime_data.store.model.raeume)
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/room/create",
+        vol.Required("name"): vol.All(str, vol.Length(min=1, max=60)),
+        vol.Required("art"): vol.In((RAUM_RADAR, RAUM_MELDER)),
+        vol.Optional("bereich_id"): vol.Any(None, str),
+        # Melder-Raum
+        vol.Optional("melder"): [str],
+        # Radar-Raum
+        vol.Optional("device_id"): str,
+        vol.Optional("quelle"): vol.In((QUELLE_MQTT, QUELLE_ENTITAET)),
+        vol.Optional("mqtt_topic"): str,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_room_create(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Neuen Raum anlegen: Kopie, prüfen, speichern, neu laden."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Raumzonen ist nicht geladen")
+        return
+    store = entry.runtime_data.store
+    model = copy.deepcopy(store.model)
+    name = msg["name"].strip()
+    raum_id = _new_id(name, {r.id for r in model.raeume})
+    bereich = msg.get("bereich_id") or ""
+    if bereich and ar.async_get(hass).async_get_area(bereich) is None:
+        connection.send_error(msg["id"], "invalid", "Bereich nicht gefunden")
+        return
+    if msg["art"] == RAUM_MELDER:
+        raum = RaumConfig(
+            id=raum_id,
+            name=name,
+            art=RAUM_MELDER,
+            bereich_id=bereich,
+            melder=[_melder_key(hass, m) for m in msg.get("melder", [])],
+            # Sensor gibt es nicht; die Quelle muss trotzdem gültig sein.
+            sensor=SensorConfig(quelle=QUELLE_ENTITAET),
+        )
+    else:
+        device_id = msg.get("device_id", "")
+        if dr.async_get(hass).async_get(device_id) is None:
+            connection.send_error(msg["id"], "invalid", "Gerät nicht gefunden")
+            return
+        quelle = msg.get("quelle", QUELLE_MQTT)
+        topic = msg.get("mqtt_topic") or suggest_topic(hass, device_id)
+        raum = RaumConfig(
+            id=raum_id,
+            name=name,
+            bereich_id=bereich,
+            sensor=SensorConfig(
+                device_id=device_id,
+                quelle=quelle,
+                mqtt_topic=topic if quelle == QUELLE_MQTT else "",
+            ),
+        )
+    model.raeume.append(raum)
+    try:
+        model.validate()
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid", str(err))
+        return
+    store.model = model
+    await store.async_save()
+    async_reload_keep_panel(hass, entry.entry_id)
+    connection.send_result(msg["id"], {"raum": raum_to_dict(raum)})
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/room/delete", vol.Required("raum_id"): str}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_room_delete(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Raum mit Zonen löschen (das Panel fragt vorher nach)."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Raumzonen ist nicht geladen")
+        return
+    store = entry.runtime_data.store
+    model = copy.deepcopy(store.model)
+    try:
+        model.raum(msg["raum_id"])
+    except KeyError:
+        connection.send_error(msg["id"], "not_found", "Raum nicht gefunden")
+        return
+    model.remove(msg["raum_id"])
+    model.validate()
+    store.model = model
+    await store.async_save()
+    async_reload_keep_panel(hass, entry.entry_id)
+    connection.send_result(msg["id"])

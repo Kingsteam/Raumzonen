@@ -72,6 +72,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: RaumzonenConfigEntry) ->
         entry_type=dr.DeviceEntryType.SERVICE,
     )
     data.main_device_id = main.id
+    # Geräte gelöschter Räume entfernen (samt ihren Entitäten).
+    keys = {room_device_key(entry.entry_id, r.id) for r in store.model.raeume}
+    for device in dr.async_entries_for_config_entry(registry, entry.entry_id):
+        ids = {i for d, i in device.identifiers if d == DOMAIN}
+        if ids and entry.entry_id not in ids and not ids & keys:
+            registry.async_remove_device(device.id)
     for raum in store.model.raeume:
         registry.async_get_or_create(
             config_entry_id=entry.entry_id,

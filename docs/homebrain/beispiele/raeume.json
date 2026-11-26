@@ -5,6 +5,7 @@
     "bereich_id": null,
     "art": "radar",
     "haus": null,
+    "melder": [],
     "sensor": {
       "device_id": "geraet1",
       "quelle": "mqtt",

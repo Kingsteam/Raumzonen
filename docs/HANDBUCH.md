@@ -58,6 +58,31 @@ Raum gehen; rot wird, wo der Sensor jemanden gesehen hat.
 
 ![Sensor und Raum](bilder/02-sensor.png)
 
+### Räume anlegen, auch nur mit Bewegungsmeldern
+
+Im Hausplan (oben **Haus**) unter **Raum hinzufügen** (nur Admins):
+
+* **Aus Home Assistant übernehmen:** Bereiche, in denen Bewegungs- oder
+  Präsenzmelder hängen, stehen als Vorschlag da. Ein Klick legt den Raum mit
+  diesen Meldern an.
+* **Selbst anlegen:** Name, Art (Bewegungsmelder oder Radarsensor FP400),
+  Melder oder Gerät wählen, optional den Bereich.
+
+Ein **Melder-Raum** zeigt nur „jemand da“ oder „niemand“, ohne Positionen
+und ohne Zonen. In Home Assistant entsteht je Raum „Anwesenheit“. Unter
+„Melder und Raum“ lassen sich Melder hinzufügen oder entfernen und ein
+**Nachlauf** einstellen (so lange bleibt der Raum belegt, nachdem alle
+Melder „aus“ melden). Wände und Türen zeichnet man wie bei jedem Raum; im
+Hausplan stellt man bei jeder Tür ein, wohin sie führt.
+
+**Bewegungsprofil** (unten im Hausplan): für jeden Raum, wann dort jemand
+war, und die letzten Wechsel von Raum zu Raum. Welche Person es war, weiß
+Raumzonen noch nicht; das ist der nächste Schritt.
+
+Ein Raum lässt sich unter „Sensor und Raum“ bzw. „Melder und Raum“ ganz
+unten **löschen** (mit Rückfrage). Seine Anzeigen in Home Assistant
+verschwinden dann; Automationen, die sie benutzen, gehen nicht mehr.
+
 ### Auswertung: wer war wann wo
 
 Reiter **Auswertung** (nur für Admins). Oben den Zeitraum wählen: die

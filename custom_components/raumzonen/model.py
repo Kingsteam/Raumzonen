@@ -1,8 +1,11 @@
 """Gespeichertes Modell: Räume, Sensoren, Zonen und ihre Regeln.
 
-Räume werden einzeln eingerichtet; jeder Raum hat (vorerst) einen Sensor.
-Bezüge auf Geräte laufen über die ``device_id`` aus dem Geräteregister,
-nie über ``entity_id`` (die lässt sich umbenennen).
+Räume werden einzeln eingerichtet. Ein Radar-Raum hat einen Sensor (FP400)
+mit Zonen; ein Melder-Raum liest einen oder mehrere Bewegungs- oder
+Präsenzmelder und hat genau eine Zone, den ganzen Raum. Bezüge auf Geräte
+laufen über die ``device_id`` aus dem Geräteregister, auf Melder über die
+feste Kennung im Entitätsregister, nie über die ``entity_id`` (die lässt
+sich umbenennen).
 
 ``validate()`` prüft IDs, Bezüge, Formen und Grenzen (``const.py``).
 ``build_room()`` macht aus einem gespeicherten Raum die Rechenlogik
@@ -26,6 +29,8 @@ from .const import (
     MAX_ECKEN,
     MAX_FREI_NACH_S,
     MAX_KOORDINATE_CM,
+    MAX_MELDER,
+    MAX_NACHLAUF_S,
     MAX_PERSONEN,
     MAX_RAND_CM,
     MAX_REICHWEITE_CM,
@@ -33,10 +38,12 @@ from .const import (
     MAX_WEG_RAHMEN,
     MAX_ZELLE_CM,
     MAX_ZONEN_JE_RAUM,
+    MELDER_ZONE_ID,
     MIN_ZELLE_CM,
     QUELLE_MQTT,
     QUELLEN,
     RAUM_ARTEN,
+    RAUM_MELDER,
     RAUM_RADAR,
     SENSOR_ARTEN,
     SENSOR_FP400_Z2M,
@@ -143,6 +150,8 @@ class OeffnungConfig:
     art: str = "tuer"
     anschlag: str = "anfang"
     aufgehen: str = "innen"
+    # Wohin sie führt: Raum-ID, „aussen“ oder leer (weiß nicht).
+    fuehrt_zu: str = ""
 
 
 @dataclass(slots=True)
@@ -171,6 +180,16 @@ class RaumConfig:
     # Eigene Aufnahme der Rohpositionen und Spuren.
     aufnahme: bool = True
     aufnahme_tage: int = DEFAULT_AUFNAHME_TAGE
+    # Nur Melder-Räume: Kennungen der Melder im Entitätsregister.
+    melder: list[str] = field(default_factory=list)
+    # Nur Melder-Räume: so lange bleibt der Raum belegt, nachdem alle Melder
+    # „aus“ melden (zusätzlich zu ihrer eigenen Nachlaufzeit).
+    melder_nachlauf_s: float = 0.0
+
+    @property
+    def ist_melder(self) -> bool:
+        """Raum nur mit Bewegungs-/Präsenzmeldern."""
+        return self.art == RAUM_MELDER
 
 
 @dataclass(slots=True)
@@ -186,6 +205,17 @@ class RaumzonenModel:
                 return raum
         raise KeyError(raum_id)
 
+    def remove(self, raum_id: str) -> None:
+        """Raum löschen; Türen, die dorthin führten, zeigen danach nirgendwohin."""
+        self.raeume = [r for r in self.raeume if r.id != raum_id]
+        for raum in self.raeume:
+            for zone in raum.zonen:
+                if zone.fuehrt_zu == raum_id:
+                    zone.fuehrt_zu = ""
+            for o in raum.oeffnungen:
+                if o.fuehrt_zu == raum_id:
+                    o.fuehrt_zu = ""
+
     def validate(self) -> None:
         """Prüft das ganze Modell; wirft ``ValueError`` mit Klartext."""
         _unique("Raum", [r.id for r in self.raeume])
@@ -199,7 +229,12 @@ class RaumzonenModel:
                 )
             if raum.art not in RAUM_ARTEN:
                 raise ValueError(f"Raum {raum.id}: unbekannte Art {raum.art!r}")
-            _check_sensor(raum.id, raum.sensor)
+            if raum.ist_melder:
+                _check_melder(raum)
+            else:
+                _check_sensor(raum.id, raum.sensor)
+                if raum.melder:
+                    raise ValueError(f"Raum {raum.id}: Melder nur bei Melder-Räumen")
             for name in ("haus_x", "haus_y"):
                 _range(name, getattr(raum, name), -100_000, 100_000)
             _range("haus_winkel", raum.haus_winkel, -180, 180)
@@ -209,7 +244,7 @@ class RaumzonenModel:
                 _check_form(
                     f"{raum.id} (Umriss)", {"art": "vieleck", "punkte": raum.umriss}
                 )
-            _check_oeffnungen(raum)
+            _check_oeffnungen(raum, {r.id for r in self.raeume})
             if len(raum.zonen) > MAX_ZONEN_JE_RAUM:
                 raise ValueError(f"Raum {raum.id}: höchstens {MAX_ZONEN_JE_RAUM} Zonen")
             _unique(f"Zone in {raum.id}", [z.id for z in raum.zonen])
@@ -222,19 +257,35 @@ class RaumzonenModel:
                 if zone.fuehrt_zu:
                     if zone.art != ART_AUSGANG:
                         raise ValueError(f"Zone {zone.id}: „führt zu“ nur bei Türen")
-                    raum_ids = {r.id for r in self.raeume}
-                    if zone.fuehrt_zu != FUEHRT_ZU_AUSSEN and (
-                        zone.fuehrt_zu not in raum_ids or zone.fuehrt_zu == raum.id
-                    ):
-                        raise ValueError(
-                            f"Zone {zone.id}: unbekannter Raum {zone.fuehrt_zu!r}"
-                        )
+                    _check_ziel(
+                        f"Zone {zone.id}",
+                        zone.fuehrt_zu,
+                        raum.id,
+                        {r.id for r in self.raeume},
+                    )
                 zone.regel.validate()
                 _check_form(zone.id, zone.form)
 
 
+def melder_zone(raum: RaumConfig) -> Zone:
+    """Die eine Zone eines Melder-Raums: der ganze Raum."""
+    if len(raum.umriss) >= 3:
+        shape = Polygon([(x, y) for x, y in raum.umriss])
+    else:
+        shape = Polygon([(-500, -500), (500, -500), (500, 500), (-500, 500)])
+    return Zone(
+        id=MELDER_ZONE_ID,
+        name="Anwesenheit",
+        shape=shape,
+        art=ART_NORMAL,
+        rule=ZoneRule(belegt_nach_s=0.0, frei_nach_s=raum.melder_nachlauf_s, rand_cm=0),
+    )
+
+
 def build_room(raum: RaumConfig) -> Room:
     """Rechenlogik für einen gespeicherten Raum."""
+    if raum.ist_melder:
+        return Room([melder_zone(raum)])
     return Room(
         Zone(
             id=z.id,
@@ -272,7 +323,25 @@ def regel_vorlage(name: str) -> RegelConfig:
     return dataclasses.replace(REGEL_VORLAGEN[name])
 
 
-def _check_oeffnungen(raum: RaumConfig) -> None:
+def _check_melder(raum: RaumConfig) -> None:
+    if not raum.melder:
+        raise ValueError(f"Raum {raum.id}: mindestens ein Melder")
+    if len(raum.melder) > MAX_MELDER:
+        raise ValueError(f"Raum {raum.id}: höchstens {MAX_MELDER} Melder")
+    _unique(f"Melder in {raum.id}", raum.melder)
+    if any(not isinstance(m, str) or not m or len(m) > 255 for m in raum.melder):
+        raise ValueError(f"Raum {raum.id}: Melder ungültig")
+    if raum.zonen:
+        raise ValueError(f"Raum {raum.id}: Melder-Räume haben keine eigenen Zonen")
+    _range("melder_nachlauf_s", raum.melder_nachlauf_s, 0, MAX_NACHLAUF_S)
+
+
+def _check_ziel(was: str, ziel: str, raum_id: str, raum_ids: set[str]) -> None:
+    if ziel and ziel != FUEHRT_ZU_AUSSEN and (ziel not in raum_ids or ziel == raum_id):
+        raise ValueError(f"{was}: unbekannter Raum {ziel!r}")
+
+
+def _check_oeffnungen(raum: RaumConfig, raum_ids: set[str]) -> None:
     n = len(raum.umriss)
     if raum.oeffnungen and n < 3:
         raise ValueError(f"Raum {raum.id}: Öffnungen brauchen Wände")
@@ -289,6 +358,7 @@ def _check_oeffnungen(raum: RaumConfig) -> None:
         laenge = math.hypot(x2 - x1, y2 - y1)
         if not (0 <= o.von < o.bis <= laenge + 0.5):
             raise ValueError(f"Raum {raum.id}: Öffnung liegt nicht auf der Wand")
+        _check_ziel(f"Raum {raum.id} (Öffnung)", o.fuehrt_zu, raum.id, raum_ids)
 
 
 def _check_sensor(raum_id: str, sensor: SensorConfig) -> None:

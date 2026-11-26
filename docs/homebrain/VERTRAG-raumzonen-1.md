@@ -80,12 +80,13 @@ Nach `geladen` am besten eine neue Momentaufnahme holen.
 
 | Feld | Bedeutung |
 |---|---|
-| `raum_id`, `name`, `art` | Raum; `art` `radar` |
+| `raum_id`, `name`, `art` | Raum; `art` `radar` (FP400 mit Zonen und Spuren) oder ab 0.8.0 `melder` (nur Bewegungs-/Präsenzmelder: eine Zone `anwesenheit` = ganzer Raum, keine Spuren, keine Positionen) |
+| `melder` | ab 0.8.0, nur bei `art` `melder`: `entity_id` der Melder (leer bei Radar-Räumen) |
 | `bereich_id` | Bereich in Home Assistant, falls zugeordnet, sonst `null` |
 | `haus` | Lage des Raums im Hausplan: `x`, `y` (cm), `winkel` (Grad); `null`, solange nicht gesetzt (ab 0.5.0 im Panel unter „Haus“ einstellbar) |
 | `sensor` | `device_id`, `quelle` (`mqtt`/`entitaet`), `lage` (`x`, `y`, `winkel` im Raum), `reichweite_cm`, `oeffnung_grad` |
 | `umriss` | Wände als Punkte im Raum (cm), leer = nicht gezeichnet |
-| `oeffnungen` | ab 0.6.0: Türen und offene Stellen in den Wänden: `kante` (Wand von Ecke `kante` zu `kante`+1), `von`/`bis` (cm ab dieser Ecke), `art` `tuer` oder `offen`; ab 0.6.2 bei Türen `anschlag` (`anfang`/`ende`: Scharnier an welcher Seite) und `aufgehen` (`innen`/`aussen`). Nur Zeichnung; Übergänge erkennt Raumzonen an Zonen der Art `ausgang` |
+| `oeffnungen` | ab 0.6.0: Türen und offene Stellen in den Wänden: `kante` (Wand von Ecke `kante` zu `kante`+1), `von`/`bis` (cm ab dieser Ecke), `art` `tuer` oder `offen`; ab 0.6.2 bei Türen `anschlag` (`anfang`/`ende`: Scharnier an welcher Seite) und `aufgehen` (`innen`/`aussen`); ab 0.8.0 `fuehrt_zu` wie bei `raender`. Nur Zeichnung; „betreten/verlassen“ erkennt Raumzonen an Zonen der Art `ausgang` |
 | `zonen` | alle Zonen: `zone_id`, `name`, `art`, `form` |
 | `raender` | Türen (`art` `ausgang`): `rand_id`, `name`, `form`, `fuehrt_zu` |
 | `stellen` | Stellen (`art` `stelle` oder `hundeplatz`): `stelle_id`, `name`, `art`, `form` |

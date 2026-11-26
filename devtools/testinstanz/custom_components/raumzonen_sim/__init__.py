@@ -7,7 +7,8 @@ erfundene Szene) in einer Schleife ab, über dieselben Entitäten wie der erweit
 gekürzt, damit es im Panel etwas zu sehen gibt.
 
 Dazu ein zweiter Sensor „Simulierter FP400 Flur“: eine erfundene Figur geht
-den Flur entlang und wieder zurück (für den Hausplan mit zwei Räumen).
+den Flur entlang und wieder zurück (für den Hausplan mit zwei Räumen), und
+zwei Bewegungsmelder (Küche, Bad) für Räume nur mit Meldern.
 """
 
 from __future__ import annotations
@@ -29,7 +30,7 @@ from homeassistant.helpers.typing import ConfigType
 DOMAIN = "raumzonen_sim"
 SIGNAL = f"{DOMAIN}_frame"
 CONFIG_SCHEMA = cv.empty_config_schema(DOMAIN)
-PLATFORMS = [Platform.SENSOR, Platform.TEXT]
+PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR, Platform.TEXT]
 DATEN = Path(__file__).resolve().parents[4] / "tests" / "daten"
 # Ausschnitt um jedes Aufstehen: so viele Sekunden davor und danach.
 VORHER_S = 90.0

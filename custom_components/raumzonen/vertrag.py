@@ -29,6 +29,7 @@ from .core.room import (
     TAG_WIEDERHERGESTELLT,
 )
 from .core.tracks import HELD, Track
+from .model import melder_zone
 
 if TYPE_CHECKING:
     from .controller import RoomController
@@ -43,11 +44,24 @@ def _iso(ts: float | None) -> str | None:
     return None if ts is None else dt_util.utc_from_timestamp(ts).isoformat()
 
 
-def raum_info(raum: RaumConfig) -> dict[str, Any]:
-    """Aufbau eines Raums: Lage im Haus, Sensor, Zonen, Türen, Stellen."""
+def raum_info(raum: RaumConfig, melder: list[str] | None = None) -> dict[str, Any]:
+    """Aufbau eines Raums: Lage im Haus, Sensor, Zonen, Türen, Stellen.
+
+    ``melder``: aktuelle ``entity_id`` der Melder eines Melder-Raums.
+    """
     zonen = []
     raender = []
     stellen = []
+    if raum.ist_melder:
+        z = melder_zone(raum)
+        zonen.append(
+            {
+                "zone_id": z.id,
+                "name": z.name,
+                "art": z.art,
+                "form": {"art": "vieleck", "punkte": [list(p) for p in z.shape.points]},
+            }
+        )
     for zone in raum.zonen:
         zonen.append(
             {"zone_id": zone.id, "name": zone.name, "art": zone.art, "form": zone.form}
@@ -81,6 +95,8 @@ def raum_info(raum: RaumConfig) -> dict[str, Any]:
         "haus": {"x": raum.haus_x, "y": raum.haus_y, "winkel": raum.haus_winkel}
         if raum.haus_gesetzt
         else None,
+        # Nur Melder-Räume: welche Melder (entity_id, sonst None = weiß nicht).
+        "melder": list(melder or []),
         "sensor": {
             "device_id": s.device_id or None,
             "quelle": s.quelle,
@@ -99,6 +115,7 @@ def raum_info(raum: RaumConfig) -> dict[str, Any]:
                 "art": o.art,
                 "anschlag": o.anschlag,
                 "aufgehen": o.aufgehen,
+                "fuehrt_zu": o.fuehrt_zu or None,
             }
             for o in raum.oeffnungen
         ],
@@ -202,7 +219,12 @@ def spur_status(c: RoomController, t: Track, now: float) -> dict[str, Any]:
 
 
 def spuren(c: RoomController) -> list[dict[str, Any]]:
-    """Alle Spuren eines Raums (ohne Platzhalter nach dem Neustart)."""
+    """Alle Spuren eines Raums (ohne Platzhalter nach dem Neustart).
+
+    Melder-Räume haben keine Positionen, darum keine Spuren.
+    """
+    if c.raum.ist_melder:
+        return []
     now = dt_util.utcnow().timestamp()
     return [
         spur_status(c, t, now)

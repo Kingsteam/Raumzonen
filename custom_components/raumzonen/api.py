@@ -111,7 +111,15 @@ class RaumzonenApi:
     @callback
     def raeume(self) -> list[dict[str, Any]]:
         """Aufbau aller Räume."""
-        return [vertrag.raum_info(r) for r in self._raeume]
+        return [
+            vertrag.raum_info(
+                r,
+                self._controllers[r.id].melder_entities()
+                if r.id in self._controllers and r.ist_melder
+                else None,
+            )
+            for r in self._raeume
+        ]
 
     @callback
     def momentaufnahme(self, raum_id: str | None = None) -> dict[str, Any]:

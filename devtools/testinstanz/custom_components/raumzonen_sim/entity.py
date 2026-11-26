@@ -7,7 +7,13 @@ from homeassistant.helpers.entity import Entity
 
 from . import DOMAIN
 
-NAMEN = {"fp400": "Simulierter FP400", "fp400_flur": "Simulierter FP400 Flur"}
+NAMEN = {
+    "fp400": "Simulierter FP400",
+    "fp400_flur": "Simulierter FP400 Flur",
+    "melder_kueche": "Simulierter Melder Küche",
+    "melder_bad": "Simulierter Melder Bad",
+}
+BEREICHE = {"melder_kueche": "Küche", "melder_bad": "Bad"}
 
 
 def device(key: str) -> DeviceInfo:
@@ -15,7 +21,8 @@ def device(key: str) -> DeviceInfo:
         identifiers={(DOMAIN, key)},
         name=NAMEN[key],
         manufacturer="Aqara",
-        model="FP400 (Simulation)",
+        model="Melder (Simulation)" if key in BEREICHE else "FP400 (Simulation)",
+        suggested_area=BEREICHE.get(key),
     )
 
 

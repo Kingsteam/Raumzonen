@@ -19,9 +19,32 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
   - WebSocket `raumzonen/auswertung/get`; ein ganzer Tag ist in wenigen
     Sekunden gerechnet, das Ergebnis wird eine Minute lang wiederverwendet.
 
+- Räume nur mit Bewegungs- oder Präsenzmeldern (Raumart „Melder“): ein
+  oder mehrere Melder aus Home Assistant, Anzeige „Anwesenheit“ je Raum,
+  Nachlauf einstellbar. Die Figur verschwindet nicht plötzlich: Haltezeit
+  wie bei jeder Figur; sind alle Melder nicht erreichbar, bleibt der letzte
+  Stand. Gespeichert wird die feste Kennung der Melder, Umbenennen schadet
+  nicht.
+- Räume im Panel anlegen (Hausplan → „Raum hinzufügen“): Bereiche aus Home
+  Assistant mit Meldern übernehmen, oder selbst mit Meldern oder einem FP400.
+  Räume im Panel löschen (mit Rückfrage); Türen, die dorthin führten, zeigen
+  danach auf „weiß nicht“.
+- Türen in den Wänden bekommen „führt zu“ (im Hausplan einstellbar), damit
+  auch Melder-Räume verbunden werden können; im Vertrag `raumzonen/1` die
+  Felder `melder` je Raum und `fuehrt_zu` je Öffnung, `art` jetzt auch
+  `melder`.
+- Bewegungsprofil im Hausplan (nur Admins): je Raum eine Zeitleiste der
+  letzten 1 bis 24 Stunden und die letzten Wechsel zwischen Räumen.
+- WebSocket `kandidaten/get`, `room/create`, `room/delete`.
+
 ### Geändert
 
 - Die Bewegungskarte unter „Ebenen“ zeigt ebenfalls weiche Flecken.
+
+### Behoben
+
+- Raum löschen im Options-Flow scheiterte, wenn eine Tür eines anderen
+  Raums dorthin führte; Geräte gelöschter Räume bleiben nicht mehr liegen.
 
 ## [0.7.0] - 2026-11-26
 

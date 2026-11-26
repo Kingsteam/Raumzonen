@@ -32,10 +32,18 @@ DEFAULT_REICHWEITE_CM: Final = 600.0
 DEFAULT_OEFFNUNG_GRAD: Final = 120.0
 MAX_REICHWEITE_CM: Final = 1500.0
 
-# Arten von Räumen. Bisher nur mit Radarsensor; „nur Bewegungsmelder“
-# (Pseudoräume im Hausplan) folgt in Phase 4.
+# Arten von Räumen: mit Radarsensor (Positionen, Zonen) oder nur mit
+# Bewegungs-/Präsenzmeldern aus Home Assistant (belegt ja/nein, für den
+# Hausplan und das Bewegungsprofil des ganzen Hauses).
 RAUM_RADAR: Final = "radar"
-RAUM_ARTEN: Final = (RAUM_RADAR,)
+RAUM_MELDER: Final = "melder"
+RAUM_ARTEN: Final = (RAUM_RADAR, RAUM_MELDER)
+# Ein Melder-Raum hat genau eine Zone: der ganze Raum.
+MELDER_ZONE_ID: Final = "anwesenheit"
+MAX_MELDER: Final = 10
+MAX_NACHLAUF_S: Final = 3600.0
+# Diese Arten von Binärsensoren gelten als Melder.
+MELDER_KLASSEN: Final = ("motion", "occupancy", "presence")
 
 # Türen (Zonen der Art „ausgang“) führen in einen anderen Raum oder nach außen.
 FUEHRT_ZU_AUSSEN: Final = "aussen"

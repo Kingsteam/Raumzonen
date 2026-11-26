@@ -105,6 +105,8 @@ def raum_from_dict(data: dict[str, Any]) -> RaumConfig:
         haus_gesetzt=bool(data.get("haus_gesetzt", False)),
         aufnahme=bool(data.get("aufnahme", True)),
         aufnahme_tage=int(data.get("aufnahme_tage", DEFAULT_AUFNAHME_TAGE)),
+        melder=[str(m) for m in data.get("melder", [])],
+        melder_nachlauf_s=float(data.get("melder_nachlauf_s", 0.0)),
     )
 
 
@@ -117,6 +119,7 @@ def oeffnung_from_dict(data: dict[str, Any]) -> OeffnungConfig:
         art=str(data.get("art", "tuer")),
         anschlag=str(data.get("anschlag", "anfang")),
         aufgehen=str(data.get("aufgehen", "innen")),
+        fuehrt_zu=str(data.get("fuehrt_zu", "")),
     )
 
 
@@ -129,6 +132,7 @@ def oeffnung_to_dict(o: OeffnungConfig) -> dict[str, Any]:
         "art": o.art,
         "anschlag": o.anschlag,
         "aufgehen": o.aufgehen,
+        "fuehrt_zu": o.fuehrt_zu,
     }
 
 
@@ -160,6 +164,8 @@ def raum_to_dict(raum: RaumConfig) -> dict[str, Any]:
         "haus_gesetzt": raum.haus_gesetzt,
         "aufnahme": raum.aufnahme,
         "aufnahme_tage": raum.aufnahme_tage,
+        "melder": list(raum.melder),
+        "melder_nachlauf_s": raum.melder_nachlauf_s,
     }
 
 

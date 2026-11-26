@@ -352,6 +352,10 @@ export const styles = css`
     background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
     color: var(--muted);
   }
+  .badge.unreachable {
+    outline: 2px dashed var(--state-inactive-color, #b3aa9c);
+    outline-offset: -2px;
+  }
   .badge.new {
     background: color-mix(in srgb, var(--accent) 18%, transparent);
     color: var(--accent);
@@ -560,6 +564,30 @@ export const styles = css`
   }
   .floor {
     fill: color-mix(in srgb, var(--card) 75%, transparent);
+  }
+  .floor.belegt {
+    fill: color-mix(in srgb, var(--rz-bereich) 22%, var(--card));
+  }
+  /* Raum hinzufügen */
+  .neu-raum {
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 12px 12px;
+    margin: 8px 0 12px;
+  }
+  .melder-liste {
+    list-style: none;
+    margin: 4px 0;
+    padding: 0;
+    max-height: 260px;
+    overflow: auto;
+  }
+  .melder-liste .check {
+    margin: 4px 0;
+  }
+  .melder-liste small {
+    color: var(--muted);
+    display: block;
   }
   .wall {
     fill: none;

@@ -22,6 +22,8 @@ async def async_setup_entry(
     """Je Zone „Personen“, je Raum „Figuren“."""
     entities: list[RaumzonenEntity] = []
     for controller in entry.runtime_data.controllers.values():
+        if controller.raum.ist_melder:
+            continue  # nur „belegt“, Personen weiß ein Melder nicht
         entities.append(RoomFigures(entry.entry_id, controller))
         entities += [
             ZonePeople(entry.entry_id, controller, zone_id)

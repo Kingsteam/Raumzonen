@@ -10,6 +10,10 @@ Quellen der Rahmen:
   Verfügbarkeit über ``<thema>/availability``.
 * **Entitäten**: ``sensor.*_targets_xy`` und ``sensor.*_tracking_last_update``
   des Geräts; jede neue Zeit in ``tracking_last_update`` ist ein Rahmen.
+* **Melder** (Melder-Räume): Bewegungs- oder Präsenzmelder aus Home
+  Assistant. Meldet einer „an“, steht eine Figur in der Raummitte; melden
+  alle „aus“, ist sie weg (mit Haltezeit und Nachlauf wie jede Figur). Sind
+  alle Melder nicht erreichbar, gilt der Raum als ohne Sensor (nichts endet).
 """
 
 from __future__ import annotations
@@ -20,7 +24,7 @@ import json
 from typing import Any
 
 from homeassistant.components import mqtt
-from homeassistant.const import STATE_UNAVAILABLE
+from homeassistant.const import STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import (
     CALLBACK_TYPE,
     Event,
@@ -28,6 +32,7 @@ from homeassistant.core import (
     HomeAssistant,
     callback,
 )
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import (
     async_track_point_in_utc_time,
     async_track_state_change_event,
@@ -43,6 +48,7 @@ from .core.fp400 import (
     raw_targets,
     reported_count,
 )
+from .core.geometry import inner_point
 from .core.heat import HeatMap
 from .core.room import TAG_WIEDERHERGESTELLT, Room, ZoneEvent
 from .core.tracks import HELD, Target
@@ -82,6 +88,10 @@ class RoomController:
         self.last_raw: dict[int, dict[str, Any]] = {}
         # Auswertung der Aufnahme (WebSocket), kurz zwischengespeichert.
         self.auswertung_cache: dict[int, tuple[datetime, dict[str, Any]]] = {}
+        # Nur Melder-Räume
+        self._melder_ids: list[str] = []
+        self._melder_punkt = (0.0, 0.0)
+        self._melder_an: bool | None = None
         self.aufnahme: Aufnahme | None = (
             Aufnahme(hass, raum.id, raum.aufnahme_tage) if raum.aufnahme else None
         )
@@ -93,7 +103,9 @@ class RoomController:
         if self.aufnahme is not None:
             self.aufnahme.async_start()
         try:
-            if self.raum.sensor.quelle == QUELLE_MQTT:
+            if self.raum.ist_melder:
+                self._start_melder()
+            elif self.raum.sensor.quelle == QUELLE_MQTT:
                 await self._async_start_mqtt()
             else:
                 self._start_entities()
@@ -163,6 +175,58 @@ class RoomController:
             clock = self.hass.states.get(clock_id)
             self._last_stamp = clock.state if clock else None
             self._frame_from_xy(xy.state)
+
+    def melder_entities(self) -> list[str]:
+        """Aktuelle ``entity_id`` der Melder (gespeichert ist die feste Kennung)."""
+        registry = er.async_get(self.hass)
+        out = []
+        for key in self.raum.melder:
+            entity_id = er.async_resolve_entity_id(registry, key)
+            if entity_id is not None:
+                out.append(entity_id)
+        return out
+
+    def _start_melder(self) -> None:
+        ids = self.melder_entities()
+        if not ids:
+            raise RuntimeError("Melder nicht gefunden (gelöscht oder umbenannt?)")
+        zone = next(iter(self.room.zones.values()))
+        cx, cy = inner_point(zone.shape)
+        self._melder_ids = ids
+        self._melder_punkt = (cx, cy)
+
+        @callback
+        def _on_change(_event: Event[EventStateChangedData]) -> None:
+            self._frame_from_melder()
+
+        self._unsubs.append(async_track_state_change_event(self.hass, ids, _on_change))
+        self._frame_from_melder()
+
+    def _frame_from_melder(self) -> None:
+        states = [self.hass.states.get(e) for e in self._melder_ids]
+        bekannt = [
+            s
+            for s in states
+            if s is not None
+            and s.state
+            not in (
+                STATE_UNAVAILABLE,
+                STATE_UNKNOWN,
+            )
+        ]
+        if not bekannt:
+            if self.room.available:
+                self._frame(None)
+            return
+        an = any(s.state == STATE_ON for s in bekannt)
+        if an == self._melder_an and self.room.available:
+            return  # nur Attribute geändert
+        self._melder_an = an
+        x, y = self._melder_punkt
+        self._frame(
+            [Target(1, x, y)] if an else [],
+            [{"id": 1, "x": x, "y": y, "melder": True}] if an else [],
+        )
 
     # -- Empfang ---------------------------------------------------------------
 
@@ -238,7 +302,7 @@ class RoomController:
 
     def _count_heat(self, now: float) -> None:
         """Seit dem letzten Rahmen waren die sichtbaren Figuren dort, wo sie waren."""
-        if self._last_frame_t is None:
+        if self._last_frame_t is None or self.raum.ist_melder:
             return
         points = [
             (track.x, track.y)
