@@ -65,6 +65,8 @@ export interface Raum {
   melder?: string[];
   melder_nachlauf_s?: number;
   bereich_id?: string;
+  /** Stockwerke (IDs aus Home Assistant); leer = das Stockwerk des Bereichs. */
+  stockwerke?: string[];
   sensor: Sensor;
   zonen: Zone[];
   ansicht_winkel: number;
@@ -89,11 +91,22 @@ export interface Plan {
   hoehe_px: number;
   x: number;
   y: number;
+  /** Stockwerk (ID aus Home Assistant), leer = keins. */
+  stockwerk?: string;
+}
+
+export interface Stockwerk {
+  id: string;
+  name: string;
+  level: number | null;
+  icon: string | null;
 }
 
 export interface RoomsResult {
   raeume: Raum[];
   plaene?: Plan[];
+  stockwerke_ha?: Stockwerk[];
+  bereiche_ha?: { id: string; name: string; stockwerk: string | null }[];
   vorlagen: Record<string, Regel>;
   arten: ZonenArt[];
   grenzen: Record<string, number>;

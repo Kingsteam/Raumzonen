@@ -3,6 +3,7 @@
     "raum_id": "schlafzimmer",
     "name": "Schlafzimmer",
     "bereich_id": null,
+    "stockwerke": [],
     "art": "radar",
     "haus": null,
     "melder": [],

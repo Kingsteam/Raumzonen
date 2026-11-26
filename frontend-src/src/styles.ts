@@ -716,6 +716,18 @@ export const styles = css`
     opacity: 0;
     cursor: pointer;
   }
+  /* Stockwerke */
+  .levels.stockwerke {
+    margin: 4px 0 10px;
+  }
+  .stockwerk-wahl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+  }
+  .stockwerk-wahl .check {
+    margin: 2px 0;
+  }
   /* Raum hinzufügen */
   .neu-raum {
     border: 2px solid var(--border);

@@ -52,6 +52,7 @@ from homeassistant.helpers import (
     area_registry as ar,
     device_registry as dr,
     entity_registry as er,
+    floor_registry as fr,
 )
 from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util, slugify
@@ -154,6 +155,8 @@ def ws_rooms_get(
         {
             "raeume": [raum_to_dict(r) for r in entry.runtime_data.store.model.raeume],
             "plaene": [plan_to_dict(p) for p in entry.runtime_data.store.model.plaene],
+            # Stockwerke und Bereiche aus Home Assistant (für die Auswahl im Plan).
+            **_haus_struktur(hass),
             "vorlagen": {k: regel_to_dict(v) for k, v in REGEL_VORLAGEN.items()},
             "arten": list(ZONE_ARTEN),
             "darf_aendern": connection.user.is_admin,
@@ -394,6 +397,8 @@ def ws_converter_zones(
                     vol.Required("x"): vol.Coerce(float),
                     vol.Required("y"): vol.Coerce(float),
                     vol.Required("winkel"): vol.Coerce(float),
+                    vol.Optional("stockwerke"): [str],
+                    vol.Optional("bereich_id"): vol.Any(None, str),
                 }
             )
         ],
@@ -431,6 +436,10 @@ async def ws_haus_save(
             winkel = (lage["winkel"] + 180) % 360 - 180
             raum.haus_winkel = 180.0 if winkel == -180 else winkel
             raum.haus_gesetzt = True
+            if "stockwerke" in lage:
+                raum.stockwerke = list(dict.fromkeys(lage["stockwerke"]))
+            if "bereich_id" in lage:
+                raum.bereich_id = lage["bereich_id"] or ""
         for tuer in msg["tueren"]:
             raum = model.raum(tuer["raum_id"])
             ziel = tuer["fuehrt_zu"] or ""
@@ -586,6 +595,25 @@ async def ws_auswertung_get(
 
 
 # -- Räume anlegen und löschen ---------------------------------------------------
+
+
+def _haus_struktur(hass: HomeAssistant) -> dict[str, Any]:
+    floors = fr.async_get(hass)
+    areas = ar.async_get(hass)
+    stockwerke = sorted(
+        floors.async_list_floors(),
+        key=lambda f: (f.level if f.level is not None else 0, f.name),
+    )
+    return {
+        "stockwerke_ha": [
+            {"id": f.floor_id, "name": f.name, "level": f.level, "icon": f.icon}
+            for f in stockwerke
+        ],
+        "bereiche_ha": [
+            {"id": a.id, "name": a.name, "stockwerk": a.floor_id}
+            for a in sorted(areas.async_list_areas(), key=lambda a: a.name)
+        ],
+    }
 
 
 def _melder_key(hass: HomeAssistant, value: str) -> str:
@@ -816,6 +844,7 @@ OEFFNUNG_SCHEMA = vol.Schema(
                 vol.Required("hoehe_px"): int,
                 vol.Optional("x", default=0.0): vol.Coerce(float),
                 vol.Optional("y", default=0.0): vol.Coerce(float),
+                vol.Optional("stockwerk", default=""): vol.Any(None, str),
             }
         ),
         vol.Required("raeume"): vol.All(
@@ -828,6 +857,7 @@ OEFFNUNG_SCHEMA = vol.Schema(
                             vol.Length(min=3),
                         ),
                         vol.Optional("oeffnungen", default=[]): [OEFFNUNG_SCHEMA],
+                        vol.Optional("stockwerke"): [str],
                         vol.Required("haus"): vol.Schema(
                             {
                                 vol.Required("x"): vol.Coerce(float),
@@ -863,6 +893,8 @@ async def ws_plan_import(
             ]
             winkel = (data["haus"]["winkel"] + 180) % 360 - 180
             raum.haus_x, raum.haus_y = data["haus"]["x"], data["haus"]["y"]
+            if "stockwerke" in data:
+                raum.stockwerke = list(dict.fromkeys(data["stockwerke"]))
             raum.haus_winkel = 180.0 if winkel == -180 else winkel
             raum.haus_gesetzt = True
         roh: bytes | None = None
@@ -879,6 +911,7 @@ async def ws_plan_import(
                     hoehe_px=plan["hoehe_px"],
                     x=plan["x"],
                     y=plan["y"],
+                    stockwerk=plan.get("stockwerk") or "",
                 )
             )
         elif not msg["raeume"]:

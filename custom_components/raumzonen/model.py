@@ -35,6 +35,7 @@ from .const import (
     MAX_PLAENE,
     MAX_RAND_CM,
     MAX_REICHWEITE_CM,
+    MAX_STOCKWERKE,
     MAX_WEG_CM,
     MAX_WEG_RAHMEN,
     MAX_ZELLE_CM,
@@ -186,6 +187,9 @@ class RaumConfig:
     # Nur Melder-Räume: so lange bleibt der Raum belegt, nachdem alle Melder
     # „aus“ melden (zusätzlich zu ihrer eigenen Nachlaufzeit).
     melder_nachlauf_s: float = 0.0
+    # Stockwerke (IDs aus Home Assistant), auf denen der Raum liegt; eine
+    # Treppe liegt auf zwei. Leer: das Stockwerk seines Bereichs.
+    stockwerke: list[str] = field(default_factory=list)
 
     @property
     def ist_melder(self) -> bool:
@@ -209,6 +213,8 @@ class PlanConfig:
     hoehe_px: int
     x: float = 0.0
     y: float = 0.0
+    # Stockwerk (ID aus Home Assistant), leer = keins.
+    stockwerk: str = ""
 
 
 @dataclass(slots=True)
@@ -250,6 +256,8 @@ class RaumzonenModel:
             _range("hoehe_px", plan.hoehe_px, 1, 20000)
             for name in ("x", "y"):
                 _range(name, getattr(plan, name), -100_000, 100_000)
+            if plan.stockwerk and not _floor_id(plan.stockwerk):
+                raise ValueError(f"Grundriss {plan.id}: Stockwerk ungültig")
         _unique("Raum", [r.id for r in self.raeume])
         for raum in self.raeume:
             _ident("Raum", raum.id)
@@ -261,6 +269,11 @@ class RaumzonenModel:
                 )
             if raum.art not in RAUM_ARTEN:
                 raise ValueError(f"Raum {raum.id}: unbekannte Art {raum.art!r}")
+            _unique(f"Stockwerk in {raum.id}", raum.stockwerke)
+            if len(raum.stockwerke) > MAX_STOCKWERKE or any(
+                not _floor_id(s) for s in raum.stockwerke
+            ):
+                raise ValueError(f"Raum {raum.id}: Stockwerke ungültig")
             if raum.ist_melder:
                 _check_melder(raum)
             else:
@@ -427,6 +440,14 @@ def _unique(what: str, ids: list[str]) -> None:
         if i in seen:
             raise ValueError(f"{what}: ID {i!r} doppelt")
         seen.add(i)
+
+
+def _floor_id(value: str) -> bool:
+    return (
+        isinstance(value, str)
+        and 0 < len(value) <= 64
+        and all(c.isalnum() or c in "_-" for c in value)
+    )
 
 
 def _ident(what: str, value: str) -> None:

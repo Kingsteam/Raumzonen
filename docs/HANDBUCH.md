@@ -58,6 +58,15 @@ Raum gehen; rot wird, wo der Sensor jemanden gesehen hat.
 
 ![Sensor und Raum](bilder/02-sensor.png)
 
+### Stockwerke
+
+Raumzonen übernimmt die Stockwerke aus Home Assistant. Oben im Hausplan
+wählst du ein Stockwerk oder „Alle“. Ein Raum liegt auf dem Stockwerk
+seines Bereichs; beim Raum im Hausplan lassen sich Bereich und Stockwerke
+ändern. Eine **Treppe** kreuzt du auf beiden Stockwerken an: Sie erscheint
+dann in beiden Plänen an derselben Stelle und verbindet sie. Räume ohne
+Stockwerk stehen nur unter „Alle“ („kein Stockwerk“).
+
 ### Grundriss übernehmen
 
 Im Hausplan **Grundriss übernehmen** tippen und den exportierten Plan wählen

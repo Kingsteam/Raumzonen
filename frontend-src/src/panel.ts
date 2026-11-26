@@ -256,6 +256,10 @@ export class RaumzonenPanel extends LitElement {
   @state() private planBilder: Record<string, string> = {};
   @state() private zeigePlan = lesen("raumzonen-zeige-plan", true);
   @state() private masse = lesen("raumzonen-masse", false);
+  /** Gewähltes Stockwerk im Hausplan ("" = alle). */
+  @state() private stockwerk = "";
+  /** Im Hausplan geänderte Stockwerke und Bereiche je Raum (bis zum Speichern). */
+  @state() private hausExtra: Record<string, { stockwerke?: string[]; bereich_id?: string }> = {};
   /** Formular „Raum hinzufügen“ (null = zu). */
   @state() private neuRaum: { name: string; art: "melder" | "radar"; melder: string[]; device_id: string; bereich_id: string } | null = null;
   /** Bewegungsprofil im Hausplan: Raum-ID → Zeitabschnitte mit jemandem darin. */
@@ -566,6 +570,7 @@ export class RaumzonenPanel extends LitElement {
     const wasHaus = this.page === "haus";
     this.page = "haus";
     this.hausSel = "";
+    this.hausExtra = {};
     this.tool = "auswahl";
     this.dirty = false;
     void this.unsubscribeLive();
@@ -822,7 +827,7 @@ export class RaumzonenPanel extends LitElement {
         return { i, raum, u: uebernehmen(p.g, i, k, v) };
       });
     // Nicht über Räume legen, die schon im Haus liegen und nicht dabei sind.
-    const andere = raeume.filter((r) => r.haus_gesetzt && !eintraege.some((e) => e.raum.id === r.id));
+    const andere = raeume.filter((r) => r.haus_gesetzt && this.aufStockwerk(r) && !eintraege.some((e) => e.raum.id === r.id));
     const huelle = (pts: Point[]) => bbox(pts);
     let dx = 0;
     if (andere.length) {
@@ -835,6 +840,7 @@ export class RaumzonenPanel extends LitElement {
     }
     const msg = eintraege.map(({ i, raum, u }) => ({
       raum_id: raum.id,
+      ...(this.stockwerk && !(raum.stockwerke ?? []).length ? { stockwerke: [this.stockwerk] } : {}),
       umriss: u.umriss,
       haus: { x: u.haus.x + dx, y: u.haus.y, winkel: 0 },
       oeffnungen: u.luecken
@@ -850,7 +856,7 @@ export class RaumzonenPanel extends LitElement {
       await this._hass.callWS({
         type: `${DOMAIN}/plan/import`,
         raeume: msg,
-        plan: { name: p.name, mime: "image/jpeg", bild: p.jpeg, cm_pro_px: k, breite_px: p.g.breite, hoehe_px: p.g.hoehe, x: dx, y: 0 },
+        plan: { name: p.name, mime: "image/jpeg", bild: p.jpeg, cm_pro_px: k, breite_px: p.g.breite, hoehe_px: p.g.hoehe, x: dx, y: 0, stockwerk: this.stockwerk },
       });
       this.planZu();
       this.showToast(msg.length ? `${msg.length} ${msg.length === 1 ? "Raum" : "Räume"} und der Grundriss übernommen.` : "Grundriss als Hintergrund übernommen.");
@@ -970,10 +976,11 @@ export class RaumzonenPanel extends LitElement {
         });
       await this._hass.callWS({
         type: `${DOMAIN}/haus/save`,
-        raeume: Object.entries(this.lagen).map(([raum_id, l]) => ({ raum_id, x: Math.round(l.x), y: Math.round(l.y), winkel: l.winkel })),
+        raeume: Object.entries(this.lagen).map(([raum_id, l]) => ({ raum_id, x: Math.round(l.x), y: Math.round(l.y), winkel: l.winkel, ...(this.hausExtra[raum_id] ?? {}) })),
         tueren,
       });
       this.dirty = false;
+      this.hausExtra = {};
       this.showToast("Hausplan gespeichert.");
       await this.unsubscribeHaus();
       await new Promise((res) => window.setTimeout(res, 1500));
@@ -1059,7 +1066,7 @@ export class RaumzonenPanel extends LitElement {
     const pts: Point[] = [[s.x, s.y]];
     if (this.page === "haus" && this.data) {
       pts.length = 0;
-      for (const r of this.data.raeume) {
+      for (const r of this.hausRaeume()) {
         const lage = this.lagen[r.id];
         if (lage) pts.push(...this.outlineOf(r).map((p) => toHouse(p, lage)));
       }
@@ -1839,7 +1846,12 @@ export class RaumzonenPanel extends LitElement {
   /** Grundrisse als Hintergrund (Hausplan: im Haus; Raum: in den Raum umgerechnet). */
   private renderPlanBilder(): TemplateResult | typeof nothing {
     if (!this.zeigePlan) return nothing;
-    const plaene = (this.data?.plaene ?? []).filter((p) => this.planBilder[p.id]);
+    let plaene = (this.data?.plaene ?? []).filter((p) => this.planBilder[p.id]);
+    if (this.page === "haus" && this.stockwerk) plaene = plaene.filter((p) => !p.stockwerk || p.stockwerk === this.stockwerk);
+    if (this.page === "raum" && this.raum) {
+      const st = this.stockwerkeVon(this.raum);
+      if (st.length) plaene = plaene.filter((p) => !p.stockwerk || st.includes(p.stockwerk));
+    }
     if (!plaene.length) return nothing;
     let zuRaum: ((h: Point) => Point) | null = null;
     if (this.page === "raum") {
@@ -2029,8 +2041,30 @@ export class RaumzonenPanel extends LitElement {
       ${this.draft.length >= 3 ? svg`<circle class="close-ring" cx=${fx} cy=${fy} r=${HIT_PX} />` : nothing}`;
   }
 
+  /** Stockwerke eines Raums: eigene Angabe, sonst das Stockwerk seines Bereichs. */
+  private stockwerkeVon(raum: Raum): string[] {
+    const extra = this.hausExtra[raum.id];
+    const eigene = extra?.stockwerke ?? raum.stockwerke ?? [];
+    if (eigene.length) return eigene;
+    const bereich = extra?.bereich_id ?? raum.bereich_id;
+    const bereiche = this.data?.bereiche_ha ?? [];
+    // Ohne Bereich: der Bereich mit gleichem Namen (z. B. „Schlafzimmer“).
+    const b = bereich ? bereiche.find((x) => x.id === bereich) : bereiche.find((x) => x.name.toLowerCase() === raum.name.trim().toLowerCase());
+    return b?.stockwerk ? [b.stockwerk] : [];
+  }
+
+  /** Raum auf dem gewählten Stockwerk? (Räume ohne Stockwerk nur unter „Alle“.) */
+  private aufStockwerk(raum: Raum): boolean {
+    if (!this.stockwerk) return true;
+    return this.stockwerkeVon(raum).includes(this.stockwerk);
+  }
+
+  private hausRaeume(): Raum[] {
+    return (this.data?.raeume ?? []).filter((r) => this.aufStockwerk(r));
+  }
+
   private hausRoomAt(p: Point): string {
-    const raeume = this.data?.raeume ?? [];
+    const raeume = this.hausRaeume();
     for (let i = raeume.length - 1; i >= 0; i--) {
       const r = raeume[i];
       const lage = this.lagen[r.id];
@@ -2041,7 +2075,7 @@ export class RaumzonenPanel extends LitElement {
 
   /** Mitte einer Tür im Haus. */
   private renderHausPlan(): TemplateResult {
-    const raeume = this.data?.raeume ?? [];
+    const raeume = this.hausRaeume();
     const rooms: TemplateResult[] = [];
     const lines: TemplateResult[] = [];
     const labels: TemplateResult[] = [];
@@ -2766,6 +2800,7 @@ export class RaumzonenPanel extends LitElement {
     return html`<aside class="side">
       <div class="side-body">
         <h3>Hausplan</h3>
+        ${this.renderStockwerkWahl()}
         <p class="hint small">
           ${this.kannAendern
             ? "Räume am Plan an ihren Platz ziehen und hier drehen. Bei jeder Tür eintragen, wohin sie führt; dann sieht Raumzonen, wer von wo nach wo geht."
@@ -2773,7 +2808,7 @@ export class RaumzonenPanel extends LitElement {
         </p>
         ${this.kannAendern ? html`${this.renderNeuRaum()} ${this.renderPlanImport()}` : nothing}
         <ul class="list">
-          ${raeume.map((raum) => {
+          ${raeume.filter((r) => this.aufStockwerk(r)).map((raum) => {
             const live = this.hausLive[raum.id];
             const n = live ? live.figuren.filter((f) => !f.tags.includes("wiederhergestellt") && !f.tags.includes("stoerung")).length : 0;
             const open = raum.id === this.hausSel;
@@ -2784,7 +2819,11 @@ export class RaumzonenPanel extends LitElement {
             return html`<li class="item ${open ? "open" : ""}">
               <div class="row" @click=${() => (this.hausSel = open ? "" : raum.id)}>
                 <span class="marker-icon"><ha-icon icon=${melder ? "mdi:motion-sensor" : "mdi:radar"}></ha-icon></span>
-                <span class="name">${raum.name}<small>${melder ? "Bewegungsmelder" : "Radarsensor"}${raum.haus_gesetzt || this.dirty ? "" : " · noch nicht eingeordnet"}</small></span>
+                <span class="name">${raum.name}<small
+                  >${melder ? "Bewegungsmelder" : "Radarsensor"}${this.data?.stockwerke_ha?.length && !this.stockwerkeVon(raum).length ? " · kein Stockwerk" : ""}${raum.haus_gesetzt || this.dirty
+                    ? ""
+                    : " · noch nicht eingeordnet"}</small
+                ></span>
                 <span class="badge ${!erreichbar ? "off unreachable" : da ? "on" : "off"}">${!erreichbar ? "nicht erreichbar" : melder ? (da ? "da" : "leer") : n ? `${n}` : "leer"}</span>
               </div>
               ${open
@@ -2796,6 +2835,7 @@ export class RaumzonenPanel extends LitElement {
                             ${turn(-5, "mdi:rotate-right", "5°")}
                           </div>`
                       : nothing}
+                    ${this.kannAendern ? this.renderRaumStockwerke(raum) : nothing}
                     ${doors.length
                       ? html`<div class="label-text">Türen</div>
                           <ul class="doors">
@@ -2920,6 +2960,11 @@ export class RaumzonenPanel extends LitElement {
           : "Keine Räume erkannt (dafür braucht es die blauen Umrisslinien eines Scans). Das Bild lässt sich trotzdem als Hintergrund übernehmen; die Wände zeichnest du dann darüber."}
       </p>
       ${vorschau}
+      ${this.stockwerk
+        ? html`<p class="hint small">Gehört zum Stockwerk „${this.data?.stockwerke_ha?.find((x) => x.id === this.stockwerk)?.name ?? this.stockwerk}“ (oben gewählt).</p>`
+        : this.data?.stockwerke_ha?.length
+          ? html`<p class="note">Tipp: oben erst das Stockwerk wählen, dann gehört der Grundriss dazu.</p>`
+          : nothing}
       <div class="label-text">Maßstab: zweimal ins Bild tippen (Anfang und Ende einer bekannten Strecke), dann ihre Länge</div>
       <div class="mass">
         <span>${p.strecke.length === 2 ? "Strecke ist" : `${p.strecke.length} von 2 Punkten`}</span>
@@ -3009,6 +3054,67 @@ export class RaumzonenPanel extends LitElement {
         </button>
       </div>
     </div>`;
+  }
+
+  private renderStockwerkWahl(): TemplateResult | typeof nothing {
+    const st = this.data?.stockwerke_ha ?? [];
+    if (!st.length) return nothing;
+    const knopf = (id: string, name: string, icon: string | null) =>
+      html`<button
+        class=${this.stockwerk === id ? "active" : ""}
+        @click=${() => {
+          this.stockwerk = id;
+          this.hausSel = "";
+          this.viewTouched = false;
+          this.fit();
+        }}
+      >
+        ${icon ? html`<ha-icon icon=${icon}></ha-icon>` : nothing}${name}
+      </button>`;
+    return html`<div class="levels stockwerke" role="group" aria-label="Stockwerk">
+      ${knopf("", "Alle", "mdi:home-outline")} ${st.map((s) => knopf(s.id, s.name, s.icon))}
+    </div>`;
+  }
+
+  /** Im Hausplan: auf welchen Stockwerken liegt der Raum, zu welchem Bereich gehört er? */
+  private renderRaumStockwerke(raum: Raum): TemplateResult | typeof nothing {
+    const st = this.data?.stockwerke_ha ?? [];
+    const bereiche = this.data?.bereiche_ha ?? [];
+    if (!st.length && !bereiche.length) return nothing;
+    const extra = this.hausExtra[raum.id] ?? {};
+    const eigene = extra.stockwerke ?? raum.stockwerke ?? [];
+    const wirksam = this.stockwerkeVon(raum);
+    const bereich = extra.bereich_id ?? raum.bereich_id ?? "";
+    const setze = (patch: { stockwerke?: string[]; bereich_id?: string }) => {
+      this.hausExtra = { ...this.hausExtra, [raum.id]: { ...extra, ...patch } };
+      this.dirty = true;
+    };
+    return html`<div class="label-text">Bereich in Home Assistant</div>
+      <label class="field"
+        ><select @change=${(e: Event) => setze({ bereich_id: (e.target as HTMLSelectElement).value })}>
+          <option value="" ?selected=${!bereich}>keiner</option>
+          ${bereiche.map((b) => html`<option value=${b.id} ?selected=${b.id === bereich}>${b.name}</option>`)}
+        </select></label
+      >
+      ${st.length
+        ? html`<div class="label-text">Stockwerke${eigene.length ? "" : " (vom Bereich)"}</div>
+            <div class="stockwerk-wahl">
+              ${st.map(
+                (s) => html`<label class="check"
+                  ><input
+                    type="checkbox"
+                    .checked=${wirksam.includes(s.id)}
+                    @change=${(e: Event) => {
+                      const on = (e.target as HTMLInputElement).checked;
+                      const basis = eigene.length ? eigene : wirksam;
+                      setze({ stockwerke: on ? [...basis.filter((x) => x !== s.id), s.id] : basis.filter((x) => x !== s.id) });
+                    }}
+                  /><span>${s.name}</span></label
+                >`,
+              )}
+            </div>
+            <p class="hint small">Eine Treppe liegt auf zwei Stockwerken; sie erscheint dann in beiden Plänen an derselben Stelle.</p>`
+        : nothing}`;
   }
 
   private renderNeuRaum(): TemplateResult {

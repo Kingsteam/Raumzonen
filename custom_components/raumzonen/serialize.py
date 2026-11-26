@@ -108,6 +108,7 @@ def raum_from_dict(data: dict[str, Any]) -> RaumConfig:
         aufnahme_tage=int(data.get("aufnahme_tage", DEFAULT_AUFNAHME_TAGE)),
         melder=[str(m) for m in data.get("melder", [])],
         melder_nachlauf_s=float(data.get("melder_nachlauf_s", 0.0)),
+        stockwerke=[str(x) for x in data.get("stockwerke", [])],
     )
 
 
@@ -167,6 +168,7 @@ def raum_to_dict(raum: RaumConfig) -> dict[str, Any]:
         "aufnahme_tage": raum.aufnahme_tage,
         "melder": list(raum.melder),
         "melder_nachlauf_s": raum.melder_nachlauf_s,
+        "stockwerke": list(raum.stockwerke),
     }
 
 
@@ -181,6 +183,7 @@ def plan_from_dict(data: dict[str, Any]) -> PlanConfig:
         hoehe_px=int(data["hoehe_px"]),
         x=float(data.get("x", 0.0)),
         y=float(data.get("y", 0.0)),
+        stockwerk=str(data.get("stockwerk", "")),
     )
 
 
@@ -195,6 +198,7 @@ def plan_to_dict(plan: PlanConfig) -> dict[str, Any]:
         "hoehe_px": plan.hoehe_px,
         "x": plan.x,
         "y": plan.y,
+        "stockwerk": plan.stockwerk,
     }
 
 

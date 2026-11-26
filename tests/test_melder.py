@@ -12,6 +12,7 @@ from homeassistant.helpers import (
     area_registry as ar,
     device_registry as dr,
     entity_registry as er,
+    floor_registry as fr,
 )
 import pytest
 from pytest_homeassistant_custom_component.common import (
@@ -438,3 +439,63 @@ async def test_grundriss_als_hintergrund(
     await hass.async_block_till_done()
     assert not datei.exists()
     assert loaded.runtime_data.store.model.plaene == []
+
+
+async def test_stockwerke(
+    hass: HomeAssistant, loaded: MockConfigEntry, hass_ws_client
+) -> None:
+    """Räume auf Stockwerken; eine Treppe liegt auf zweien."""
+    floors = fr.async_get(hass)
+    eg = floors.async_create("Erdgeschoss", level=0)
+    og = floors.async_create("Oben", level=1)
+    treppe = ar.async_get(hass).async_create("Treppe", floor_id=og.floor_id)
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id({"type": f"{DOMAIN}/rooms/get"})
+    result = (await client.receive_json())["result"]
+    assert [s["id"] for s in result["stockwerke_ha"]] == [eg.floor_id, og.floor_id]
+    assert {"id": treppe.id, "name": "Treppe", "stockwerk": og.floor_id} in result[
+        "bereiche_ha"
+    ]
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/haus/save",
+            "raeume": [
+                {
+                    "raum_id": "schlafzimmer",
+                    "x": 0,
+                    "y": 0,
+                    "winkel": 0,
+                    "stockwerke": [eg.floor_id, og.floor_id, og.floor_id],
+                    "bereich_id": treppe.id,
+                }
+            ],
+        }
+    )
+    msg = await client.receive_json()
+    assert msg["success"], msg
+    await hass.async_block_till_done()
+    raum = loaded.runtime_data.store.model.raum("schlafzimmer")
+    assert raum.stockwerke == [eg.floor_id, og.floor_id]
+    assert raum.bereich_id == treppe.id
+    assert api_raeume(hass)[0]["stockwerke"] == [eg.floor_id, og.floor_id]
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/haus/save",
+            "raeume": [
+                {
+                    "raum_id": "schlafzimmer",
+                    "x": 0,
+                    "y": 0,
+                    "winkel": 0,
+                    "stockwerke": ["nicht gültig!"],
+                }
+            ],
+        }
+    )
+    assert (await client.receive_json())["error"]["code"] == "invalid"
+
+
+def api_raeume(hass: HomeAssistant) -> list:
+    from custom_components.raumzonen.api import get_api
+
+    return get_api(hass).raeume()

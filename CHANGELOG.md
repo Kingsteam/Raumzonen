@@ -4,6 +4,20 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.12.0] - 2026-11-26
+
+### Hinzugefügt
+
+- Stockwerke: Raumzonen übernimmt die Stockwerke aus Home Assistant. Im
+  Hausplan oben ein Stockwerk wählen (oder „Alle“); es zeigt nur dessen
+  Räume und Grundrisse. Jeder Raum liegt auf dem Stockwerk seines Bereichs
+  (ohne Bereich: der Bereich mit gleichem Namen) oder auf den Stockwerken,
+  die man im Hausplan beim Raum ankreuzt; eine Treppe liegt so auf zwei
+  Stockwerken an derselben Stelle.
+- Bereich eines Raums im Hausplan änderbar.
+- Ein Grundriss gehört zum Stockwerk, das beim Übernehmen gewählt ist.
+- Vertrag `raumzonen/1`: Feld `stockwerke` je Raum.
+
 ## [0.11.0] - 2026-11-26
 
 ### Hinzugefügt

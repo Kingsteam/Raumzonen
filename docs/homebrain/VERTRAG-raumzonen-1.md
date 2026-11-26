@@ -83,6 +83,7 @@ Nach `geladen` am besten eine neue Momentaufnahme holen.
 | `raum_id`, `name`, `art` | Raum; `art` `radar` (FP400 mit Zonen und Spuren) oder ab 0.8.0 `melder` (nur Bewegungs-/Präsenzmelder: eine Zone `anwesenheit` = ganzer Raum, keine Spuren, keine Positionen) |
 | `melder` | ab 0.8.0, nur bei `art` `melder`: `entity_id` der Melder (leer bei Radar-Räumen) |
 | `bereich_id` | Bereich in Home Assistant, falls zugeordnet, sonst `null` |
+| `stockwerke` | ab 0.12.0: Stockwerke (`floor_id` aus Home Assistant), auf denen der Raum liegt, z. B. eine Treppe auf zweien; leer = das Stockwerk des Bereichs |
 | `haus` | Lage des Raums im Hausplan: `x`, `y` (cm), `winkel` (Grad); `null`, solange nicht gesetzt (ab 0.5.0 im Panel unter „Haus“ einstellbar) |
 | `sensor` | `device_id`, `quelle` (`mqtt`/`entitaet`), `lage` (`x`, `y`, `winkel` im Raum), `reichweite_cm`, `oeffnung_grad` |
 | `umriss` | Wände als Punkte im Raum (cm), leer = nicht gezeichnet |

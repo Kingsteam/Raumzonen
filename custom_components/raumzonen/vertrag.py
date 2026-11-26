@@ -90,6 +90,8 @@ def raum_info(raum: RaumConfig, melder: list[str] | None = None) -> dict[str, An
         "raum_id": raum.id,
         "name": raum.name,
         "bereich_id": raum.bereich_id or None,
+        # Stockwerke (IDs aus Home Assistant); leer = das Stockwerk des Bereichs.
+        "stockwerke": list(raum.stockwerke),
         "art": raum.art,
         # None = noch nicht im Hausplan (weiß nicht).
         "haus": {"x": raum.haus_x, "y": raum.haus_y, "winkel": raum.haus_winkel}
