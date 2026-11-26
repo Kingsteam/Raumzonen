@@ -40,6 +40,7 @@ from .const import (
     MAX_WEG_RAHMEN,
     MAX_ZELLE_CM,
     MAX_ZONEN_JE_RAUM,
+    MELDER_HALTE_S,
     MELDER_ZONE_ID,
     MIN_ZELLE_CM,
     QUELLE_MQTT,
@@ -53,6 +54,7 @@ from .const import (
 from .core.geometry import Cells, Polygon, inner_point, shape_from_dict
 from .core.pose import Pose
 from .core.room import ART_AUSGANG, ART_NORMAL, ZONE_ARTEN, Room, Zone, ZoneRule
+from .core.tracks import TrackerSettings
 from .core.wege import TuerKnoten
 
 
@@ -407,7 +409,8 @@ def build_room(raum: RaumConfig) -> Room:
     """Rechenlogik für einen gespeicherten Raum."""
     if raum.ist_melder:
         return Room(
-            [
+            tracker_settings=TrackerSettings(hold_s=MELDER_HALTE_S),
+            zones=[
                 melder_zone(raum),
                 *(
                     Zone(
@@ -423,7 +426,7 @@ def build_room(raum: RaumConfig) -> Room:
                     )
                     for z in raum.zonen
                 ),
-            ]
+            ],
         )
     zonen = [
         Zone(

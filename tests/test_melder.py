@@ -179,9 +179,11 @@ async def test_melder_raum_anlegen_und_belegen(
     hass.states.async_set(eins.entity_id, "off", {"device_class": "motion"})
     await hass.async_block_till_done()
     assert hass.states.get(state_id).state == "on"
-    freezer.tick(timedelta(seconds=30))
-    async_fire_time_changed(hass)
-    await hass.async_block_till_done()
+    # Kurz gehalten (der Melder läuft selbst nach): nach gut 2 s frei.
+    for _ in range(3):
+        freezer.tick(timedelta(seconds=1.1))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
     assert hass.states.get(state_id).state == "off"
 
     # Melder nicht erreichbar: nichts ändert sich, Sensor gilt als getrennt.

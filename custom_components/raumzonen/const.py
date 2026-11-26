@@ -40,6 +40,11 @@ RAUM_MELDER: Final = "melder"
 RAUM_ARTEN: Final = (RAUM_RADAR, RAUM_MELDER)
 # Ein Melder-Raum hat genau eine Zone: der ganze Raum.
 MELDER_ZONE_ID: Final = "anwesenheit"
+# Melder-Räume: so lange bleibt „jemand da“, nachdem alle Melder „aus“ melden.
+# Kurz, weil der Melder selbst schon nachläuft (Besitzer, 26.11.2026: vorher
+# 10 s, das Licht ging zu spät aus). Ein „aus“ des Melders ist eine echte
+# Meldung, kein fehlender Rahmen (Regel 4 gilt für Radar-Räume).
+MELDER_HALTE_S: Final = 2.0
 MAX_MELDER: Final = 10
 # Grundrisse als Hintergrund (Bilder unter <config>/raumzonen/plaene/).
 MAX_PLAENE: Final = 10

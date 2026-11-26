@@ -119,6 +119,8 @@ const AUSWERTUNG_STUNDEN = [1, 3, 8, 12, 24];
 const MELDER_TOOLS: Tool[] = ["auswahl", "rechteck", "vieleck", "zellen", "umriss", "oeffnung"];
 /** Die eine Zone eines Melder-Raums (der ganze Raum). */
 const MELDER_ZONE = "anwesenheit";
+/** Wie `MELDER_HALTE_S` in `const.py`: so lange hält Raumzonen nach dem letzten Melder. */
+const MELDER_HALTE_S = 2;
 /** Ein Raum oder das ganze Haus. */
 type Page = "raum" | "haus";
 
@@ -2488,6 +2490,12 @@ export class RaumzonenPanel extends LitElement {
         /><span class="unit">m</span></label
       >
       <p class="hint small">${rundum ? "Erfasst ringsum, z. B. an der Decke." : "Erfasst nur nach vorne; am gelben Griff im Plan drehen."}</p>
+      ${this.umriss.length >= 3
+        ? html`<p class="hint small">
+            <b>Reichweite laut Plan: ${(Math.max(...this.umriss.map((q) => Math.hypot(q[0] - l.x, q[1] - l.y))) / 100).toFixed(1).replace(".", ",")} m</b>
+            (weitester Punkt des Raums von hier). Hat der Melder eine einstellbare Reichweite („Maximum range“), am Gerät etwa so viel plus 20 cm einstellen; dann sieht er nicht durch die Wand in den Nachbarraum.
+          </p>`
+        : nothing}
     </div>`;
   }
 
@@ -3235,7 +3243,7 @@ export class RaumzonenPanel extends LitElement {
       </ul>
       ${this.kannAendern
         ? html`${k
-              ? html`${this.renderNurBereich(this.raum?.bereich_id)}<ul class="melder-liste">
+              ? html`${this.renderNurBereich(this.raum?.bereich_id)}<ul class="melder-liste voll">
                   ${auswahl.map((m) => {
                     const an = this.melder.includes(m.id) || this.melder.includes(m.entity_id);
                     return html`<li>
@@ -3295,9 +3303,9 @@ export class RaumzonenPanel extends LitElement {
               /><span class="unit">s</span></label
             >
             <div class="summary">
-              Der Raum gilt als belegt, solange ein Melder „Bewegung“ meldet, und noch ${10 + this.nachlauf} s danach${this.nachlauf
-                ? ` (10 s Haltezeit und ${this.nachlauf} s Nachlauf)`
-                : " (Haltezeit)"}. Sind alle Melder nicht erreichbar, bleibt der letzte Stand.
+              Der Raum gilt als belegt, solange ein Melder „Bewegung“ meldet, und noch ${MELDER_HALTE_S + this.nachlauf} s danach${this.nachlauf
+                ? ` (${MELDER_HALTE_S} s Haltezeit und ${this.nachlauf} s Nachlauf)`
+                : " (Haltezeit)"}. Dazu kommt die Nachlaufzeit, die am Melder selbst eingestellt ist. Sind alle Melder nicht erreichbar, bleibt der letzte Stand.
             </div>`
         : html`<ul class="doors">
             ${this.melder.map((m) => html`<li class="door"><ha-icon icon="mdi:motion-sensor"></ha-icon><span>${name(m)}</span></li>`)}

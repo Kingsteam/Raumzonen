@@ -4,6 +4,20 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.21.0] - 2026-11-26
+
+### Geändert
+
+- Melder-Räume werden schneller frei: Raumzonen hält „jemand da“ nach dem
+  letzten Melder nur noch 2 s statt 10 s (`MELDER_HALTE_S`); der Melder hält
+  ja selbst schon nach. Radar-Räume bleiben unverändert.
+
+### Hinzugefügt
+
+- Bei jedem platzierten Melder: „Reichweite laut Plan“ (weitester Punkt des
+  Raums vom Melder aus) als Hilfe, die Reichweite am Gerät passend
+  einzustellen. Raumzonen stellt Geräte nicht selbst ein.
+
 ## [0.20.0] - 2026-11-26
 
 ### Geändert

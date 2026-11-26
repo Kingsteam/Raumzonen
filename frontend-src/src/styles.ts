@@ -879,6 +879,11 @@ export const styles = css`
     max-height: 260px;
     overflow: auto;
   }
+  /* Im Raum: die Liste wächst mit (Einstellungen je Melder), kein eigener Rollbalken. */
+  .melder-liste.voll {
+    max-height: none;
+    overflow: visible;
+  }
   .melder-aktionen {
     margin: 0 0 6px 30px;
   }

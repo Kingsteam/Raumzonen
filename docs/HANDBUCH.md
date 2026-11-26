@@ -143,6 +143,14 @@ das ein Weg. Auf der Seite eines Melder-Raums zählt dessen „jemand da“
 Automationen gibt es das Ereignis `raumzonen_weg` mit `von`, `nach`, `tuer`
 und `genau`.
 
+**Reichweite der Melder:** Bei einem platzierten Melder steht unter
+„Melder und Raum“ die **Reichweite laut Plan**, also wie weit der
+entfernteste Punkt des Raums vom Melder liegt. Hat der Melder eine
+einstellbare Reichweite (z. B. „Maximum range“ bei kleinen Radar-Meldern),
+stell sie am Gerät etwa so groß plus 20 cm ein; dann sieht er nicht durch die
+Wand ins Nachbarzimmer. „Jemand da“ endet 2 s nach dem letzten Melder; dazu
+kommt die Nachlaufzeit, die am Melder selbst eingestellt ist.
+
 **Melder-Raum mit FP400 umwandeln:** Hast du einen Raum mit den
 Belegt-Anzeigen eines FP400 als Melder angelegt, steht unter „Melder und
 Raum“ der Knopf **„In Radar-Raum umwandeln“**. Wände, Türen, Lage im Haus,
