@@ -75,3 +75,73 @@ def test_verbindung_ins_leere_wird_geloest() -> None:
     model = RaumzonenModel(raeume=[a, raum("kueche", "t1")])
     tueren_abgleichen(model, {"flur"})
     assert a.oeffnungen[0].gegenstueck == ""
+
+
+def test_wege_zwei_radar_raeume() -> None:
+    from custom_components.raumzonen.core.wege import TuerKnoten, Wege
+
+    w = Wege()
+    w.setze(
+        {
+            "a/t": TuerKnoten("a/t", "a", "b", frozenset({"b/t"})),
+            "b/t": TuerKnoten("b/t", "b", "a", frozenset({"a/t"})),
+        },
+        set(),
+    )
+    assert w.tuer_belegt("a/t", 100.0) is None
+    weg = w.tuer_belegt("b/t", 103.0)
+    assert weg is not None
+    assert (weg.von, weg.nach, weg.genau) == ("a", "b", True)
+    # Dieselben Meldungen zählen nicht noch einmal.
+    assert w.tuer_belegt("a/t", 104.0) is None
+    # Zu spät: kein Weg.
+    assert w.tuer_belegt("b/t", 200.0) is None
+
+
+def test_wege_mit_melder_raum() -> None:
+    from custom_components.raumzonen.core.wege import TuerKnoten, Wege
+
+    w = Wege()
+    w.setze({"a/t": TuerKnoten("a/t", "a", "m")}, {"m"})
+    w.tuer_belegt("a/t", 10.0)
+    weg = w.raum_belegt("m", 14.0)
+    assert weg is not None
+    assert (weg.von, weg.nach, weg.genau) == ("a", "m", False)
+    # Umgekehrt: erst der Melder-Raum, dann die Tür im Radar-Raum.
+    w.raum_belegt("m", 50.0)
+    weg = w.tuer_belegt("a/t", 52.0)
+    assert weg is not None
+    assert (weg.von, weg.nach) == ("m", "a")
+    assert len(w.liste) == 2
+
+
+def test_wege_knoten_aus_tueren() -> None:
+    from custom_components.raumzonen.model import ZoneConfig, wege_knoten
+
+    a, b = raum("flur", "t1"), raum("kueche", "t1")
+    for r in (a, b):
+        r.art = "radar"
+        r.melder = []
+        r.sensor = SensorConfig(device_id="x")
+        # Tür-Zone vor der Öffnung (Wand unten, 50 bis 130 cm).
+        r.zonen.append(
+            ZoneConfig(
+                id="tuer",
+                name="Tür",
+                art="ausgang",
+                form={
+                    "art": "rechteck",
+                    "mitte": [90, 30],
+                    "breite": 80,
+                    "tiefe": 60,
+                    "winkel": 0,
+                },
+            )
+        )
+    a.oeffnungen[0].gegenstueck = "kueche/#t1"
+    model = RaumzonenModel(raeume=[a, b, raum("bad", "t1")])
+    tueren_abgleichen(model, {"flur"})
+    knoten, melder = wege_knoten(model)
+    assert knoten["flur/tuer"].partner == frozenset({"kueche/tuer"})
+    assert knoten["kueche/tuer"].ziel == "flur"
+    assert melder == {"bad"}

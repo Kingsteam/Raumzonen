@@ -50,7 +50,7 @@ from .core.fp400 import (
 )
 from .core.geometry import inner_point
 from .core.heat import HeatMap
-from .core.room import TAG_WIEDERHERGESTELLT, Room, ZoneEvent
+from .core.room import ART_AUSGANG, TAG_WIEDERHERGESTELLT, Room, ZoneEvent
 from .core.tracks import HELD, Target
 from .discovery import find_fp400_entities
 from .model import RaumConfig
@@ -336,6 +336,14 @@ class RoomController:
         for event in events:
             zone = self.room.zones[event.zone_id]
             self.last_reason[event.zone_id] = event.reason
+            if event.occupied:
+                # Wege durchs Haus: Tür-Zonen und Melder-Räume melden „belegt“.
+                wege = self.hass.data.get(f"{DOMAIN}_wege")
+                if wege is not None:
+                    if zone.art == ART_AUSGANG:
+                        wege.tuer_belegt(f"{self.raum.id}/{zone.id}", event.t)
+                    elif self.raum.ist_melder and zone.id == MELDER_ZONE_ID:
+                        wege.raum_belegt(self.raum.id, event.t)
             self.hass.bus.async_fire(
                 EVENT_ZONE,
                 {

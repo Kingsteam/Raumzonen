@@ -143,6 +143,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_room_create,
         ws_room_delete,
         ws_room_umwandeln,
+        ws_wege_get,
         ws_plan_import,
         ws_plan_bild_get,
         ws_plan_delete,
@@ -858,6 +859,33 @@ def kandidaten(hass: HomeAssistant, raeume: list[RaumConfig]) -> dict[str, Any]:
         "bereiche": bereiche,
         "vorschlaege": vorschlaege,
     }
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/wege/get"})
+@websocket_api.require_admin
+@callback
+def ws_wege_get(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Die letzten Wege durchs Haus (nur im Speicher, neueste zuletzt)."""
+    wege = hass.data.get(f"{DOMAIN}_wege")
+    knoten = wege.knoten if wege is not None else {}
+    connection.send_result(
+        msg["id"],
+        {
+            "wege": [
+                {
+                    "zeit": w.t,
+                    "von": w.von,
+                    "nach": w.nach,
+                    "tuer": knoten[w.tuer].name if w.tuer in knoten else "",
+                    "genau": w.genau,
+                }
+                for w in (wege.liste if wege is not None else [])
+            ],
+            "tueren": len(knoten),
+        },
+    )
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/kandidaten/get"})

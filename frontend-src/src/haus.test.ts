@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { naechsteTuer, oeffnungMitte, summeDauer, tuerenVon, vereinigen, wechsel } from "./haus";
+import { naechsteTuer, oeffnungMitte, summeDauer, tuerenVon, tuerZone, vereinigen, wechsel } from "./haus";
+import { formPoints, inPolygon } from "./geometry";
 import type { Raum } from "./types";
 
 const raum = (extra: Partial<Raum>): Raum =>
@@ -78,5 +79,22 @@ describe("naechsteTuer", () => {
     expect(v?.tuer.key).toBe("b/#o1");
     expect(v!.abstand).toBeLessThan(20);
     expect(naechsteTuer([a, b], "a", ta.punkt, 5)).toBeNull();
+  });
+});
+
+describe("tuerZone", () => {
+  it("liegt vor der Tür im Raum", () => {
+    const wand: [number, number][] = [
+      [0, 0],
+      [400, 0],
+      [400, 300],
+      [0, 300],
+    ];
+    const f = tuerZone(wand, { kante: 1, von: 100, bis: 180, art: "tuer" })!;
+    expect(f.art).toBe("rechteck");
+    if (f.art !== "rechteck") return;
+    expect(f.mitte).toEqual([370, 140]);
+    expect(f.breite).toBe(80);
+    for (const p of formPoints(f)) expect(inPolygon([p[0] - 0.01, p[1]], wand) || p[0] >= 399.9).toBe(true);
   });
 });

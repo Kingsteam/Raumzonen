@@ -58,6 +58,8 @@ MAX_AUFNAHME_TAGE: Final = 365
 
 # Ereignis für eigene Automationen: Zone belegt/frei.
 EVENT_ZONE: Final = f"{DOMAIN}_zone"
+# Weg durchs Haus: jemand ging durch eine Tür von einem Raum in einen anderen.
+EVENT_WEG: Final = f"{DOMAIN}_weg"
 
 # Ohne Rahmen so lange: Sensor gilt als still, nicht als weg. Nur Hinweis
 # im Diagnose-Sensor, ändert keine Zone.

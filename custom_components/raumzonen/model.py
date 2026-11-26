@@ -50,9 +50,10 @@ from .const import (
     SENSOR_ARTEN,
     SENSOR_FP400_Z2M,
 )
-from .core.geometry import Cells, Polygon, shape_from_dict
+from .core.geometry import Cells, Polygon, inner_point, shape_from_dict
 from .core.pose import Pose
 from .core.room import ART_AUSGANG, ART_NORMAL, ZONE_ARTEN, Room, Zone, ZoneRule
+from .core.wege import TuerKnoten
 
 
 @dataclass(slots=True)
@@ -493,6 +494,97 @@ def tueren_abgleichen(model: RaumzonenModel, vorrang: set[str]) -> None:
         ziel = alle.get(tuer.gegenstueck)
         if ziel is None or ziel[0].id == raum.id or ziel[1].gegenstueck != key:
             tuer.gegenstueck = ""
+
+
+# Tür-Zone und Öffnung gehören zusammen, wenn ihre Mitten so nah sind.
+TUER_ZONE_ABSTAND_CM = 100.0
+
+
+def oeffnung_mitte(raum: RaumConfig, o: OeffnungConfig) -> tuple[float, float] | None:
+    """Mitte einer Öffnung in der Wand (Raumkoordinaten)."""
+    n = len(raum.umriss)
+    if n < 3 or not 0 <= o.kante < n:
+        return None
+    (x1, y1), (x2, y2) = raum.umriss[o.kante], raum.umriss[(o.kante + 1) % n]
+    laenge = math.hypot(x2 - x1, y2 - y1)
+    if not laenge:
+        return None
+    t = (o.von + o.bis) / 2 / laenge
+    return x1 + (x2 - x1) * t, y1 + (y2 - y1) * t
+
+
+def wege_knoten(model: RaumzonenModel) -> tuple[dict[str, TuerKnoten], set[str]]:
+    """Tür-Zonen der Radar-Räume mit ihrem Ziel und den Tür-Zonen gegenüber.
+
+    Gegenüber ist: das Gegenstück der Zone selbst, sonst die Tür-Zonen vor
+    dem Gegenstück der Öffnung, vor der die Zone liegt, sonst alle Tür-Zonen
+    im Zielraum, die zurück in diesen Raum führen.
+    """
+    mitten: dict[str, tuple[float, float]] = {}
+    zonen_von: dict[str, list[str]] = {}
+    for raum in model.raeume:
+        if raum.ist_melder:
+            continue
+        for zone in raum.zonen:
+            if zone.art != ART_AUSGANG:
+                continue
+            try:
+                mitten[f"{raum.id}/{zone.id}"] = inner_point(shape_from_dict(zone.form))
+            except ValueError, KeyError, TypeError:
+                continue
+            zonen_von.setdefault(raum.id, []).append(f"{raum.id}/{zone.id}")
+
+    def zonen_vor(raum: RaumConfig, o: OeffnungConfig) -> list[str]:
+        p = oeffnung_mitte(raum, o)
+        if p is None:
+            return []
+        return [
+            k
+            for k in zonen_von.get(raum.id, [])
+            if math.dist(mitten[k], p) <= TUER_ZONE_ABSTAND_CM
+        ]
+
+    tueren = model.tueren()
+    knoten: dict[str, TuerKnoten] = {}
+    for raum in model.raeume:
+        for key in zonen_von.get(raum.id, []):
+            zone = next(z for z in raum.zonen if f"{raum.id}/{z.id}" == key)
+            ziel = zone.fuehrt_zu
+            partner: set[str] = set()
+            if zone.gegenstueck in mitten:
+                partner.add(zone.gegenstueck)
+            # Die Öffnung, vor der die Zone liegt.
+            naechste = min(
+                (
+                    (math.dist(mitten[key], p), o)
+                    for o in raum.oeffnungen
+                    if (p := oeffnung_mitte(raum, o)) is not None
+                ),
+                default=None,
+                key=lambda x: x[0],
+            )
+            if naechste and naechste[0] <= TUER_ZONE_ABSTAND_CM:
+                o = naechste[1]
+                ziel = ziel or o.fuehrt_zu
+                if (gegen := tueren.get(o.gegenstueck)) is not None:
+                    ziel = gegen[0].id
+                    if isinstance(gegen[1], OeffnungConfig):
+                        partner.update(zonen_vor(gegen[0], gegen[1]))
+                    elif o.gegenstueck in mitten:
+                        partner.add(o.gegenstueck)
+            if not partner and ziel:
+                for k in zonen_von.get(ziel, []):
+                    z = next(x for x in model.raum(ziel).zonen if f"{ziel}/{x.id}" == k)
+                    if z.fuehrt_zu == raum.id:
+                        partner.add(k)
+            knoten[key] = TuerKnoten(
+                key=key,
+                raum=raum.id,
+                ziel=ziel if ziel != FUEHRT_ZU_AUSSEN else "",
+                partner=frozenset(partner),
+                name=zone.name,
+            )
+    return knoten, {r.id for r in model.raeume if r.ist_melder}
 
 
 def _check_oeffnungen(raum: RaumConfig, raum_ids: set[str]) -> None:

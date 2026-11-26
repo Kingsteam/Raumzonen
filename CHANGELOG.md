@@ -4,6 +4,20 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.17.0] - 2026-11-26
+
+### Hinzugefügt
+
+- Wege durchs Haus: Werden kurz nacheinander (bis 10 s) die Tür-Zone in
+  einem Raum und die verbundene Tür-Zone im Nachbarraum belegt, ist das ein
+  Weg von dort nach hier. Mit einem Melder-Raum auf der anderen Seite zählt
+  dessen „jemand da“ (grob). Jeder Weg kommt als Ereignis `raumzonen_weg`
+  (von, nach, Tür, genau) für eigene Automationen; im Hausplan unter
+  „Wege“ stehen die letzten 20 (nur im Speicher, seit dem letzten Start).
+- „Tür-Zonen anlegen“ (Raum → Zonen, Radar-Räume): vor jede Tür in der Wand
+  eine Zone mit der Rolle „Tür“, so breit wie die Tür, mit Name und Ziel der
+  Tür.
+
 ## [0.16.0] - 2026-11-26
 
 ### Hinzugefügt

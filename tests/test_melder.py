@@ -813,3 +813,28 @@ async def test_melder_raum_in_radar_raum_umwandeln(
         {"type": f"{DOMAIN}/room/umwandeln", "raum_id": "stube", "device_id": radar.id}
     )
     assert (await client.receive_json())["error"]["code"] == "invalid"
+
+
+async def test_wege_ereignis_und_abfrage(
+    hass: HomeAssistant, loaded: MockConfigEntry, hass_ws_client
+) -> None:
+    """Ein Weg wird als Ereignis gemeldet und ist über wege/get abrufbar."""
+    from pytest_homeassistant_custom_component.common import async_capture_events
+
+    from custom_components.raumzonen.core.wege import TuerKnoten
+
+    wege = hass.data[f"{DOMAIN}_wege"]
+    ereignisse = async_capture_events(hass, f"{DOMAIN}_weg")
+    knoten = {
+        "a/t": TuerKnoten("a/t", "a", "b", frozenset({"b/t"}), "Tür A"),
+        "b/t": TuerKnoten("b/t", "b", "a", frozenset({"a/t"}), "Tür B"),
+    }
+    wege.knoten.update(knoten)
+    wege.tuer_belegt("a/t", 1000.0)
+    wege.tuer_belegt("b/t", 1002.0)
+    await hass.async_block_till_done()
+    assert [(e.data["von_id"], e.data["nach_id"]) for e in ereignisse] == [("a", "b")]
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id({"type": f"{DOMAIN}/wege/get"})
+    result = (await client.receive_json())["result"]
+    assert result["wege"][-1]["tuer"] == "Tür B"

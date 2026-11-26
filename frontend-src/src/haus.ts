@@ -3,7 +3,8 @@
  * Bewegungsprofil des Hauses (wann war in welchem Raum jemand).
  */
 
-import { formCenter, toHouse } from "./geometry";
+import { formCenter, formPoints, inPolygon, toHouse } from "./geometry";
+import type { Form } from "./types";
 import type { Oeffnung, Point, Raum } from "./types";
 
 export interface Tuer {
@@ -125,4 +126,37 @@ export function wechsel(raeume: Record<string, [number, number][]>, fenster = 30
     if (best) out.push({ zeit: s.t, von: best.raum, nach: s.raum });
   }
   return out;
+}
+
+/**
+ * Tür-Zone vor einer Öffnung: Rechteck so breit wie die Öffnung, `tiefe` cm
+ * in den Raum hinein, an der Wand ausgerichtet.
+ */
+export function tuerZone(umriss: Point[], o: Oeffnung, tiefe = 60): Form | null {
+  const n = umriss.length;
+  if (n < 3 || o.kante < 0 || o.kante >= n) return null;
+  const [x1, y1] = umriss[o.kante];
+  const [x2, y2] = umriss[(o.kante + 1) % n];
+  const len = Math.hypot(x2 - x1, y2 - y1);
+  if (!len) return null;
+  const [ux, uy] = [(x2 - x1) / len, (y2 - y1) / len];
+  const t = (o.von + o.bis) / 2;
+  const auf: Point = [x1 + ux * t, y1 + uy * t];
+  // Die Normale, die in den Raum zeigt.
+  let [nx, ny] = [-uy, ux];
+  if (!inPolygon([auf[0] + nx * 5, auf[1] + ny * 5], umriss)) [nx, ny] = [-nx, -ny];
+  return {
+    art: "rechteck",
+    mitte: [Math.round(auf[0] + (nx * tiefe) / 2), Math.round(auf[1] + (ny * tiefe) / 2)],
+    breite: Math.round(o.bis - o.von),
+    tiefe,
+    winkel: Math.round((Math.atan2(uy, ux) * 180) / Math.PI),
+  };
+}
+
+/** Liegt vor dieser Öffnung schon eine Tür-Zone (Mitte höchstens `max` cm entfernt)? */
+export function hatTuerZone(raum: Raum, o: Oeffnung, max = 80): boolean {
+  const p = oeffnungMitte(raum.umriss, o);
+  if (!p) return true;
+  return raum.zonen.some((z) => z.art === "ausgang" && formPoints(z.form).length && Math.hypot(formCenter(z.form)[0] - p[0], formCenter(z.form)[1] - p[1]) <= max);
 }

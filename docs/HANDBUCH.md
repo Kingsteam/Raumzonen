@@ -103,6 +103,16 @@ Hausplan steht bei jeder Tür ohne Ziel ein Vorschlag („Nächste Tür: …“)
 „Türen automatisch verbinden“ übernimmt alle Vorschläge auf einmal. Danach
 „Speichern“. Eine Verbindung gilt immer in beide Richtungen.
 
+**Wege durchs Haus:** Damit Raumzonen sieht, wer von wo nach wo geht,
+braucht jede Tür (1) eine Verbindung zur Tür gegenüber (siehe oben) und (2)
+in Radar-Räumen eine **Tür-Zone**: im Raum unter „Zonen“ auf **„Tür-Zonen
+anlegen“** tippen, prüfen, „Speichern“. Wird erst die Tür-Zone in einem Raum
+und kurz danach (bis 10 s) die verbundene Tür-Zone im Nachbarraum belegt, ist
+das ein Weg. Auf der Seite eines Melder-Raums zählt dessen „jemand da“
+(ungenauer). Die letzten Wege stehen im Hausplan unter **„Wege“**; für
+Automationen gibt es das Ereignis `raumzonen_weg` mit `von`, `nach`, `tuer`
+und `genau`.
+
 **Melder-Raum mit FP400 umwandeln:** Hast du einen Raum mit den
 Belegt-Anzeigen eines FP400 als Melder angelegt, steht unter „Melder und
 Raum“ der Knopf **„In Radar-Raum umwandeln“**. Wände, Türen, Lage im Haus,

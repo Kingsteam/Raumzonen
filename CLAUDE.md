@@ -18,7 +18,7 @@ Zone, Spuren, die nicht plötzlich verschwinden. Konzept: `docs/KONZEPT.md`
 (allgemeine Fassung; die vollständige und die Auswertung der Aufnahmen
 liegen in `haus-privat/raumzonen/docs/`).
 
-Stand 0.16.0: **Phase 0 bis 4a, Hausplan, Türen in Wänden.** Rechenkern in reinem Python, getestet gegen
+Stand 0.17.0: **Phase 0 bis 4a, Hausplan, Türen in Wänden.** Rechenkern in reinem Python, getestet gegen
 anonymisierte Aufnahmen; Sensor-Anbindung (MQTT oder Entitäten, nur lesen),
 Entitäten je Zone und Raum, Ereignis `raumzonen_zone`, Einrichtung über den
 Options-Flow; Panel „Raumzonen“ (sehen alle, ändern nur Admins) mit
@@ -96,6 +96,7 @@ Nächstes: 4b (Herkunft, Einstufung, Sicherheit, `hinweis/1`); siehe
 | `core/trace.py` | Aufnahmen `fp400-trace/1` lesen und abspielen |
 | `core/pose.py` | Lage des Sensors im Raum: Sensor ↔ Raumkoordinaten |
 | `core/auswertung.py` | Auswertung der eigenen Aufnahme: je Figur Zeit in 5-cm-Zellen, je Zone Dauer und Zeitabschnitte (Ruhe ohne Rahmen zählt bis 30 min, Gehaltenes/Ausfall bis 60 s); WebSocket `auswertung/get` (nur Admins) |
+| `core/wege.py` | Wege durchs Haus: `Wege` (in `hass.data["raumzonen_wege"]`, überlebt das Neuladen) paart „belegt“ von Tür-Zonen (und „Anwesenheit“ von Melder-Räumen) innerhalb 10 s zu `Weg(von, nach, tuer, genau)`; Graph aus `wege_knoten()` in `model.py`; Ereignis `raumzonen_weg`, WebSocket `wege/get` (nur Admins) |
 | `core/heat.py` | Bewegungskarte (20-cm-Zellen, 5-min-Fächer, 24 h, nur Speicher; liegt in `hass.data`, überlebt das Neuladen) |
 | `core/fp400.py` | Meldungen des Konverters lesen (`tracking_targets`, `targets_xy`, Verfügbarkeit, Software-Zonen) |
 | `devtools/trace_export.py` | Verlaufsdateien (REST-Format) → anonymisierte Aufnahmen; spricht nie mit Home Assistant |

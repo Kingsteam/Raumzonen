@@ -13,16 +13,17 @@ from dataclasses import dataclass, field
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryError
 from homeassistant.helpers import config_validation as cv, device_registry as dr
 from homeassistant.helpers.typing import ConfigType
 
 from .api import async_get_api
-from .const import DOMAIN, LOGGER, NAME
+from .const import DOMAIN, EVENT_WEG, LOGGER, NAME
 from .controller import RoomController
+from .core.wege import Weg, Wege
 from .entity import room_device_key
-from .model import build_room
+from .model import RaumzonenModel, build_room, wege_knoten
 from .panel import async_register_panel, async_remove_panel
 from .store import RaumzonenStore
 from .websocket_api import async_register as async_register_websocket
@@ -96,6 +97,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: RaumzonenConfigEntry) ->
     for controller in data.controllers.values():
         await controller.async_start()
     async_get_api(hass).attach(store.model.raeume, data.controllers)
+    _wege_einrichten(hass, store.model)
     await async_register_panel(hass)
     LOGGER.debug("Raumzonen eingerichtet: %s Räume", len(data.controllers))
     return True
@@ -108,3 +110,32 @@ async def async_unload_entry(hass: HomeAssistant, entry: RaumzonenConfigEntry) -
         await controller.async_shutdown()
     async_remove_panel(hass)
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+def wege_von(hass: HomeAssistant) -> Wege:
+    """Wege durchs Haus (in ``hass.data``, überlebt das Neuladen)."""
+    return hass.data.setdefault(f"{DOMAIN}_wege", Wege())
+
+
+def _wege_einrichten(hass: HomeAssistant, model: RaumzonenModel) -> None:
+    """Türen und Räume neu verknüpfen; jeder Weg wird als Ereignis gemeldet."""
+    wege = wege_von(hass)
+    wege.setze(*wege_knoten(model))
+    namen = {r.id: r.name for r in model.raeume}
+    knoten = wege.knoten
+
+    @callback
+    def melden(weg: Weg) -> None:
+        hass.bus.async_fire(
+            EVENT_WEG,
+            {
+                "von_id": weg.von,
+                "von": namen.get(weg.von, weg.von),
+                "nach_id": weg.nach,
+                "nach": namen.get(weg.nach, weg.nach),
+                "tuer": knoten[weg.tuer].name if weg.tuer in knoten else "",
+                "genau": weg.genau,
+            },
+        )
+
+    wege.on_weg = melden

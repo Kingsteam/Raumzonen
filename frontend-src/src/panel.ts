@@ -71,7 +71,7 @@ import {
 import { styles } from "./styles";
 import { dauer, dichte, flecken, pixel, summe, type HeatCell } from "./heat";
 import { fehlerText } from "./fehler";
-import { naechsteTuer, oeffnungMitte, oeffnungName, summeDauer, tuerenVon, vereinigen, wechsel, type Tuer } from "./haus";
+import { hatTuerZone, naechsteTuer, oeffnungMitte, oeffnungName, summeDauer, tuerenVon, tuerZone, vereinigen, wechsel, type Tuer } from "./haus";
 import { einmessen, stelle, stellenProblem, type Einmessung } from "./einmessen";
 import { bbox, erkenneGrundriss, jpegsAusPdf, uebernehmen, type Grundriss } from "./grundriss";
 import type { Auswertung, AuswertungFigur, Form, Hass, Heat, Kandidaten, MelderLage, Plan, Live, Oeffnung, Point, Raum, Regel, RoomsResult, Zone } from "./types";
@@ -79,6 +79,14 @@ import type { Auswertung, AuswertungFigur, Form, Hass, Heat, Kandidaten, MelderL
 const DOMAIN = "raumzonen";
 const SNAP_CM = 5;
 const HIT_PX = 12;
+
+interface WegInfo {
+  zeit: number;
+  von: string;
+  nach: string;
+  tuer: string;
+  genau: boolean;
+}
 
 type Tool = "auswahl" | "rechteck" | "vieleck" | "zellen" | "umriss" | "oeffnung";
 type Tab = "zonen" | "raum" | "auswertung";
@@ -297,6 +305,7 @@ export class RaumzonenPanel extends LitElement {
   /** "<raum_id>/<zone_id>" → wohin die Tür führt ("" = weiß nicht). */
   /** Ziel je Tür: "", "aussen", Raum-ID oder "tuer:<Schlüssel der anderen Tür>". */
   @state() private tueren: Record<string, string> = {};
+  @state() private wege?: { wege: WegInfo[]; tueren: number };
   /** Geänderte Namen von Türen in Wänden. */
   @state() private tuerNamen: Record<string, string> = {};
   @state() private hausLive: Record<string, Live> = {};
@@ -1030,6 +1039,49 @@ export class RaumzonenPanel extends LitElement {
     } finally {
       this.saving = false;
     }
+  }
+
+  private async loadWege(): Promise<void> {
+    if (!this._hass || !this.kannAendern) return;
+    try {
+      this.wege = await this._hass.callWS<{ wege: WegInfo[]; tueren: number }>({ type: `${DOMAIN}/wege/get` });
+    } catch (err) {
+      this.showToast(`Wege nicht geladen: ${fehlerText(err)}`);
+    }
+  }
+
+  /** Die letzten Wege durchs Haus: wer ging wann durch welche Tür wohin. */
+  private renderWege(): TemplateResult {
+    const w = this.wege;
+    const name = (id: string) => this.data?.raeume.find((r) => r.id === id)?.name ?? id;
+    const zeit = (t: number) => new Date(t * 1000).toLocaleTimeString(this._hass?.language ?? "de", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    return html`<h3>Wege</h3>
+      <p class="hint small">
+        Wer ging wann von welchem Raum in welchen? Dafür braucht jede Tür eine Tür-Zone (im Raum unter „Zonen“: „Tür-Zonen anlegen“) und eine Verbindung zur Tür gegenüber.
+        Zwischen zwei Radar-Räumen genau, mit Bewegungsmeldern grob.
+      </p>
+      <div class="actions">
+        <button class="text small" @click=${() => void this.loadWege()}><ha-icon icon="mdi:refresh"></ha-icon>${w ? "Neu laden" : "Anzeigen"}</button>
+      </div>
+      ${w
+        ? w.wege.length
+          ? html`<ul class="list wege">
+              ${[...w.wege]
+                .reverse()
+                .slice(0, 20)
+                .map(
+                  (x) => html`<li class="item">
+                    <div class="row static">
+                      <span class="marker-icon"><ha-icon icon="mdi:walk"></ha-icon></span>
+                      <span class="name"
+                        >${name(x.von)} → ${name(x.nach)}<small>${zeit(x.zeit)}${x.tuer ? ` · ${x.tuer}` : ""}${x.genau ? "" : " · grob (Melder)"}</small></span
+                      >
+                    </div>
+                  </li>`,
+                )}
+            </ul>`
+          : html`<p class="hint small">${w.tueren ? "Noch kein Weg erkannt (seit dem letzten Neustart)." : "Noch keine Tür-Zone in einem Radar-Raum."}</p>`
+        : nothing}`;
   }
 
   /** Melder-Raum mit Anzeigen eines FP400 → Radar-Raum (Wände, Türen, Lage bleiben). */
@@ -2993,7 +3045,42 @@ export class RaumzonenPanel extends LitElement {
         ? nothing
         : html`<div class="actions">
             <button class="text small" @click=${this.importConverter}><ha-icon icon="mdi:import"></ha-icon>Aus dem Konverter übernehmen</button>
+            ${this.offeneTueren().length
+              ? html`<button class="text small" @click=${() => this.tuerZonenAnlegen()}>
+                  <ha-icon icon="mdi:door-sliding"></ha-icon>Tür-Zonen anlegen (${this.offeneTueren().length})
+                </button>`
+              : nothing}
           </div>`}`;
+  }
+
+  /** Türen in den Wänden, vor denen noch keine Tür-Zone liegt. */
+  private offeneTueren(): number[] {
+    if (!this.raum || this.istMelder || this.umriss.length < 3) return [];
+    const raum = { ...this.raum, umriss: this.umriss, zonen: this.zones };
+    return this.oeffnungen.map((o, i) => (hatTuerZone(raum, o) ? -1 : i)).filter((i) => i >= 0);
+  }
+
+  /**
+   * Vor jede Tür eine Zone mit der Rolle „Tür“: damit erkennt Raumzonen
+   * „betreten“ und „verlassen“ und verfolgt Wege von Raum zu Raum.
+   */
+  private tuerZonenAnlegen(): void {
+    if (!this.data) return;
+    this.remember();
+    let zones = [...this.zones];
+    let n = 0;
+    for (const i of this.offeneTueren()) {
+      const o = this.oeffnungen[i];
+      const form = tuerZone(this.umriss, o);
+      if (!form) continue;
+      let zone = applyRolle(newZone(form, zones, this.data.vorlagen), "tuer", this.data.vorlagen);
+      zone = { ...zone, name: oeffnungName(o, i), fuehrt_zu: o.fuehrt_zu ?? "" };
+      zones = [...zones, zone];
+      n++;
+    }
+    this.zones = zones;
+    this.dirty = n > 0 || this.dirty;
+    this.showToast(n ? `${n} Tür-${n === 1 ? "Zone" : "Zonen"} angelegt. Prüfen und „Speichern“.` : "Keine Tür ohne Tür-Zone gefunden.");
   }
 
   private renderMelderTab(): TemplateResult {
@@ -3494,7 +3581,7 @@ export class RaumzonenPanel extends LitElement {
             </li>`;
           })}
         </ul>
-        ${this.kannAendern ? html`${this.renderPlanListe()} ${this.renderProfil()}` : nothing}
+        ${this.kannAendern ? html`${this.renderPlanListe()} ${this.renderProfil()} ${this.renderWege()}` : nothing}
       </div>
     </aside>`;
   }
