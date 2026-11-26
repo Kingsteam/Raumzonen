@@ -84,7 +84,9 @@ erkannt hat: nummerierte Räume, grün die Türen, grau die Fenster.
 
 Liegt das Bild nicht genau unter den Räumen: im Hausplan unter
 **Grundrisse → Ausrichten** das Bild ziehen, drehen (90°, 5°, 1°) und an
-den runden Ecken zuschneiden, dann „Speichern“. Stimmt die Größe nicht,
+den runden Ecken zuschneiden, dann „Speichern“. Enthält ein PDF mehrere
+Grundrisse (einer je Seite), zeigt das Panel sie nebeneinander; du wählst
+einen und übernimmst den anderen danach genauso. Stimmt die Größe nicht,
 dort mit „1 %“/„10 %“ größer oder kleiner machen, oder „Maß neu setzen“:
 zwei Punkte einer bekannten Strecke im Bild antippen (z. B. die Enden
 einer Wand), die echte Länge in Metern eingeben, „Maß übernehmen“.
@@ -136,7 +138,10 @@ Zone eines Aqara FP2; jede Zone bekommt eine eigene Belegt-Anzeige. In Home Assi
 „Melder und Raum“ lassen sich Melder hinzufügen oder entfernen und ein
 **Nachlauf** einstellen (so lange bleibt der Raum belegt, nachdem alle
 Melder „aus“ melden). Wände und Türen zeichnet man wie bei jedem Raum; im
-Hausplan stellt man bei jeder Tür ein, wohin sie führt.
+Hausplan stellt man bei jeder Tür ein, wohin sie führt. Beim
+platzierten Melder wählst du die **Erfassung**: „Rundum (Decke)“ für
+Melder, die ringsum sehen, oder „Gerichtet (Wand)“ mit der Öffnung (60° bis
+150°); dazu die Reichweite in Metern.
 
 **Bewegungsprofil** (unten im Hausplan): für jeden Raum, wann dort jemand
 war, und die letzten Wechsel von Raum zu Raum. Welche Person es war, weiß

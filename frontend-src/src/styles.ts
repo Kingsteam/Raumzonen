@@ -659,6 +659,39 @@ export const styles = css`
     font-size: 11px;
     fill: var(--rz-tuer);
   }
+  .melder-erfassung {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+  }
+  .plan-bilder {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+    margin: 8px 0;
+  }
+  .plan-bild-wahl {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px;
+    border: 2px solid var(--divider-color);
+    border-radius: 8px;
+    background: var(--card-background-color);
+    color: var(--primary-text-color);
+    cursor: pointer;
+    font: inherit;
+  }
+  .plan-bild-wahl:hover {
+    border-color: var(--primary-color);
+  }
+  .plan-bild-wahl img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: contain;
+    border-radius: 4px;
+  }
   .plan-strecke-linie {
     stroke: var(--accent);
     stroke-width: 3;

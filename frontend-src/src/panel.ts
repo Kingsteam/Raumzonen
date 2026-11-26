@@ -73,7 +73,7 @@ import { dauer, dichte, flecken, pixel, summe, type HeatCell } from "./heat";
 import { fehlerText } from "./fehler";
 import { summeDauer, tuerenVon, vereinigen, wechsel, type Tuer } from "./haus";
 import { einmessen, stelle, stellenProblem, type Einmessung } from "./einmessen";
-import { bbox, erkenneGrundriss, jpegAusPdf, uebernehmen, type Grundriss } from "./grundriss";
+import { bbox, erkenneGrundriss, jpegsAusPdf, uebernehmen, type Grundriss } from "./grundriss";
 import type { Auswertung, AuswertungFigur, Form, Hass, Heat, Kandidaten, MelderLage, Plan, Live, Oeffnung, Point, Raum, Regel, RoomsResult, Zone } from "./types";
 
 const DOMAIN = "raumzonen";
@@ -257,6 +257,8 @@ export class RaumzonenPanel extends LitElement {
     streckeM: number;
   } | null = null;
   @state() private planLaedt = false;
+  /** PDF mit mehreren Grundrissen: welcher soll es sein? */
+  @state() private planAuswahl: { name: string; bilder: { blob: Blob; url: string }[] } | null = null;
   /** Bilder der Grundrisse (Plan-ID → Objekt-URL). */
   @state() private planBilder: Record<string, string> = {};
   /** Grundriss wird ausgerichtet (verschieben, drehen, zuschneiden). */
@@ -789,13 +791,72 @@ export class RaumzonenPanel extends LitElement {
 
   private async planLaden(file: File): Promise<void> {
     this.planLaedt = true;
+    const name = file.name.replace(/\.[^.]+$/, "").slice(0, 60) || "Grundriss";
     try {
-      let blob: Blob = file;
       if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
-        const jpg = jpegAusPdf(new Uint8Array(await file.arrayBuffer()));
-        if (!jpg) throw new Error("Im PDF ist kein Bild des Grundrisses.");
-        blob = new Blob([jpg.slice()], { type: "image/jpeg" });
+        const bilder: Blob[] = [];
+        for (const jpg of jpegsAusPdf(new Uint8Array(await file.arrayBuffer()))) {
+          const blob = new Blob([jpg.slice()], { type: "image/jpeg" });
+          if (await this.istGrundriss(blob)) bilder.push(blob);
+        }
+        if (!bilder.length) throw new Error("Im PDF ist kein Bild des Grundrisses.");
+        if (bilder.length > 1) {
+          this.planAuswahl = { name, bilder: bilder.map((blob) => ({ blob, url: URL.createObjectURL(blob) })) };
+          return;
+        }
+        await this.planBildLaden(bilder[0], name);
+        return;
       }
+      await this.planBildLaden(file, name);
+    } catch (err) {
+      this.showToast(`Grundriss nicht gelesen: ${fehlerText(err)}`);
+    } finally {
+      this.planLaedt = false;
+    }
+  }
+
+  /** Grob prüfen, ob ein Bild etwas zeigt (leere Seiten und kleine Symbole weglassen). */
+  private async istGrundriss(blob: Blob): Promise<boolean> {
+    try {
+      const bmp = await createImageBitmap(blob);
+      if (bmp.width < 300 || bmp.height < 200) return false;
+      const c = document.createElement("canvas");
+      c.width = 200;
+      c.height = 200;
+      const ctx = c.getContext("2d")!;
+      ctx.drawImage(bmp, 0, 0, 200, 200);
+      const d = ctx.getImageData(0, 0, 200, 200).data;
+      let dunkel = 0;
+      for (let i = 0; i < d.length; i += 4) if (d[i] + d[i + 1] + d[i + 2] < 600) dunkel++;
+      return dunkel > 200; // mehr als 0,5 % nicht weiß
+    } catch {
+      return false;
+    }
+  }
+
+  private planAuswahlZu(): void {
+    for (const b of this.planAuswahl?.bilder ?? []) URL.revokeObjectURL(b.url);
+    this.planAuswahl = null;
+  }
+
+  private async planAuswaehlen(i: number): Promise<void> {
+    const a = this.planAuswahl;
+    if (!a) return;
+    const blob = a.bilder[i].blob;
+    const name = `${a.name} ${i + 1}`.slice(0, 60);
+    this.planAuswahlZu();
+    this.planLaedt = true;
+    try {
+      await this.planBildLaden(blob, name);
+    } catch (err) {
+      this.showToast(`Grundriss nicht gelesen: ${fehlerText(err)}`);
+    } finally {
+      this.planLaedt = false;
+    }
+  }
+
+  private async planBildLaden(blob: Blob, name: string): Promise<void> {
+    {
       const bmp = await createImageBitmap(blob);
       // Sehr große Bilder verkleinern (schont schwache Geräte).
       const f = Math.min(1, 4000 / Math.max(bmp.width, bmp.height));
@@ -809,12 +870,7 @@ export class RaumzonenPanel extends LitElement {
       const art: Record<number, "tuer" | "offen" | "fenster"> = {};
       g.luecken.forEach((l, i) => (art[i] = l.partner !== null ? "tuer" : "fenster"));
       const jpeg = canvas.toDataURL("image/jpeg", 0.85).split(",")[1];
-      const name = file.name.replace(/\.[^.]+$/, "").slice(0, 60) || "Grundriss";
       this.plan = { bild: URL.createObjectURL(blob), g, zuordnung: g.raeume.map(() => ""), art, massRaum: 0, massSeite: "breite", massM: 0, jpeg, name, strecke: [], streckeM: 0 };
-    } catch (err) {
-      this.showToast(`Grundriss nicht gelesen: ${fehlerText(err)}`);
-    } finally {
-      this.planLaedt = false;
     }
   }
 
@@ -2143,6 +2199,51 @@ export class RaumzonenPanel extends LitElement {
     return m?.name ?? "Unbekannter Melder";
   }
 
+  private melderLageAendern(key: string, patch: Partial<MelderLage>): void {
+    const l = this.melderLagen[key];
+    if (!l) return;
+    this.melderLagen = { ...this.melderLagen, [key]: { ...l, ...patch } };
+    this.dirty = true;
+  }
+
+  /** Erfassung eines platzierten Melders: rundum (Decke) oder gerichtet (Wand), Reichweite. */
+  private renderMelderErfassung(key: string): TemplateResult | typeof nothing {
+    const l = this.melderLagen[key];
+    if (!l) return nothing;
+    const rundum = l.oeffnung_grad >= 360;
+    return html`<div class="melder-erfassung">
+      <div class="levels" role="group" aria-label="Erfassung">
+        <button class=${rundum ? "active" : ""} @click=${() => this.melderLageAendern(key, { oeffnung_grad: 360 })}>
+          <ha-icon icon="mdi:circle-outline"></ha-icon>Rundum (Decke)
+        </button>
+        <button class=${rundum ? "" : "active"} @click=${() => this.melderLageAendern(key, { oeffnung_grad: rundum ? 100 : l.oeffnung_grad })}>
+          <ha-icon icon="mdi:angle-acute"></ha-icon>Gerichtet (Wand)
+        </button>
+      </div>
+      ${rundum
+        ? nothing
+        : html`<div class="levels" role="group" aria-label="Öffnung">
+            ${[60, 90, 120, 150].map(
+              (g) => html`<button class=${Math.round(l.oeffnung_grad) === g ? "active" : ""} @click=${() => this.melderLageAendern(key, { oeffnung_grad: g })}>${g}°</button>`,
+            )}
+          </div>`}
+      <label class="field"
+        >Reichweite<input
+          type="number"
+          min="0.5"
+          max="15"
+          step="0.5"
+          .value=${String(l.reichweite_cm / 100)}
+          @change=${(e: Event) => {
+            const v = Number((e.target as HTMLInputElement).value.replace(",", "."));
+            if (Number.isFinite(v) && v > 0) this.melderLageAendern(key, { reichweite_cm: Math.round(Math.max(50, Math.min(1500, v * 100))) });
+          }}
+        /><span class="unit">m</span></label
+      >
+      <p class="hint small">${rundum ? "Erfasst ringsum, z. B. an der Decke." : "Erfasst nur nach vorne; am gelben Griff im Plan drehen."}</p>
+    </div>`;
+  }
+
   private melderGriff(lage: MelderLage): Point {
     const [dx, dy] = sensorDirection(lage.winkel);
     const len = 40 / this.view.scale;
@@ -2158,7 +2259,7 @@ export class RaumzonenPanel extends LitElement {
       const [hx, hy] = this.toScreen(this.melderGriff(l));
       return svg`<g class="melder-lage">
         <polygon class="coverage" points=${this.screenPoints(sectorPoints([l.x, l.y], l.winkel, l.reichweite_cm, l.oeffnung_grad))} />
-        ${this.kannAendern
+        ${this.kannAendern && l.oeffnung_grad < 360
           ? svg`<line class="sensor-line" x1=${x} y1=${y} x2=${hx} y2=${hy} /><circle class="handle angle" cx=${hx} cy=${hy} r="7" />`
           : nothing}
         <circle class="melder-punkt" cx=${x} cy=${y} r="9" />
@@ -2797,6 +2898,7 @@ export class RaumzonenPanel extends LitElement {
                               : html`<button class="text small" @click=${() => this.melderPlatzieren(m.id)}>
                                   <ha-icon icon="mdi:map-marker-plus-outline"></ha-icon>Im Plan platzieren
                                 </button>`}
+                            ${this.renderMelderErfassung(m.id)}
                             <button
                               class="text small"
                               @click=${() => {
@@ -3317,6 +3419,21 @@ export class RaumzonenPanel extends LitElement {
 
   private renderPlanImport(): TemplateResult {
     const p = this.plan;
+    const a = this.planAuswahl;
+    if (!p && a) {
+      return html`<div class="plan-auswahl">
+        <div class="label-text">Im PDF sind ${a.bilder.length} Grundrisse. Welchen übernehmen?</div>
+        <div class="plan-bilder">
+          ${a.bilder.map(
+            (b, i) => html`<button class="plan-bild-wahl" @click=${() => void this.planAuswaehlen(i)}>
+              <img src=${b.url} alt="Grundriss ${i + 1}" /><span>Grundriss ${i + 1}</span>
+            </button>`,
+          )}
+        </div>
+        <p class="hint small">Den anderen danach genauso übernehmen (zum Beispiel für das zweite Stockwerk).</p>
+        <div class="actions"><button class="text small" @click=${() => this.planAuswahlZu()}>Abbrechen</button></div>
+      </div>`;
+    }
     if (!p) {
       return html`<div class="actions">
         <label class="text small file-knopf">

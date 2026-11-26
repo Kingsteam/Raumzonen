@@ -4,7 +4,14 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
-## [0.13.1] - 2026-11-26
+## [0.14.0] - 2026-11-26
+
+### Hinzugefügt
+
+- PDF mit mehreren Grundrissen (einer je Seite): beim Übernehmen erscheinen
+  alle als Vorschau, man wählt einen. Leere Seiten werden ausgelassen.
+- Melder im Plan: Erfassung „Rundum (Decke)“ oder „Gerichtet (Wand)“ mit
+  Öffnung 60°, 90°, 120° oder 150°, dazu die Reichweite in Metern.
 
 ### Geändert
 

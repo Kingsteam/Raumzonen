@@ -50,8 +50,15 @@ export interface Grundriss {
 
 /** Größtes eingebettetes JPEG eines PDF (so exportiert UniFi den Plan). */
 export function jpegAusPdf(pdf: Uint8Array): Uint8Array | null {
-  const ende = new TextEncoder().encode("endstream");
   let best: Uint8Array | null = null;
+  for (const j of jpegsAusPdf(pdf)) if (!best || j.length > best.length) best = j;
+  return best;
+}
+
+/** Alle JPEG-Bilder im PDF in ihrer Reihenfolge (ein Grundriss je Seite). */
+export function jpegsAusPdf(pdf: Uint8Array): Uint8Array[] {
+  const ende = new TextEncoder().encode("endstream");
+  const alle: Uint8Array[] = [];
   for (let i = 0; i < pdf.length - 3; i++) {
     if (pdf[i] !== 0xff || pdf[i + 1] !== 0xd8 || pdf[i + 2] !== 0xff) continue;
     let j = i + 3;
@@ -62,10 +69,10 @@ export function jpegAusPdf(pdf: Uint8Array): Uint8Array | null {
     // Letztes FF D9 (Bildende) vor „endstream“.
     let e = j;
     while (e > i && !(pdf[e - 2] === 0xff && pdf[e - 1] === 0xd9)) e--;
-    if (e > i && (!best || e - i > best.length)) best = pdf.subarray(i, e);
+    if (e > i) alle.push(pdf.subarray(i, e));
     i = j;
   }
-  return best;
+  return alle;
 }
 
 // -- Erkennen ----------------------------------------------------------------

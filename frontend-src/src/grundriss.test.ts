@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bbox, erkenneGrundriss, jpegAusPdf, uebernehmen, vereinfachen } from "./grundriss";
+import { bbox, erkenneGrundriss, jpegAusPdf, jpegsAusPdf, uebernehmen, vereinfachen } from "./grundriss";
 import type { Point } from "./types";
 
 /** Erfundener Plan: zwei Räume nebeneinander, Tür in der Trennwand, Fenster rechts. */
@@ -110,4 +110,20 @@ it("holt das JPEG aus einem PDF", () => {
   const pdf = new Uint8Array([...head, ...jpg, ...tail]);
   expect(Array.from(jpegAusPdf(pdf)!)).toEqual(Array.from(jpg));
   expect(jpegAusPdf(new TextEncoder().encode("%PDF ohne Bild"))).toBeNull();
+});
+
+it("PDF mit zwei Grundrissen: beide Bilder in Reihenfolge", () => {
+  const a = new Uint8Array([0xff, 0xd8, 0xff, 1, 2, 3, 0xff, 0xd9]);
+  const b = new Uint8Array([0xff, 0xd8, 0xff, 9, 9, 0xff, 0xd9]);
+  const t = (x: string) => new TextEncoder().encode(x);
+  const teile = [t("%PDF stream\n"), a, t("\nendstream x stream\n"), b, t("\nendstream")];
+  const pdf = new Uint8Array(teile.reduce((n, x) => n + x.length, 0));
+  let o = 0;
+  for (const x of teile) {
+    pdf.set(x, o);
+    o += x.length;
+  }
+  const bilder = jpegsAusPdf(pdf);
+  expect(bilder.map((x) => Array.from(x))).toEqual([Array.from(a), Array.from(b)]);
+  expect(Array.from(jpegAusPdf(pdf)!)).toEqual(Array.from(a));
 });
