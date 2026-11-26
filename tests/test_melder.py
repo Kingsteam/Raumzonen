@@ -627,3 +627,43 @@ async def test_fp400_ist_kein_melder(
     assert eins.entity_id in ids
     [v] = [v for v in k["vorschlaege"] if v["bereich_id"] == kueche.id]
     assert (v["art"], v["device_id"]) == ("radar", dev.id)
+
+
+async def test_grundriss_nachtraeglich_skalieren(
+    hass: HomeAssistant, loaded: MockConfigEntry, hass_ws_client
+) -> None:
+    client = await hass_ws_client(hass)
+    plan = {
+        "name": "Oben",
+        "mime": "image/png",
+        "bild": PNG,
+        "cm_pro_px": 0.5,
+        "breite_px": 1,
+        "hoehe_px": 1,
+    }
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/plan/import", "raeume": [], "plan": plan}
+    )
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/haus/save",
+            "raeume": [],
+            "plaene": [
+                {"plan_id": "oben", "x": 10, "y": 20, "winkel": 95, "cm_pro_px": 0.55}
+            ],
+        }
+    )
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    [p] = loaded.runtime_data.store.model.plaene
+    assert (p.x, p.y, p.winkel, p.cm_pro_px) == (10, 20, 95, 0.55)
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/haus/save",
+            "raeume": [],
+            "plaene": [{"plan_id": "oben", "x": 0, "y": 0, "cm_pro_px": 0}],
+        }
+    )
+    assert (await client.receive_json())["error"]["code"] == "invalid"

@@ -659,6 +659,14 @@ export const styles = css`
     font-size: 11px;
     fill: var(--rz-tuer);
   }
+  .plan-strecke-linie {
+    stroke: var(--accent);
+    stroke-width: 3;
+    pointer-events: none;
+  }
+  circle.plan-strecke {
+    pointer-events: none;
+  }
   .plan-rahmen {
     fill: none;
     stroke: var(--accent);

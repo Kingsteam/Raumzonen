@@ -15,6 +15,9 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
   Melder“ legt die Zone gleich mit der Zuordnung an.
 - Grundriss ausrichten (Hausplan → Grundrisse → „Ausrichten“): Bild unter
   die Räume ziehen, um 90°, 5° oder 1° drehen, an den Ecken zuschneiden.
+- Maßstab des Grundrisses nachträglich ändern: unter „Ausrichten“ größer
+  oder kleiner (1 %, 10 %) oder „Maß neu setzen“ (zwei Punkte im Bild
+  antippen, echte Länge eingeben).
 - „Aus Home Assistant übernehmen“ schlägt für Bereiche mit einem
   Radarsensor einen Radar-Raum vor; Melder sind nach Gerät gruppiert.
 

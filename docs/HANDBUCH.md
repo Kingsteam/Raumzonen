@@ -84,7 +84,10 @@ erkannt hat: nummerierte Räume, grün die Türen, grau die Fenster.
 
 Liegt das Bild nicht genau unter den Räumen: im Hausplan unter
 **Grundrisse → Ausrichten** das Bild ziehen, drehen (90°, 5°, 1°) und an
-den runden Ecken zuschneiden, dann „Speichern“.
+den runden Ecken zuschneiden, dann „Speichern“. Stimmt die Größe nicht,
+dort mit „1 %“/„10 %“ größer oder kleiner machen, oder „Maß neu setzen“:
+zwei Punkte einer bekannten Strecke im Bild antippen (z. B. die Enden
+einer Wand), die echte Länge in Metern eingeben, „Maß übernehmen“.
 
 Das Bild wird in deinem Home Assistant gespeichert (nicht im Recorder) und
 liegt dann im Hausplan und beim Zeichnen im Raum im Hintergrund; ein- und

@@ -262,7 +262,9 @@ export class RaumzonenPanel extends LitElement {
   /** Grundriss wird ausgerichtet (verschieben, drehen, zuschneiden). */
   @state() private planEdit: string = "";
   /** Geänderte Lage/Zuschnitt der Grundrisse bis zum Speichern. */
-  @state() private planAenderung: Record<string, { x: number; y: number; winkel: number; zuschnitt: number[] }> = {};
+  @state() private planAenderung: Record<string, { x: number; y: number; winkel: number; zuschnitt: number[]; cm_pro_px: number }> = {};
+  /** Maß neu setzen: angetippte Punkte im Haus (höchstens zwei) und die echte Länge in m. */
+  @state() private planMessen: { punkte: Point[]; meter: number } | null = null;
   @state() private zeigePlan = lesen("raumzonen-zeige-plan", true);
   @state() private masse = lesen("raumzonen-masse", false);
   /** Gewähltes Stockwerk im Hausplan ("" = alle). */
@@ -1004,7 +1006,7 @@ export class RaumzonenPanel extends LitElement {
       await this._hass.callWS({
         type: `${DOMAIN}/haus/save`,
         raeume: Object.entries(this.lagen).map(([raum_id, l]) => ({ raum_id, x: Math.round(l.x), y: Math.round(l.y), winkel: l.winkel, ...(this.hausExtra[raum_id] ?? {}) })),
-        plaene: Object.entries(this.planAenderung).map(([plan_id, l]) => ({ plan_id, x: Math.round(l.x), y: Math.round(l.y), winkel: l.winkel, zuschnitt: l.zuschnitt })),
+        plaene: Object.entries(this.planAenderung).map(([plan_id, l]) => ({ plan_id, x: Math.round(l.x), y: Math.round(l.y), winkel: l.winkel, zuschnitt: l.zuschnitt, cm_pro_px: l.cm_pro_px })),
         tueren,
       });
       this.dirty = false;
@@ -1282,6 +1284,10 @@ export class RaumzonenPanel extends LitElement {
 
     if (this.wiz?.tippen && this.page === "raum") {
       this.wizAngetippt(p);
+      return;
+    }
+    if (this.page === "haus" && this.planEdit && this.planMessen && this.planMessen.punkte.length < 2) {
+      this.planMessen = { ...this.planMessen, punkte: [...this.planMessen.punkte, raw] };
       return;
     }
     if (this.page === "haus" && this.planEdit) {
@@ -1950,14 +1956,14 @@ export class RaumzonenPanel extends LitElement {
   }
 
   /** Lage eines Grundrisses (mit ungespeicherten Änderungen). */
-  private planLage(p: Plan): { x: number; y: number; winkel: number; zuschnitt: number[] } {
-    return this.planAenderung[p.id] ?? { x: p.x, y: p.y, winkel: p.winkel ?? 0, zuschnitt: p.zuschnitt ?? [] };
+  private planLage(p: Plan): { x: number; y: number; winkel: number; zuschnitt: number[]; cm_pro_px: number } {
+    return this.planAenderung[p.id] ?? { x: p.x, y: p.y, winkel: p.winkel ?? 0, zuschnitt: p.zuschnitt ?? [], cm_pro_px: p.cm_pro_px };
   }
 
   /** Bildpunkt → Haus. */
   private planZuHaus(p: Plan, px: number, py: number): Point {
     const l = this.planLage(p);
-    const [dx, dy] = rotate([px * p.cm_pro_px, (p.hoehe_px - py) * p.cm_pro_px], l.winkel);
+    const [dx, dy] = rotate([px * l.cm_pro_px, (p.hoehe_px - py) * l.cm_pro_px], l.winkel);
     return [l.x + dx, l.y + dy];
   }
 
@@ -1965,7 +1971,7 @@ export class RaumzonenPanel extends LitElement {
   private hausZuPlan(p: Plan, h: Point): Point {
     const l = this.planLage(p);
     const [dx, dy] = rotate([h[0] - l.x, h[1] - l.y], -l.winkel);
-    return [dx / p.cm_pro_px, p.hoehe_px - dy / p.cm_pro_px];
+    return [dx / l.cm_pro_px, p.hoehe_px - dy / l.cm_pro_px];
   }
 
   private planZuschnitt(p: Plan): [number, number, number, number] {
@@ -1973,7 +1979,20 @@ export class RaumzonenPanel extends LitElement {
     return z.length === 4 ? [z[0], z[1], z[2], z[3]] : [0, 0, p.breite_px, p.hoehe_px];
   }
 
-  private planAendern(p: Plan, patch: Partial<{ x: number; y: number; winkel: number; zuschnitt: number[] }>): void {
+  /** Größer oder kleiner; `fest` (Haus) bleibt an seinem Platz, sonst die Mitte des Ausschnitts. */
+  private planSkalieren(p: Plan, faktor: number, fest?: Point): void {
+    const l = this.planLage(p);
+    const k = Math.max(0.01, Math.min(100, l.cm_pro_px * faktor));
+    const [x0, y0, x1, y1] = this.planZuschnitt(p);
+    const anker = fest ?? this.planZuHaus(p, (x0 + x1) / 2, (y0 + y1) / 2);
+    const [apx, apy] = this.hausZuPlan(p, anker);
+    this.planAendern(p, { cm_pro_px: k });
+    const neu = this.planZuHaus(p, apx, apy);
+    const l2 = this.planLage(p);
+    this.planAendern(p, { x: l2.x + anker[0] - neu[0], y: l2.y + anker[1] - neu[1] });
+  }
+
+  private planAendern(p: Plan, patch: Partial<{ x: number; y: number; winkel: number; zuschnitt: number[]; cm_pro_px: number }>): void {
     this.planAenderung = { ...this.planAenderung, [p.id]: { ...this.planLage(p), ...patch } };
     this.dirty = true;
   }
@@ -2353,7 +2372,14 @@ export class RaumzonenPanel extends LitElement {
         figures.push(svg`<circle class="figure ${f.gehalten ? "held" : ""}" cx=${x} cy=${y} r=${rr} fill=${color} stroke=${f.gehalten ? color : "var(--card)"} />`);
       }
     }
-    return svg`${this.renderPlanBilder()}${rooms}${lines}${figures}${labels}`;
+    const mess = this.planMessen?.punkte ?? [];
+    const messung = svg`${mess.length === 2
+      ? svg`<line class="plan-strecke-linie" x1=${this.toScreen(mess[0])[0]} y1=${this.toScreen(mess[0])[1]} x2=${this.toScreen(mess[1])[0]} y2=${this.toScreen(mess[1])[1]} />`
+      : nothing}${mess.map((q) => {
+      const [x, y] = this.toScreen(q);
+      return svg`<circle class="plan-strecke" cx=${x} cy=${y} r="6" />`;
+    })}`;
+    return svg`${this.renderPlanBilder()}${rooms}${lines}${figures}${labels}${messung}`;
   }
 
   private renderScalebar(): TemplateResult {
@@ -3154,6 +3180,7 @@ export class RaumzonenPanel extends LitElement {
                 class="text small"
                 @click=${() => {
                   this.planEdit = this.planEdit === p.id ? "" : p.id;
+                  this.planMessen = null;
                   if (this.planEdit) {
                     this.zeigePlan = true;
                     this.showToast("Bild ziehen zum Verschieben, Ecken ziehen zum Zuschneiden.");
@@ -3178,6 +3205,54 @@ export class RaumzonenPanel extends LitElement {
                       ] as const
                     ).map(([d, icon, label]) => html`<button class="text small" @click=${() => this.planDrehen(p, d)}><ha-icon icon=${icon}></ha-icon>${label}</button>`)}
                   </div>
+                  <div class="label-text">Größe</div>
+                  <div class="actions">
+                    ${(
+                      [
+                        [1 / 1.1, "mdi:magnify-minus-outline", "10 %"],
+                        [1 / 1.01, "mdi:magnify-minus-outline", "1 %"],
+                        [1.01, "mdi:magnify-plus-outline", "1 %"],
+                        [1.1, "mdi:magnify-plus-outline", "10 %"],
+                      ] as const
+                    ).map(([f, icon, label]) => html`<button class="text small" @click=${() => this.planSkalieren(p, f)}><ha-icon icon=${icon}></ha-icon>${label}</button>`)}
+                  </div>
+                  ${this.planMessen
+                    ? html`<div class="mass">
+                          <span>${this.planMessen.punkte.length < 2 ? `Ins Bild tippen: ${2 - this.planMessen.punkte.length} Punkt${this.planMessen.punkte.length ? "" : "e"} noch` : "Diese Strecke ist"}</span>
+                          <label class="field"
+                            ><input
+                              type="number"
+                              min="0.2"
+                              max="100"
+                              step="0.01"
+                              ?disabled=${this.planMessen.punkte.length < 2}
+                              placeholder="z. B. 4,20"
+                              @change=${(e: Event) => (this.planMessen = { ...this.planMessen!, meter: Number((e.target as HTMLInputElement).value.replace(",", ".")) || 0 })}
+                            /><span class="unit">m</span></label
+                          >
+                        </div>
+                        <div class="actions">
+                          <button class="text small" @click=${() => (this.planMessen = null)}>Abbrechen</button>
+                          <span class="spacer"></span>
+                          <button
+                            class="text small"
+                            ?disabled=${this.planMessen.punkte.length < 2 || !(this.planMessen.meter > 0)}
+                            @click=${() => {
+                              const [a, b] = this.planMessen!.punkte;
+                              const gemessen = Math.hypot(b[0] - a[0], b[1] - a[1]);
+                              if (gemessen > 0) this.planSkalieren(p, (this.planMessen!.meter * 100) / gemessen, a);
+                              this.planMessen = null;
+                              this.showToast("Maßstab gesetzt. Bild jetzt wieder unter die Räume ziehen.");
+                            }}
+                          >
+                            <ha-icon icon="mdi:check"></ha-icon>Maß übernehmen
+                          </button>
+                        </div>`
+                    : html`<div class="actions">
+                        <button class="text small" @click=${() => (this.planMessen = { punkte: [], meter: 0 })}>
+                          <ha-icon icon="mdi:ruler"></ha-icon>Maß neu setzen
+                        </button>
+                      </div>`}
                   <p class="hint small">Das Bild ziehen, bis es unter den Räumen liegt. Die runden Ecken ziehen, um wegzuschneiden, was nicht dazugehört. Danach oben „Speichern“.</p>
                   <div class="actions">
                     <button class="text small" ?disabled=${!this.planLage(p).zuschnitt.length} @click=${() => this.planAendern(p, { zuschnitt: [] })}>

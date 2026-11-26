@@ -430,6 +430,7 @@ def ws_converter_zones(
                     vol.Required("y"): vol.Coerce(float),
                     vol.Optional("winkel", default=0.0): vol.Coerce(float),
                     vol.Optional("zuschnitt", default=[]): [vol.Coerce(float)],
+                    vol.Optional("cm_pro_px"): vol.Coerce(float),
                 }
             )
         ],
@@ -477,6 +478,8 @@ async def ws_haus_save(
             w = (daten["winkel"] + 180) % 360 - 180
             plan.winkel = 180.0 if w == -180 else w
             plan.zuschnitt = [round(v, 1) for v in daten["zuschnitt"]]
+            if "cm_pro_px" in daten:
+                plan.cm_pro_px = daten["cm_pro_px"]
         for tuer in msg["tueren"]:
             raum = model.raum(tuer["raum_id"])
             ziel = tuer["fuehrt_zu"] or ""
