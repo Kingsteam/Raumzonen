@@ -67,6 +67,7 @@ import {
 } from "./geometry";
 import { styles } from "./styles";
 import { dauer, dichte, flecken, pixel, summe, type HeatCell } from "./heat";
+import { fehlerText } from "./fehler";
 import { summeDauer, tuerenVon, vereinigen, wechsel, type Tuer } from "./haus";
 import { einmessen, stelle, stellenProblem, type Einmessung } from "./einmessen";
 import { bbox, erkenneGrundriss, jpegAusPdf, uebernehmen, type Grundriss } from "./grundriss";
@@ -283,7 +284,7 @@ export class RaumzonenPanel extends LitElement {
         this.selectRoom(keep ? this.raumId : data.raeume[0]?.id ?? "", true);
       }
     } catch (err) {
-      this.error = `Laden fehlgeschlagen: ${(err as Error).message ?? err}`;
+      this.error = `Laden fehlgeschlagen: ${fehlerText(err)}`;
     }
   }
 
@@ -400,7 +401,7 @@ export class RaumzonenPanel extends LitElement {
       if (raumId !== this.raumId) return;
       const e = err as { code?: string; message?: string };
       this.ausw = undefined;
-      this.auswFehler = e.code === "off" ? "off" : `Auswertung fehlgeschlagen: ${e.message ?? err}`;
+      this.auswFehler = e.code === "off" ? "off" : `Auswertung fehlgeschlagen: ${fehlerText(err)}`;
     } finally {
       this.auswLaedt = false;
     }
@@ -449,7 +450,7 @@ export class RaumzonenPanel extends LitElement {
       await new Promise((r) => window.setTimeout(r, 1500));
       await this.load();
     } catch (err) {
-      this.showToast(`Nicht gespeichert: ${(err as Error).message ?? err}`);
+      this.showToast(`Nicht gespeichert: ${fehlerText(err)}`);
     } finally {
       this.saving = false;
     }
@@ -481,7 +482,7 @@ export class RaumzonenPanel extends LitElement {
       this.dirty = true;
       this.showToast(`${result.zonen.length} Zonen übernommen. Rollen prüfen und speichern.`);
     } catch (err) {
-      this.showToast(`Konverter-Zonen nicht lesbar: ${(err as Error).message ?? err}`);
+      this.showToast(`Konverter-Zonen nicht lesbar: ${fehlerText(err)}`);
     }
   }
 
@@ -731,7 +732,7 @@ export class RaumzonenPanel extends LitElement {
       g.luecken.forEach((l, i) => (art[i] = l.partner !== null ? "tuer" : "fenster"));
       this.plan = { bild: URL.createObjectURL(blob), g, zuordnung: g.raeume.map(() => ""), art, massRaum: 0, massSeite: "breite", massM: 0 };
     } catch (err) {
-      this.showToast(`Grundriss nicht gelesen: ${(err as Error).message ?? err}`);
+      this.showToast(`Grundriss nicht gelesen: ${fehlerText(err)}`);
     } finally {
       this.planLaedt = false;
     }
@@ -806,7 +807,7 @@ export class RaumzonenPanel extends LitElement {
       this.viewTouched = false;
       this.fit();
     } catch (err) {
-      this.showToast(`Nicht übernommen: ${(err as Error).message ?? err}`);
+      this.showToast(`Nicht übernommen: ${fehlerText(err)}`);
     } finally {
       this.saving = false;
     }
@@ -817,7 +818,7 @@ export class RaumzonenPanel extends LitElement {
     try {
       this.kandidaten = await this._hass.callWS<Kandidaten>({ type: `${DOMAIN}/kandidaten/get` });
     } catch (err) {
-      this.showToast(`Geräte nicht geladen: ${(err as Error).message ?? err}`);
+      this.showToast(`Geräte nicht geladen: ${fehlerText(err)}`);
     }
   }
 
@@ -847,7 +848,7 @@ export class RaumzonenPanel extends LitElement {
       this.fit();
       await this.loadKandidaten();
     } catch (err) {
-      this.showToast(`Nicht angelegt: ${(err as Error).message ?? err}`);
+      this.showToast(`Nicht angelegt: ${fehlerText(err)}`);
     } finally {
       this.saving = false;
     }
@@ -867,7 +868,7 @@ export class RaumzonenPanel extends LitElement {
       this.page = "haus";
       await this.load();
     } catch (err) {
-      this.showToast(`Nicht gelöscht: ${(err as Error).message ?? err}`);
+      this.showToast(`Nicht gelöscht: ${fehlerText(err)}`);
     } finally {
       this.saving = false;
     }
@@ -925,7 +926,7 @@ export class RaumzonenPanel extends LitElement {
       await new Promise((res) => window.setTimeout(res, 1500));
       await this.load();
     } catch (err) {
-      this.showToast(`Nicht gespeichert: ${(err as Error).message ?? err}`);
+      this.showToast(`Nicht gespeichert: ${fehlerText(err)}`);
     } finally {
       this.saving = false;
     }

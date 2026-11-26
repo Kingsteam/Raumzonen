@@ -4,6 +4,14 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.10.1] - 2026-11-26
+
+### Behoben
+
+- Nach einem Update vor dem Neustart zeigte das Panel „unknown command“.
+  Jetzt steht dort, dass Raumzonen auf einen Neustart von Home Assistant
+  wartet und wo man ihn auslöst.
+
 ## [0.10.0] - 2026-11-26
 
 ### Hinzugefügt
