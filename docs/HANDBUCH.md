@@ -58,6 +58,23 @@ Raum gehen; rot wird, wo der Sensor jemanden gesehen hat.
 
 ![Sensor und Raum](bilder/02-sensor.png)
 
+### Grundriss übernehmen
+
+Im Hausplan **Grundriss übernehmen** tippen und den exportierten Plan wählen
+(PDF aus dem UniFi Design Center oder ein Bild). Raumzonen zeigt, was es
+erkannt hat: nummerierte Räume, grün die Türen, grau die Fenster.
+
+1. **Ein Maß eingeben**: z. B. „Raum 2 ist innen von links nach rechts
+   4,20 m“. Der Plan selbst hat keinen Maßstab.
+2. Jeden erkannten Raum einem Raum in Raumzonen zuordnen (oder „nicht
+   übernehmen“). Räume, die es noch nicht gibt, vorher mit „Raum
+   hinzufügen“ anlegen.
+3. Lücken prüfen: Tür, offen oder Fenster (Fenster werden weggelassen).
+4. **Übernehmen**: Wände, Türen (mit „führt zu“) und die Lage im Haus
+   werden gesetzt. Bei Räumen mit Radarsensor danach den Sensor einmessen.
+
+Das Bild bleibt im Browser; gespeichert werden nur Wände und Türen.
+
 ### Sensor umsetzen oder einmessen
 
 Unter **Sensor und Raum → Sensor umsetzen** (nur Admins):
@@ -100,6 +117,11 @@ unten **löschen** (mit Rückfrage). Seine Anzeigen in Home Assistant
 verschwinden dann; Automationen, die sie benutzen, gehen nicht mehr.
 
 ### Auswertung: wer war wann wo
+
+**Vorschläge für Zonen:** Wo sich jemand lange aufhielt und noch keine Zone
+ist, steht ein Vorschlag mit Größe und Dauer. „Als Zone anlegen“ legt ein
+Rechteck an; Rolle wählen, Form anpassen, speichern.
+
 
 Reiter **Auswertung** (nur für Admins). Oben den Zeitraum wählen: die
 letzten 1, 3, 8, 12 oder 24 Stunden. Gerechnet wird aus der eigenen

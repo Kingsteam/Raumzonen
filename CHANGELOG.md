@@ -4,6 +4,22 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.10.0] - 2026-11-26
+
+### Hinzugefügt
+
+- Grundriss übernehmen (Hausplan, nur Admins): PDF oder Bild eines Plans
+  hochladen, z. B. den Export aus dem UniFi Design Center. Raumzonen
+  erkennt im Browser die Räume (blaue Umrisslinien des Scans), Wände und
+  Lücken; Lücken zwischen zwei Räumen werden Türen, Lücken in Außenwänden
+  vorerst Fenster (umstellbar). Mit einem Maß (der Plan hat keinen
+  Maßstab) werden Wände, Türen samt „führt zu“ und die Lage im Haus für
+  die zugeordneten Räume übernommen. Das Bild verlässt den Browser nicht.
+- Vorschläge für Zonen (Auswertung): Orte, an denen sich jemand lange
+  aufgehalten hat und die noch in keiner Zone liegen, mit „Als Zone
+  anlegen“.
+- WebSocket `plan/import` (mehrere Räume in einem Schritt).
+
 ## [0.9.0] - 2026-11-26
 
 ### Hinzugefügt

@@ -66,9 +66,10 @@ import {
   type HausLage,
 } from "./geometry";
 import { styles } from "./styles";
-import { dauer, dichte, pixel, summe, type HeatCell } from "./heat";
+import { dauer, dichte, flecken, pixel, summe, type HeatCell } from "./heat";
 import { summeDauer, tuerenVon, vereinigen, wechsel, type Tuer } from "./haus";
 import { einmessen, stelle, stellenProblem, type Einmessung } from "./einmessen";
+import { bbox, erkenneGrundriss, jpegAusPdf, uebernehmen, type Grundriss } from "./grundriss";
 import type { Auswertung, AuswertungFigur, Form, Hass, Heat, Kandidaten, Live, Oeffnung, Point, Raum, Regel, RoomsResult, Zone } from "./types";
 
 const DOMAIN = "raumzonen";
@@ -201,6 +202,17 @@ export class RaumzonenPanel extends LitElement {
   @state() private auswFehler = "";
   @state() private kandidaten?: Kandidaten;
   @state() private wiz: Wizard | null = null;
+  /** Grundriss übernehmen (null = zu). */
+  @state() private plan: {
+    bild: string;
+    g: Grundriss;
+    zuordnung: string[];
+    art: Record<number, "tuer" | "offen" | "fenster">;
+    massRaum: number;
+    massSeite: "breite" | "tiefe";
+    massM: number;
+  } | null = null;
+  @state() private planLaedt = false;
   /** Formular „Raum hinzufügen“ (null = zu). */
   @state() private neuRaum: { name: string; art: "melder" | "radar"; melder: string[]; device_id: string; bereich_id: string } | null = null;
   /** Bewegungsprofil im Hausplan: Raum-ID → Zeitabschnitte mit jemandem darin. */
@@ -691,6 +703,113 @@ export class RaumzonenPanel extends LitElement {
     this.dirty = true;
     this.wizEnde();
     this.showToast("Neue Lage eingetragen. Zum Behalten oben „Speichern“ tippen.");
+  }
+
+  // -- Grundriss übernehmen -------------------------------------------------
+
+  private async planLaden(file: File): Promise<void> {
+    this.planLaedt = true;
+    try {
+      let blob: Blob = file;
+      if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+        const jpg = jpegAusPdf(new Uint8Array(await file.arrayBuffer()));
+        if (!jpg) throw new Error("Im PDF ist kein Bild des Grundrisses.");
+        blob = new Blob([jpg.slice()], { type: "image/jpeg" });
+      }
+      const bmp = await createImageBitmap(blob);
+      // Sehr große Bilder verkleinern (schont schwache Geräte).
+      const f = Math.min(1, 4000 / Math.max(bmp.width, bmp.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(bmp.width * f);
+      canvas.height = Math.round(bmp.height * f);
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+      const px = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const g = erkenneGrundriss({ width: px.width, height: px.height, data: px.data });
+      if (!g.raeume.length) throw new Error("Keine Räume erkannt. Der Plan braucht die blauen Umrisslinien aus dem Scan.");
+      const art: Record<number, "tuer" | "offen" | "fenster"> = {};
+      g.luecken.forEach((l, i) => (art[i] = l.partner !== null ? "tuer" : "fenster"));
+      this.plan = { bild: URL.createObjectURL(blob), g, zuordnung: g.raeume.map(() => ""), art, massRaum: 0, massSeite: "breite", massM: 0 };
+    } catch (err) {
+      this.showToast(`Grundriss nicht gelesen: ${(err as Error).message ?? err}`);
+    } finally {
+      this.planLaedt = false;
+    }
+  }
+
+  private planZu(): void {
+    if (this.plan) URL.revokeObjectURL(this.plan.bild);
+    this.plan = null;
+  }
+
+  /** Zentimeter je Bildpunkt aus dem eingegebenen Maß (0 = noch keins). */
+  private planCmProPx(): number {
+    const p = this.plan;
+    if (!p || !(p.massM > 0) || !p.g.raeume[p.massRaum]) return 0;
+    const b = bbox(p.g.raeume[p.massRaum].punkte);
+    const px = p.massSeite === "breite" ? b.x1 - b.x0 : b.y1 - b.y0;
+    return px > 0 ? (p.massM * 100) / px : 0;
+  }
+
+  private async planUebernehmen(): Promise<void> {
+    const p = this.plan;
+    const k = this.planCmProPx();
+    if (!p || !k || !this._hass || !this.data) return;
+    const raeume = this.data.raeume;
+    const eintraege = p.g.raeume
+      .map((_, i) => i)
+      .filter((i) => p.zuordnung[i])
+      .map((i) => {
+        const raum = raeume.find((r) => r.id === p.zuordnung[i])!;
+        // Vorhandene Wände/Zonen: neuen Umriss an dieselbe Stelle im Raum legen.
+        const alt: Point[] = raum.umriss.length >= 3 ? raum.umriss : raum.zonen.length ? [...raum.zonen.flatMap((z) => formPoints(z.form)), [raum.sensor.x, raum.sensor.y]] : [];
+        const roh = uebernehmen(p.g, i, k);
+        let v: Point = [0, 0];
+        if (alt.length) {
+          const a = bbox(alt);
+          const n = bbox(roh.umriss);
+          v = [Math.round((a.x0 + a.x1 - n.x0 - n.x1) / 2), Math.round((a.y0 + a.y1 - n.y0 - n.y1) / 2)];
+        }
+        return { i, raum, u: uebernehmen(p.g, i, k, v) };
+      });
+    if (!eintraege.length) return;
+    // Nicht über Räume legen, die schon im Haus liegen und nicht dabei sind.
+    const andere = raeume.filter((r) => r.haus_gesetzt && !eintraege.some((e) => e.raum.id === r.id));
+    const huelle = (pts: Point[]) => bbox(pts);
+    let dx = 0;
+    if (andere.length) {
+      const a = huelle(andere.flatMap((r) => this.outlineOf(r).map((q) => toHouse(q, { x: r.haus_x, y: r.haus_y, winkel: r.haus_winkel }))));
+      const n = huelle(eintraege.flatMap((e) => e.u.umriss.map((q) => toHouse(q, e.u.haus))));
+      const ueber = n.x0 < a.x1 && n.x1 > a.x0 && n.y0 < a.y1 && n.y1 > a.y0;
+      if (ueber) dx = a.x1 + 200 - n.x0;
+    }
+    const msg = eintraege.map(({ i, raum, u }) => ({
+      raum_id: raum.id,
+      umriss: u.umriss,
+      haus: { x: u.haus.x + dx, y: u.haus.y, winkel: 0 },
+      oeffnungen: u.luecken
+        .filter((l) => p.art[l.luecke] !== "fenster")
+        .map((l) => {
+          const partner = p.g.luecken[l.luecke].partner;
+          const ziel = partner !== null ? p.zuordnung[partner] || "" : "aussen";
+          return { kante: l.kante, von: l.von, bis: l.bis, art: p.art[l.luecke] === "offen" ? "offen" : "tuer", fuehrt_zu: ziel === raum.id ? "" : ziel };
+        }),
+    }));
+    this.saving = true;
+    try {
+      await this._hass.callWS({ type: `${DOMAIN}/plan/import`, raeume: msg });
+      this.planZu();
+      this.showToast(`${msg.length} ${msg.length === 1 ? "Raum" : "Räume"} aus dem Grundriss übernommen.`);
+      await this.unsubscribeHaus();
+      await new Promise((res) => window.setTimeout(res, 1500));
+      await this.load();
+      this.viewTouched = false;
+      this.fit();
+    } catch (err) {
+      this.showToast(`Nicht übernommen: ${(err as Error).message ?? err}`);
+    } finally {
+      this.saving = false;
+    }
   }
 
   private async loadKandidaten(): Promise<void> {
@@ -2459,7 +2578,7 @@ export class RaumzonenPanel extends LitElement {
             ? "Räume am Plan an ihren Platz ziehen und hier drehen. Bei jeder Tür eintragen, wohin sie führt; dann sieht Raumzonen, wer von wo nach wo geht."
             : "So liegen die Räume im Haus. Die Punkte zeigen, wo gerade jemand ist."}
         </p>
-        ${this.kannAendern ? this.renderNeuRaum() : nothing}
+        ${this.kannAendern ? html`${this.renderNeuRaum()} ${this.renderPlanImport()}` : nothing}
         <ul class="list">
           ${raeume.map((raum) => {
             const live = this.hausLive[raum.id];
@@ -2502,6 +2621,136 @@ export class RaumzonenPanel extends LitElement {
         ${this.kannAendern ? this.renderProfil() : nothing}
       </div>
     </aside>`;
+  }
+
+  private renderPlanImport(): TemplateResult {
+    const p = this.plan;
+    if (!p) {
+      return html`<div class="actions">
+        <label class="text small file-knopf">
+          <ha-icon icon="mdi:file-image-outline"></ha-icon>${this.planLaedt ? "Liest …" : "Grundriss übernehmen"}
+          <input
+            type="file"
+            accept=".pdf,image/png,image/jpeg"
+            ?disabled=${this.planLaedt || this.dirty}
+            @change=${(e: Event) => {
+              const f = (e.target as HTMLInputElement).files?.[0];
+              if (f) void this.planLaden(f);
+              (e.target as HTMLInputElement).value = "";
+            }}
+          />
+        </label>
+      </div>`;
+    }
+    const k = this.planCmProPx();
+    const raeume = this.data?.raeume ?? [];
+    const masz = (i: number) => {
+      if (!k) return "Größe: erst ein Maß eingeben";
+      const b = bbox(p.g.raeume[i].punkte);
+      const f = (v: number) => (v / 100).toFixed(1).replace(".", ",");
+      return `ca. ${f((b.x1 - b.x0) * k)} × ${f((b.y1 - b.y0) * k)} m`;
+    };
+    const set = (patch: Partial<NonNullable<typeof this.plan>>) => (this.plan = { ...p, ...patch });
+    const mitte = (pts: Point[]): Point => formCenter({ art: "vieleck", punkte: pts });
+    const vorschau = svg`<svg class="plan-vorschau" viewBox="0 0 ${p.g.breite} ${p.g.hoehe}">
+      <image href=${p.bild} x="0" y="0" width=${p.g.breite} height=${p.g.hoehe} opacity="0.55" />
+      ${p.g.raeume.map((r, i) => {
+        const [cx, cy] = mitte(r.punkte);
+        const on = !!p.zuordnung[i];
+        return svg`<polygon class="plan-raum ${on ? "on" : ""}" points=${r.punkte.map((q) => q.join(",")).join(" ")} />
+          <circle class="plan-nr" cx=${cx} cy=${cy} r=${p.g.breite / 40} /><text class="plan-nr" x=${cx} y=${cy} dy="0.35em" font-size=${p.g.breite / 30}>${i + 1}</text>`;
+      })}
+      ${p.g.luecken.map((l, li) => {
+        const pts = p.g.raeume[l.raum].punkte;
+        const a = pts[l.kante];
+        const b = pts[(l.kante + 1) % pts.length];
+        const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+        const at = (t: number) => [a[0] + ((b[0] - a[0]) * t) / len, a[1] + ((b[1] - a[1]) * t) / len];
+        const [x1, y1] = at(l.von_px);
+        const [x2, y2] = at(l.bis_px);
+        return svg`<line class="plan-luecke ${p.art[li]}" x1=${x1} y1=${y1} x2=${x2} y2=${y2} stroke-width=${p.g.breite / 150} />`;
+      })}
+    </svg>`;
+    const zugeordnet = p.zuordnung.filter(Boolean);
+    const doppelt = zugeordnet.length !== new Set(zugeordnet).size;
+    return html`<div class="neu-raum">
+      <h3>Grundriss übernehmen</h3>
+      <p class="hint small">
+        ${p.g.raeume.length} ${p.g.raeume.length === 1 ? "Raum" : "Räume"} erkannt. Grün sind Türen, grau Fenster. Der Plan bleibt nur in diesem Browser; übernommen
+        werden Wände, Türen und die Lage im Haus.
+      </p>
+      ${vorschau}
+      <div class="label-text">Ein Maß (der Plan hat keinen Maßstab)</div>
+      <div class="mass">
+        <select @change=${(e: Event) => set({ massRaum: Number((e.target as HTMLSelectElement).value) })}>
+          ${p.g.raeume.map((_, i) => html`<option value=${i} ?selected=${p.massRaum === i}>Raum ${i + 1}</option>`)}
+        </select>
+        <span>ist innen</span>
+        <select @change=${(e: Event) => set({ massSeite: (e.target as HTMLSelectElement).value as "breite" | "tiefe" })}>
+          <option value="breite" ?selected=${p.massSeite === "breite"}>von links nach rechts</option>
+          <option value="tiefe" ?selected=${p.massSeite === "tiefe"}>von oben nach unten</option>
+        </select>
+        <label class="field"
+          ><input
+            type="number"
+            min="0.5"
+            max="50"
+            step="0.01"
+            .value=${p.massM ? String(p.massM) : ""}
+            placeholder="z. B. 4,20"
+            @change=${(e: Event) => set({ massM: Number((e.target as HTMLInputElement).value.replace(",", ".")) || 0 })}
+          /><span class="unit">m</span></label
+        >
+      </div>
+      <ul class="list">
+        ${p.g.raeume.map(
+          (_, i) => html`<li class="item">
+            <div class="row static">
+              <span class="marker-icon"><b>${i + 1}</b></span>
+              <span class="name">Raum ${i + 1}<small>${masz(i)}</small></span>
+              <select
+                @change=${(e: Event) => {
+                  const z = [...p.zuordnung];
+                  z[i] = (e.target as HTMLSelectElement).value;
+                  set({ zuordnung: z });
+                }}
+              >
+                <option value="" ?selected=${!p.zuordnung[i]}>nicht übernehmen</option>
+                ${raeume.map((r) => html`<option value=${r.id} ?selected=${p.zuordnung[i] === r.id}>${r.name}</option>`)}
+              </select>
+            </div>
+            ${p.g.luecken
+              .map((l, li) => ({ l, li }))
+              .filter(({ l }) => l.raum === i)
+              .map(
+                ({ l, li }) => html`<div class="row static luecke">
+                  <ha-icon icon="mdi:door"></ha-icon>
+                  <span class="name"
+                    >${k ? `${((l.bis_px - l.von_px) * k / 100).toFixed(2).replace(".", ",")} m breit` : "Lücke"}<small
+                      >${l.partner !== null ? `zu Raum ${l.partner + 1}` : "Außenwand"}</small
+                    ></span
+                  >
+                  <select @change=${(e: Event) => set({ art: { ...p.art, [li]: (e.target as HTMLSelectElement).value as "tuer" | "offen" | "fenster" } })}>
+                    <option value="tuer" ?selected=${p.art[li] === "tuer"}>Tür</option>
+                    <option value="offen" ?selected=${p.art[li] === "offen"}>offen</option>
+                    <option value="fenster" ?selected=${p.art[li] === "fenster"}>Fenster (weglassen)</option>
+                  </select>
+                </div>`,
+              )}
+          </li>`,
+        )}
+      </ul>
+      ${raeume.some((r) => p.zuordnung.includes(r.id) && r.art !== "melder")
+        ? html`<p class="note">Bei Räumen mit Radarsensor danach den Sensor einmessen (Sensor und Raum → Sensor umsetzen), damit er zu den neuen Wänden passt.</p>`
+        : nothing}
+      ${doppelt ? html`<p class="note warn">Jeder Raum nur einmal zuordnen.</p>` : nothing}
+      ${!raeume.length ? html`<p class="hint small">Zuerst Räume anlegen (Raum hinzufügen), dann hier zuordnen.</p>` : nothing}
+      <div class="actions">
+        <button class="text small" @click=${this.planZu}>Abbrechen</button>
+        <span class="spacer"></span>
+        <button class="primary" ?disabled=${!k || !zugeordnet.length || doppelt || this.saving} @click=${this.planUebernehmen}><ha-icon icon="mdi:check"></ha-icon>Übernehmen</button>
+      </div>
+    </div>`;
   }
 
   private renderNeuRaum(): TemplateResult {
@@ -2712,7 +2961,12 @@ export class RaumzonenPanel extends LitElement {
               (z) => html`<li class="item" style="--zone:${zoneFarbe(z.zone_id)}">
                 <div class="row static">
                   <span class="dot"></span>
-                  <span class="name">${zoneName(z.zone_id)}<small>${z.figuren.length ? z.figuren.map((k) => this.figurName(a.figuren.find((f) => f.figur === k)!)).join(", ") : "nur kurz"}</small></span>
+                  <span class="name">${zoneName(z.zone_id)}<small
+                    >${z.figuren.length
+                      ? z.figuren.slice(0, 4).map((k) => this.figurName(a.figuren.find((f) => f.figur === k)!)).join(", ") +
+                        (z.figuren.length > 4 ? ` und ${z.figuren.length - 4} weitere` : "")
+                      : "nur kurz"}</small
+                  ></span>
                   <span class="dauer" title=${z.sekunden > z.belegt_s + 60 ? `Alle Figuren zusammen: ${dauer(z.sekunden)}` : ""}>${dauer(z.belegt_s)}</span>
                 </div>
                 ${this.renderLeiste(z.abschnitte, "var(--zone)")}
@@ -2723,7 +2977,39 @@ export class RaumzonenPanel extends LitElement {
         : html`<p class="hint">In diesem Zeitraum war niemand in einer Zone.</p>`}
       ${this.istMelder
         ? html`<p class="hint small">Melder kennen keine Position; darum gibt es hier keine Karte und keine Figuren.</p>`
-        : this.renderFiguren(a, zoneName, achse)}`;
+        : html`${this.renderVorschlaege(a)} ${this.renderFiguren(a, zoneName, achse)}`}`;
+  }
+
+  /** Wo sich jemand lange aufhielt und noch keine Zone ist: als Zone vorschlagen. */
+  private renderVorschlaege(a: Auswertung): TemplateResult | typeof nothing {
+    if (!this.kannAendern) return nothing;
+    const d = dichte(summe(a.figuren.filter((f) => !f.hund).map((f) => f.zellen)), a.zelle_cm, 8);
+    if (!d) return nothing;
+    const liste = flecken(d, 600).filter((f) => !this.zones.some((z) => inForm(f.mitte, z.form))).slice(0, 4);
+    if (!liste.length) return nothing;
+    const m = (cm: number) => (cm / 100).toFixed(1).replace(".", ",");
+    return html`<h3>Vorschläge für Zonen</h3>
+      <p class="hint small">Hier hielt sich jemand lange auf, aber es ist noch keine Zone. Zum Beispiel ein Liegeplatz, das Sofa oder ein Schreibtisch.</p>
+      <ul class="list">
+        ${liste.map(
+          (f, i) => html`<li class="item">
+            <div class="row static">
+              <span class="marker-icon"><ha-icon icon="mdi:selection-marker"></ha-icon></span>
+              <span class="name">Platz ${i + 1}<small>ca. ${m(f.breite)} × ${m(f.tiefe)} m · ${dauer(f.sekunden)}</small></span>
+              <button
+                class="text small"
+                @click=${() => {
+                  this.addZone({ art: "rechteck", mitte: f.mitte, breite: f.breite, tiefe: f.tiefe, winkel: 0 });
+                  this.openTab("zonen");
+                  this.showToast("Zone angelegt. Rolle wählen, Form anpassen und speichern.");
+                }}
+              >
+                Als Zone anlegen
+              </button>
+            </div>
+          </li>`,
+        )}
+      </ul>`;
   }
 
   private renderFiguren(a: Auswertung, zoneName: (id: string) => string, achse: TemplateResult): TemplateResult {

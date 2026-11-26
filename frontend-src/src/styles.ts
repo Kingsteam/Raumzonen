@@ -611,6 +611,86 @@ export const styles = css`
   .wiz-stellen .fertig {
     color: var(--ok);
   }
+  /* Grundriss übernehmen */
+  .plan-vorschau {
+    width: 100%;
+    height: auto;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+  }
+  .plan-raum {
+    fill: color-mix(in srgb, var(--muted) 18%, transparent);
+    stroke: var(--muted);
+    stroke-width: 6;
+  }
+  .plan-raum.on {
+    fill: color-mix(in srgb, var(--rz-bereich) 25%, transparent);
+    stroke: var(--rz-bereich);
+  }
+  circle.plan-nr {
+    fill: var(--card);
+    stroke: var(--primary-text-color);
+    stroke-width: 4;
+  }
+  text.plan-nr {
+    text-anchor: middle;
+    font-weight: 700;
+    fill: var(--primary-text-color);
+  }
+  .plan-luecke {
+    stroke: var(--muted);
+    stroke-dasharray: 20 14;
+  }
+  .plan-luecke.tuer,
+  .plan-luecke.offen {
+    stroke: var(--rz-tuer);
+    stroke-dasharray: none;
+  }
+  .mass {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+  }
+  .mass .field {
+    width: 120px;
+    margin: 0;
+  }
+  .row.luecke {
+    padding: 2px 8px 2px 30px;
+  }
+  .file-knopf {
+    position: relative;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent);
+    font-weight: 500;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: var(--radius);
+  }
+  .file-knopf:hover {
+    background: color-mix(in srgb, currentColor 10%, transparent);
+  }
+  .neu-raum .row select,
+  .mass select {
+    width: auto;
+    max-width: 55%;
+    flex: 0 1 auto;
+  }
+  .neu-raum .row .name {
+    flex: 1 1 auto;
+  }
+  .file-knopf input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
   /* Raum hinzufügen */
   .neu-raum {
     border: 2px solid var(--border);

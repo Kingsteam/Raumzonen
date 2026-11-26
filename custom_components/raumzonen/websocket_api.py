@@ -33,6 +33,8 @@ Vertrag ``raumzonen/1`` (``vertrag.py``, ``api.py``):
   Bewegungs- und Präsenzmelder, Bereiche mit Meldern als Vorschlag). Nur Admins.
 * ``raumzonen/room/create``, ``raumzonen/room/delete``: Raum anlegen oder
   löschen (Kopie, prüfen, speichern, neu laden). Nur Admins.
+* ``raumzonen/plan/import``: Wände, Türen und Lage im Haus für mehrere Räume
+  auf einmal (aus einem Grundriss, den das Panel erkannt hat). Nur Admins.
 """
 
 from __future__ import annotations
@@ -125,6 +127,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_kandidaten_get,
         ws_room_create,
         ws_room_delete,
+        ws_plan_import,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -772,6 +775,83 @@ async def ws_room_delete(
         return
     model.remove(msg["raum_id"])
     model.validate()
+    store.model = model
+    await store.async_save()
+    async_reload_keep_panel(hass, entry.entry_id)
+    connection.send_result(msg["id"])
+
+
+OEFFNUNG_SCHEMA = vol.Schema(
+    {
+        vol.Required("kante"): int,
+        vol.Required("von"): vol.Coerce(float),
+        vol.Required("bis"): vol.Coerce(float),
+        vol.Required("art"): str,
+        vol.Optional("anschlag", default="anfang"): str,
+        vol.Optional("aufgehen", default="innen"): str,
+        vol.Optional("fuehrt_zu", default=""): vol.Any(None, str),
+    }
+)
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/plan/import",
+        vol.Required("raeume"): vol.All(
+            [
+                vol.Schema(
+                    {
+                        vol.Required("raum_id"): str,
+                        vol.Required("umriss"): vol.All(
+                            [vol.ExactSequence([vol.Coerce(float), vol.Coerce(float)])],
+                            vol.Length(min=3),
+                        ),
+                        vol.Optional("oeffnungen", default=[]): [OEFFNUNG_SCHEMA],
+                        vol.Required("haus"): vol.Schema(
+                            {
+                                vol.Required("x"): vol.Coerce(float),
+                                vol.Required("y"): vol.Coerce(float),
+                                vol.Required("winkel"): vol.Coerce(float),
+                            }
+                        ),
+                    }
+                )
+            ],
+            vol.Length(min=1),
+        ),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_plan_import(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Grundriss übernehmen: Kopie, alle Räume ändern, prüfen, speichern, neu laden."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Raumzonen ist nicht geladen")
+        return
+    store = entry.runtime_data.store
+    model = copy.deepcopy(store.model)
+    try:
+        for data in msg["raeume"]:
+            raum = model.raum(data["raum_id"])
+            raum.umriss = [list(p) for p in data["umriss"]]
+            raum.oeffnungen = [
+                oeffnung_from_dict({**o, "fuehrt_zu": o.get("fuehrt_zu") or ""})
+                for o in data["oeffnungen"]
+            ]
+            winkel = (data["haus"]["winkel"] + 180) % 360 - 180
+            raum.haus_x, raum.haus_y = data["haus"]["x"], data["haus"]["y"]
+            raum.haus_winkel = 180.0 if winkel == -180 else winkel
+            raum.haus_gesetzt = True
+        model.validate()
+    except KeyError:
+        connection.send_error(msg["id"], "not_found", "Raum nicht gefunden")
+        return
+    except (ValueError, TypeError) as err:
+        connection.send_error(msg["id"], "invalid", str(err))
+        return
     store.model = model
     await store.async_save()
     async_reload_keep_panel(hass, entry.entry_id)

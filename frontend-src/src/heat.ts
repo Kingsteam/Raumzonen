@@ -135,3 +135,55 @@ export function dauer(s: number): string {
   const m = min % 60;
   return m ? `${h} h ${m} min` : `${h} h`;
 }
+
+export interface Fleck {
+  /** Rechteck um den Fleck (cm, Raumkoordinaten). */
+  mitte: [number, number];
+  breite: number;
+  tiefe: number;
+  /** Aufenthalt in diesem Fleck (s). */
+  sekunden: number;
+}
+
+/**
+ * Orte, an denen sich jemand lange aufgehalten hat: zusammenhängende Flächen
+ * der Dichte über `anteil` des Höchstwerts mit mindestens `minSekunden`
+ * Aufenthalt. Grundlage für Vorschläge neuer Zonen (Bett, Sofa, Schreibtisch).
+ */
+export function flecken(d: Dichte, minSekunden = 300, anteil = 0.2, rand_cm = 15): Fleck[] {
+  const { nx, ny, werte } = d;
+  const grenze = d.max * anteil;
+  const seen = new Uint8Array(nx * ny);
+  const out: Fleck[] = [];
+  for (let s = 0; s < nx * ny; s++) {
+    if (seen[s] || werte[s] < grenze) continue;
+    const stack = [s];
+    seen[s] = 1;
+    let [x0, x1, y0, y1, sum] = [Infinity, -Infinity, Infinity, -Infinity, 0];
+    while (stack.length) {
+      const p = stack.pop()!;
+      const x = p % nx;
+      const y = (p / nx) | 0;
+      x0 = Math.min(x0, x);
+      x1 = Math.max(x1, x);
+      y0 = Math.min(y0, y);
+      y1 = Math.max(y1, y);
+      sum += werte[p];
+      for (const q of [x > 0 ? p - 1 : -1, x < nx - 1 ? p + 1 : -1, p - nx, p + nx]) {
+        if (q < 0 || q >= nx * ny || seen[q] || werte[q] < grenze) continue;
+        seen[q] = 1;
+        stack.push(q);
+      }
+    }
+    if (sum < minSekunden) continue;
+    const breite = (x1 - x0 + 1) * d.zelle + 2 * rand_cm;
+    const tiefe = (y1 - y0 + 1) * d.zelle + 2 * rand_cm;
+    out.push({
+      mitte: [Math.round(d.x0 + ((x0 + x1 + 1) / 2) * d.zelle), Math.round(d.y0 + ((y0 + y1 + 1) / 2) * d.zelle)],
+      breite: Math.round(breite),
+      tiefe: Math.round(tiefe),
+      sekunden: Math.round(sum),
+    });
+  }
+  return out.sort((a, b) => b.sekunden - a.sekunden);
+}

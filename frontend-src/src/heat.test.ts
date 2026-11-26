@@ -54,3 +54,27 @@ it("dauer in Worten", () => {
   expect(dauer(24000)).toBe("6 h 40 min");
   expect(dauer(7200)).toBe("2 h");
 });
+
+import { flecken } from "./heat";
+
+describe("flecken", () => {
+  it("findet zwei Liegeplätze und übersieht kurzes Durchgehen", () => {
+    const cells: [number, number, number][] = [];
+    // zwei Liegeplätze (5-cm-Zellen) mit je 2 h, dazu ein Weg mit 5 s
+    for (let i = 0; i < 8; i++) for (let j = 0; j < 12; j++) {
+      cells.push([10 + i, 20 + j, 7200 / 96]);
+      cells.push([30 + i, 20 + j, 7200 / 96]);
+    }
+    for (let i = 0; i < 60; i++) cells.push([i, 5, 5 / 60]);
+    const d = dichte(cells, 5, 8)!;
+    const f = flecken(d, 300);
+    expect(f.length).toBe(2);
+    for (const x of f) {
+      expect(x.sekunden).toBeGreaterThan(3000);
+      expect(x.breite).toBeGreaterThan(40);
+      expect(x.breite).toBeLessThan(110);
+    }
+    const xs = f.map((x) => x.mitte[0]).sort((a, b) => a - b);
+    expect(xs[1] - xs[0]).toBeGreaterThan(80);
+  });
+});

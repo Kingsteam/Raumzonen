@@ -260,6 +260,16 @@ async def test_nur_admins(
         {"type": f"{DOMAIN}/kandidaten/get"},
         {"type": f"{DOMAIN}/room/create", "name": "X", "art": "melder"},
         {"type": f"{DOMAIN}/room/delete", "raum_id": "schlafzimmer"},
+        {
+            "type": f"{DOMAIN}/plan/import",
+            "raeume": [
+                {
+                    "raum_id": "schlafzimmer",
+                    "umriss": [[0, 0], [1, 0], [1, 1]],
+                    "haus": {"x": 0, "y": 0, "winkel": 0},
+                }
+            ],
+        },
     ):
         await client.send_json_auto_id(message)
         msg = await client.receive_json()
@@ -307,3 +317,65 @@ async def test_tuer_in_der_wand_fuehrt_zu(
     raum = loaded.runtime_data.store.model.raum("flur")
     assert raum.oeffnungen[0].fuehrt_zu == "schlafzimmer"
     assert raum.melder_nachlauf_s == 30
+
+
+async def test_grundriss_uebernehmen(
+    hass: HomeAssistant, loaded: MockConfigEntry, hass_ws_client
+) -> None:
+    eins = melder(hass, "eins")
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/room/create",
+            "name": "Kueche",
+            "art": "melder",
+            "melder": [eins.entity_id],
+        }
+    )
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/plan/import",
+            "raeume": [
+                {
+                    "raum_id": "kueche",
+                    "umriss": [[0, 0], [400, 0], [400, 300], [0, 300]],
+                    "oeffnungen": [
+                        {
+                            "kante": 1,
+                            "von": 50,
+                            "bis": 140,
+                            "art": "tuer",
+                            "fuehrt_zu": "schlafzimmer",
+                        }
+                    ],
+                    "haus": {"x": 1200, "y": -300, "winkel": 0},
+                }
+            ],
+        }
+    )
+    msg = await client.receive_json()
+    assert msg["success"], msg
+    await hass.async_block_till_done()
+    raum = loaded.runtime_data.store.model.raum("kueche")
+    assert raum.umriss[2] == [400, 300]
+    assert raum.oeffnungen[0].fuehrt_zu == "schlafzimmer"
+    assert (raum.haus_x, raum.haus_y, raum.haus_gesetzt) == (1200, -300, True)
+    # Tür außerhalb der Wand: nichts wird gespeichert.
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/plan/import",
+            "raeume": [
+                {
+                    "raum_id": "kueche",
+                    "umriss": [[0, 0], [100, 0], [100, 100]],
+                    "oeffnungen": [{"kante": 0, "von": 50, "bis": 400, "art": "tuer"}],
+                    "haus": {"x": 0, "y": 0, "winkel": 0},
+                }
+            ],
+        }
+    )
+    msg = await client.receive_json()
+    assert msg["error"]["code"] == "invalid"
+    assert loaded.runtime_data.store.model.raum("kueche").umriss[2] == [400, 300]
