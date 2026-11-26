@@ -673,6 +673,19 @@ async def test_grundriss_nachtraeglich_skalieren(
         }
     )
     assert (await client.receive_json())["error"]["code"] == "invalid"
+    # Stockwerk nachträglich zuordnen und wieder entfernen.
+    for wert, erwartet in (("og", "og"), (None, "")):
+        await client.send_json_auto_id(
+            {
+                "type": f"{DOMAIN}/haus/save",
+                "raeume": [],
+                "plaene": [{"plan_id": "oben", "x": 0, "y": 0, "stockwerk": wert}],
+            }
+        )
+        assert (await client.receive_json())["success"]
+        await hass.async_block_till_done()
+        [p] = loaded.runtime_data.store.model.plaene
+        assert p.stockwerk == erwartet
 
 
 async def test_melder_typ_und_benutzte_radar_anzeige(

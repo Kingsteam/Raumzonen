@@ -264,7 +264,7 @@ export class RaumzonenPanel extends LitElement {
   /** Grundriss wird ausgerichtet (verschieben, drehen, zuschneiden). */
   @state() private planEdit: string = "";
   /** Geänderte Lage/Zuschnitt der Grundrisse bis zum Speichern. */
-  @state() private planAenderung: Record<string, { x: number; y: number; winkel: number; zuschnitt: number[]; cm_pro_px: number }> = {};
+  @state() private planAenderung: Record<string, { x: number; y: number; winkel: number; zuschnitt: number[]; cm_pro_px: number; stockwerk: string }> = {};
   /** Maß neu setzen: angetippte Punkte im Haus (höchstens zwei) und die echte Länge in m. */
   @state() private planMessen: { punkte: Point[]; meter: number } | null = null;
   @state() private zeigePlan = lesen("raumzonen-zeige-plan", true);
@@ -1090,7 +1090,7 @@ export class RaumzonenPanel extends LitElement {
       await this._hass.callWS({
         type: `${DOMAIN}/haus/save`,
         raeume: Object.entries(this.lagen).map(([raum_id, l]) => ({ raum_id, x: Math.round(l.x), y: Math.round(l.y), winkel: l.winkel, ...(this.hausExtra[raum_id] ?? {}) })),
-        plaene: Object.entries(this.planAenderung).map(([plan_id, l]) => ({ plan_id, x: Math.round(l.x), y: Math.round(l.y), winkel: l.winkel, zuschnitt: l.zuschnitt, cm_pro_px: l.cm_pro_px })),
+        plaene: Object.entries(this.planAenderung).map(([plan_id, l]) => ({ plan_id, x: Math.round(l.x), y: Math.round(l.y), winkel: l.winkel, zuschnitt: l.zuschnitt, cm_pro_px: l.cm_pro_px, stockwerk: l.stockwerk || null })),
         tueren,
       });
       this.dirty = false;
@@ -2040,8 +2040,8 @@ export class RaumzonenPanel extends LitElement {
   }
 
   /** Lage eines Grundrisses (mit ungespeicherten Änderungen). */
-  private planLage(p: Plan): { x: number; y: number; winkel: number; zuschnitt: number[]; cm_pro_px: number } {
-    return this.planAenderung[p.id] ?? { x: p.x, y: p.y, winkel: p.winkel ?? 0, zuschnitt: p.zuschnitt ?? [], cm_pro_px: p.cm_pro_px };
+  private planLage(p: Plan): { x: number; y: number; winkel: number; zuschnitt: number[]; cm_pro_px: number; stockwerk: string } {
+    return this.planAenderung[p.id] ?? { x: p.x, y: p.y, winkel: p.winkel ?? 0, zuschnitt: p.zuschnitt ?? [], cm_pro_px: p.cm_pro_px, stockwerk: p.stockwerk ?? "" };
   }
 
   /** Bildpunkt → Haus. */
@@ -2076,7 +2076,7 @@ export class RaumzonenPanel extends LitElement {
     this.planAendern(p, { x: l2.x + anker[0] - neu[0], y: l2.y + anker[1] - neu[1] });
   }
 
-  private planAendern(p: Plan, patch: Partial<{ x: number; y: number; winkel: number; zuschnitt: number[]; cm_pro_px: number }>): void {
+  private planAendern(p: Plan, patch: Partial<{ x: number; y: number; winkel: number; zuschnitt: number[]; cm_pro_px: number; stockwerk: string }>): void {
     this.planAenderung = { ...this.planAenderung, [p.id]: { ...this.planLage(p), ...patch } };
     this.dirty = true;
   }
@@ -2112,10 +2112,13 @@ export class RaumzonenPanel extends LitElement {
   private renderPlanBilder(): TemplateResult | typeof nothing {
     if (!this.zeigePlan) return nothing;
     let plaene = (this.data?.plaene ?? []).filter((p) => this.planBilder[p.id]);
-    if (this.page === "haus" && this.stockwerk) plaene = plaene.filter((p) => !p.stockwerk || p.stockwerk === this.stockwerk);
+    // Grundriss mit Stockwerk: nur sichtbar, wenn dieses Stockwerk gewählt ist
+    // (unter „Alle“ nur die ohne Stockwerk, sonst liegen sie übereinander).
+    const sw = (p: Plan) => this.planLage(p).stockwerk;
+    if (this.page === "haus") plaene = plaene.filter((p) => p.id === this.planEdit || !sw(p) || sw(p) === this.stockwerk);
     if (this.page === "raum" && this.raum) {
       const st = this.stockwerkeVon(this.raum);
-      if (st.length) plaene = plaene.filter((p) => !p.stockwerk || st.includes(p.stockwerk));
+      if (st.length) plaene = plaene.filter((p) => !sw(p) || st.includes(sw(p)));
     }
     if (!plaene.length) return nothing;
     let zuRaum: ((h: Point) => Point) | null = null;
@@ -3305,7 +3308,15 @@ export class RaumzonenPanel extends LitElement {
           (p) => html`<li class="item">
             <div class="row static">
               <span class="marker-icon"><ha-icon icon="mdi:image-outline"></ha-icon></span>
-              <span class="name">${p.name}<small>${this.planBilder[p.id] ? "im Hintergrund" : "Bild fehlt"}</small></span>
+              <span class="name"
+                >${p.name}<small
+                  >${!this.planBilder[p.id]
+                    ? "Bild fehlt"
+                    : this.planLage(p).stockwerk
+                      ? `nur im Stockwerk „${this.data?.stockwerke_ha?.find((x) => x.id === this.planLage(p).stockwerk)?.name ?? this.planLage(p).stockwerk}“`
+                      : "auf jedem Stockwerk"}</small
+                ></span
+              >
               <button
                 class="text small"
                 @click=${() => {
@@ -3322,6 +3333,20 @@ export class RaumzonenPanel extends LitElement {
             </div>
             ${this.planEdit === p.id
               ? html`<div class="inspector">
+                  ${this.data?.stockwerke_ha?.length
+                    ? html`<label class="field"
+                        >Stockwerk<select
+                          @change=${(e: Event) => {
+                            const v = (e.target as HTMLSelectElement).value;
+                            this.planAendern(p, { stockwerk: v });
+                            if (v) this.stockwerk = v;
+                          }}
+                        >
+                          <option value="" ?selected=${!this.planLage(p).stockwerk}>jedes Stockwerk</option>
+                          ${this.data.stockwerke_ha.map((st) => html`<option value=${st.id} ?selected=${this.planLage(p).stockwerk === st.id}>${st.name}</option>`)}
+                        </select></label
+                      >`
+                    : nothing}
                   <div class="label-text">Drehen</div>
                   <div class="actions">
                     ${(

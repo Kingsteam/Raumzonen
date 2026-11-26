@@ -4,6 +4,15 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.15.0] - 2026-11-26
+
+### Hinzugefügt
+
+- Grundriss einem Stockwerk zuordnen (Hausplan → Grundrisse → „Ausrichten“
+  → Stockwerk), auch nachträglich. Ein Grundriss mit Stockwerk erscheint nur,
+  wenn oben dieses Stockwerk gewählt ist; unter „Alle“ nur Grundrisse ohne
+  Stockwerk, damit nichts übereinanderliegt.
+
 ## [0.14.0] - 2026-11-26
 
 ### Hinzugefügt

@@ -431,6 +431,8 @@ def ws_converter_zones(
                     vol.Optional("winkel", default=0.0): vol.Coerce(float),
                     vol.Optional("zuschnitt", default=[]): [vol.Coerce(float)],
                     vol.Optional("cm_pro_px"): vol.Coerce(float),
+                    # Stockwerk aus Home Assistant; leer = auf jedem Stockwerk.
+                    vol.Optional("stockwerk"): vol.Any(None, str),
                 }
             )
         ],
@@ -480,6 +482,8 @@ async def ws_haus_save(
             plan.zuschnitt = [round(v, 1) for v in daten["zuschnitt"]]
             if "cm_pro_px" in daten:
                 plan.cm_pro_px = daten["cm_pro_px"]
+            if "stockwerk" in daten:
+                plan.stockwerk = daten["stockwerk"] or ""
         for tuer in msg["tueren"]:
             raum = model.raum(tuer["raum_id"])
             ziel = tuer["fuehrt_zu"] or ""
