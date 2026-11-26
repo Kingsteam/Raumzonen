@@ -74,7 +74,6 @@ from .const import (
     MAX_WEG_RAHMEN,
     MAX_ZONEN_JE_RAUM,
     MELDER_KLASSEN,
-    MELDER_ZONE_ID,
     QUELLE_ENTITAET,
     QUELLE_MQTT,
     RAUM_MELDER,
@@ -990,8 +989,8 @@ async def ws_room_umwandeln(
     """Melder-Raum in einen Radar-Raum umwandeln (FP400 statt Melder).
 
     Name, Bereich, Stockwerke, Wände, Türen, Lage im Haus und gezeichnete
-    Zonen bleiben. „Anwesenheit“ bleibt als Zone über den ganzen Raum, damit
-    die Anzeige in Home Assistant weiter dieselbe ist.
+    Zonen bleiben. „Anwesenheit“ bleibt (automatisch über den ganzen Raum),
+    damit die Anzeige in Home Assistant weiter dieselbe ist.
     """
     entry = _entry(hass)
     if entry is None:
@@ -1039,21 +1038,8 @@ async def ws_room_umwandeln(
     raum.melder_lagen = {}
     for zone in raum.zonen:
         zone.melder = []
-    if len(raum.umriss) >= 3:
-        raum.zonen.insert(
-            0,
-            zone_from_dict(
-                {
-                    "id": MELDER_ZONE_ID,
-                    "name": "Anwesenheit",
-                    "form": {
-                        "art": "vieleck",
-                        "punkte": [list(p) for p in raum.umriss],
-                    },
-                    "art": "normal",
-                }
-            ),
-        )
+    # „Anwesenheit“ entsteht in Radar-Räumen mit Wänden von selbst (gleiche
+    # Kennung, also dieselbe Anzeige in Home Assistant).
     try:
         model.validate()
     except ValueError as err:

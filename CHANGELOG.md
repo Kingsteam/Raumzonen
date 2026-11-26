@@ -4,6 +4,17 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.18.0] - 2026-11-26
+
+### Hinzugefügt
+
+- Jeder Radar-Raum mit Wänden hat jetzt von selbst „Anwesenheit“ für den
+  ganzen Raum (wie die Melder-Räume), ohne eigene Zone. Regel wie eine
+  normale Zone (frei 5 s nach dem Letzten). Gibt es schon eine eigene Zone
+  mit der Kennung „anwesenheit“ (z. B. aus „In Radar-Raum umwandeln“), zählt
+  die eigene; wird sie gelöscht, übernimmt die automatische mit derselben
+  Anzeige in Home Assistant.
+
 ## [0.17.0] - 2026-11-26
 
 ### Hinzugefügt

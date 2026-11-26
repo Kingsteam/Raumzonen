@@ -805,7 +805,9 @@ async def test_melder_raum_in_radar_raum_umwandeln(
         radar.id,
         [],
     )
-    assert [z.id for z in raum.zonen] == ["anwesenheit"]
+    # „Anwesenheit“ ist keine eigene Zone, sondern kommt von selbst.
+    assert raum.zonen == []
+    assert "anwesenheit" in loaded.runtime_data.controllers["stube"].room.zones
     assert raum.oeffnungen[0].id == "o1"
     assert (raum.sensor.x, raum.sensor.y) == (200, 150)
     # Zweimal geht nicht: der Raum hat jetzt einen Sensor.
@@ -838,3 +840,29 @@ async def test_wege_ereignis_und_abfrage(
     await client.send_json_auto_id({"type": f"{DOMAIN}/wege/get"})
     result = (await client.receive_json())["result"]
     assert result["wege"][-1]["tuer"] == "Tür B"
+
+
+def test_radar_raum_hat_anwesenheit_von_selbst() -> None:
+    """Mit Wänden: „Anwesenheit“ über den ganzen Raum; eigene Zone geht vor."""
+    from custom_components.raumzonen.model import ZoneConfig, build_room
+
+    raum = RaumConfig(
+        id="stube",
+        name="Stube",
+        sensor=SensorConfig(device_id="x"),
+        umriss=[[0.0, 0.0], [400.0, 0.0], [400.0, 300.0], [0.0, 300.0]],
+    )
+    room = build_room(raum)
+    assert list(room.zones) == ["anwesenheit"]
+    assert room.zones["anwesenheit"].shape.contains(200, 150)
+    # Ohne Wände: keine.
+    assert list(build_room(RaumConfig(id="b", name="B")).zones) == []
+    # Eigene Zone gleicher Kennung: die eigene zählt.
+    raum.zonen.append(
+        ZoneConfig(
+            id="anwesenheit",
+            name="Ganzer Raum",
+            form={"art": "vieleck", "punkte": [[0, 0], [100, 0], [100, 100]]},
+        )
+    )
+    assert build_room(raum).zones["anwesenheit"].name == "Ganzer Raum"

@@ -3086,8 +3086,29 @@ export class RaumzonenPanel extends LitElement {
     </div>`;
   }
 
+  /** Radar-Raum mit Wänden: „Anwesenheit“ für den ganzen Raum kommt von selbst. */
+  private renderAnwesenheit(): TemplateResult | typeof nothing {
+    if (this.istMelder) return nothing;
+    if (this.zones.some((z) => z.id === MELDER_ZONE)) return nothing;
+    const live = this.live;
+    const ok = !!live && live.verfuegbar && !live.problem;
+    const da = !!live?.zonen[MELDER_ZONE]?.belegt;
+    if (this.umriss.length < 3)
+      return html`<p class="hint small">„Anwesenheit“ für den ganzen Raum gibt es, sobald die Wände gezeichnet sind (unter „Sensor und Raum“).</p>`;
+    return html`<ul class="list">
+      <li class="item">
+        <div class="row static">
+          <span class="marker-icon"><ha-icon icon="mdi:home-account"></ha-icon></span>
+          <span class="name">Anwesenheit<small>ganzer Raum, von selbst (frei 5 s nach dem Letzten)</small></span>
+          <span class="badge ${!ok ? "off unreachable" : da ? "on" : "off"}" style="--zone:var(--rz-bereich)">${!ok ? "nicht erreichbar" : da ? "belegt" : "frei"}</span>
+        </div>
+      </li>
+    </ul>`;
+  }
+
   private renderZonesTab(): TemplateResult {
     return html`
+      ${this.renderAnwesenheit()}
       ${this.zones.length
         ? html`<ul class="list">
             ${this.zones.map((z, i) => this.renderZoneItem(z, i))}

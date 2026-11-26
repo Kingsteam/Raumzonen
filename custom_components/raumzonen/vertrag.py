@@ -29,7 +29,7 @@ from .core.room import (
     TAG_WIEDERHERGESTELLT,
 )
 from .core.tracks import HELD, Track
-from .model import melder_zone
+from .model import anwesenheit_zone, melder_zone
 
 if TYPE_CHECKING:
     from .controller import RoomController
@@ -52,8 +52,8 @@ def raum_info(raum: RaumConfig, melder: list[str] | None = None) -> dict[str, An
     zonen = []
     raender = []
     stellen = []
-    if raum.ist_melder:
-        z = melder_zone(raum)
+    z = melder_zone(raum) if raum.ist_melder else anwesenheit_zone(raum)
+    if z is not None:
         zonen.append(
             {
                 "zone_id": z.id,

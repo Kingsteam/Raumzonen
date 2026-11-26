@@ -176,7 +176,9 @@ async def test_room_save(
     # Panel bleibt beim eigenen Neuladen erhalten.
     assert PANEL_URL in hass.data[frontend.DATA_PANELS]
     entry = hass.config_entries.async_get_entry(loaded.entry_id)
+    # Mit Wänden kommt „Anwesenheit“ für den ganzen Raum von selbst dazu.
     assert set(entry.runtime_data.controllers["schlafzimmer"].room.zones) == {
+        "anwesenheit",
         "sofa",
         "tuer",
     }

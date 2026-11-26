@@ -262,8 +262,8 @@ ne.elementStyles = [], ne.shadowRootOptions = { mode: "open" }, ne[me("elementPr
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const Ye = globalThis, lt = (e) => e, Te = Ye.trustedTypes, ht = Te ? Te.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, Ot = "$lit$", j = `lit$${Math.random().toFixed(9).slice(2)}$`, Nt = "?" + j, on = `<${Nt}>`, J = document, be = () => J.createComment(""), $e = (e) => e === null || typeof e != "object" && typeof e != "function", Qe = Array.isArray, ln = (e) => Qe(e) || typeof e?.[Symbol.iterator] == "function", Ie = `[ 	
-\f\r]`, le = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, ct = /-->/g, ut = />/g, K = RegExp(`>|${Ie}(?:([^\\s"'>=/]+)(${Ie}*=${Ie}*(?:[^ 	
+const Ye = globalThis, lt = (e) => e, Te = Ye.trustedTypes, ht = Te ? Te.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, Ot = "$lit$", C = `lit$${Math.random().toFixed(9).slice(2)}$`, Nt = "?" + C, on = `<${Nt}>`, J = document, be = () => J.createComment(""), $e = (e) => e === null || typeof e != "object" && typeof e != "function", Qe = Array.isArray, ln = (e) => Qe(e) || typeof e?.[Symbol.iterator] == "function", Ie = `[ 	
+\f\r]`, le = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, ct = /-->/g, ut = />/g, q = RegExp(`>|${Ie}(?:([^\\s"'>=/]+)(${Ie}*=${Ie}*(?:[^ 	
 \f\r"'\`<>=]|("|')|))|$)`, "g"), dt = /'/g, pt = /"/g, Bt = /^(?:script|style|textarea|title)$/i, Dt = (e) => (t, ...n) => ({ _$litType$: e, strings: t, values: n }), u = Dt(1), v = Dt(2), ie = Symbol.for("lit-noChange"), m = Symbol.for("lit-nothing"), mt = /* @__PURE__ */ new WeakMap(), X = J.createTreeWalker(J, 129);
 function Wt(e, t) {
   if (!Qe(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
@@ -275,9 +275,9 @@ const hn = (e, t) => {
   for (let o = 0; o < n; o++) {
     const h = e[o];
     let l, c, d = -1, f = 0;
-    for (; f < h.length && (a.lastIndex = f, c = a.exec(h), c !== null); ) f = a.lastIndex, a === le ? c[1] === "!--" ? a = ct : c[1] !== void 0 ? a = ut : c[2] !== void 0 ? (Bt.test(c[2]) && (i = RegExp("</" + c[2], "g")), a = K) : c[3] !== void 0 && (a = K) : a === K ? c[0] === ">" ? (a = i ?? le, d = -1) : c[1] === void 0 ? d = -2 : (d = a.lastIndex - c[2].length, l = c[1], a = c[3] === void 0 ? K : c[3] === '"' ? pt : dt) : a === pt || a === dt ? a = K : a === ct || a === ut ? a = le : (a = K, i = void 0);
-    const p = a === K && e[o + 1].startsWith("/>") ? " " : "";
-    r += a === le ? h + on : d >= 0 ? (s.push(l), h.slice(0, d) + Ot + h.slice(d) + j + p) : h + j + (d === -2 ? o : p);
+    for (; f < h.length && (a.lastIndex = f, c = a.exec(h), c !== null); ) f = a.lastIndex, a === le ? c[1] === "!--" ? a = ct : c[1] !== void 0 ? a = ut : c[2] !== void 0 ? (Bt.test(c[2]) && (i = RegExp("</" + c[2], "g")), a = q) : c[3] !== void 0 && (a = q) : a === q ? c[0] === ">" ? (a = i ?? le, d = -1) : c[1] === void 0 ? d = -2 : (d = a.lastIndex - c[2].length, l = c[1], a = c[3] === void 0 ? q : c[3] === '"' ? pt : dt) : a === pt || a === dt ? a = q : a === ct || a === ut ? a = le : (a = q, i = void 0);
+    const p = a === q && e[o + 1].startsWith("/>") ? " " : "";
+    r += a === le ? h + on : d >= 0 ? (s.push(l), h.slice(0, d) + Ot + h.slice(d) + C + p) : h + C + (d === -2 ? o : p);
   }
   return [Wt(e, r + (e[n] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), s];
 };
@@ -294,11 +294,11 @@ class ke {
     for (; (i = X.nextNode()) !== null && h.length < o; ) {
       if (i.nodeType === 1) {
         if (i.hasAttributes()) for (const d of i.getAttributeNames()) if (d.endsWith(Ot)) {
-          const f = c[a++], p = i.getAttribute(d).split(j), g = /([.?@])?(.*)/.exec(f);
+          const f = c[a++], p = i.getAttribute(d).split(C), g = /([.?@])?(.*)/.exec(f);
           h.push({ type: 1, index: r, name: g[2], strings: p, ctor: g[1] === "." ? un : g[1] === "?" ? dn : g[1] === "@" ? pn : Ze }), i.removeAttribute(d);
-        } else d.startsWith(j) && (h.push({ type: 6, index: r }), i.removeAttribute(d));
+        } else d.startsWith(C) && (h.push({ type: 6, index: r }), i.removeAttribute(d));
         if (Bt.test(i.tagName)) {
-          const d = i.textContent.split(j), f = d.length - 1;
+          const d = i.textContent.split(C), f = d.length - 1;
           if (f > 0) {
             i.textContent = Te ? Te.emptyScript : "";
             for (let p = 0; p < f; p++) i.append(d[p], be()), X.nextNode(), h.push({ type: 2, index: ++r });
@@ -308,7 +308,7 @@ class ke {
       } else if (i.nodeType === 8) if (i.data === Nt) h.push({ type: 2, index: r });
       else {
         let d = -1;
-        for (; (d = i.data.indexOf(j, d + 1)) !== -1; ) h.push({ type: 7, index: r }), d += j.length - 1;
+        for (; (d = i.data.indexOf(C, d + 1)) !== -1; ) h.push({ type: 7, index: r }), d += C.length - 1;
       }
       r++;
     }
@@ -602,7 +602,7 @@ function tt(e) {
 function nt(e, t, n = 0, s = 0) {
   return [Math.floor((e[0] - n) / t), Math.floor((e[1] - s) / t)];
 }
-function C(e) {
+function F(e) {
   if (e.art === "vieleck") return e.punkte;
   if (e.art === "rechteck") return Me(e.mitte, e.breite, e.tiefe, e.winkel);
   const t = tt(e), n = t.flatMap((h) => [h.x, h.x + h.s]), s = t.flatMap((h) => [h.y, h.y + h.s]);
@@ -628,7 +628,7 @@ function Oe(e, t) {
     const [n, s] = nt(e, t.groesse, t.x0 ?? 0, t.y0 ?? 0);
     return t.zellen.some(([i, r]) => i === n && r === s);
   }
-  return Ft(e, C(t));
+  return Ft(e, F(t));
 }
 function yn(e) {
   if (!e.length) return [0, 0];
@@ -725,7 +725,7 @@ function An(e, t) {
 function Rn(e, t, n) {
   if (e.length >= 3) return e;
   const s = [n];
-  for (const d of t) s.push(...C(d));
+  for (const d of t) s.push(...F(d));
   const i = s.map((d) => d[0]), r = s.map((d) => d[1]), a = 40, [o, h] = [Math.min(...i) - a, Math.max(...i) + a], [l, c] = [Math.min(...r) - a, Math.max(...r) + a];
   return [
     [o, l],
@@ -2401,7 +2401,7 @@ function Xn(e, t, n = 60) {
 }
 function Jn(e, t, n = 80) {
   const s = Ee(e.umriss, t);
-  return s ? e.zonen.some((i) => i.art === "ausgang" && C(i.form).length && Math.hypot(T(i.form)[0] - s[0], T(i.form)[1] - s[1]) <= n) : !0;
+  return s ? e.zonen.some((i) => i.art === "ausgang" && F(i.form).length && Math.hypot(T(i.form)[0] - s[0], T(i.form)[1] - s[1]) <= n) : !0;
 }
 function Ke(e) {
   if (e.length < 3) return "Es braucht drei Stellen.";
@@ -2640,12 +2640,12 @@ function os(e, t = 2) {
       let W = -1;
       const st = (O) => {
         if (W >= 0 && O - W >= $ && W > 2 && O < B - 2) {
-          const F = (W + O) / 2;
+          const U = (W + O) / 2;
           let ee = null;
-          for (const U of [1, -1]) {
-            const V = Math.round(S[0] + ae * F + oe * U * b * 2.5), G = Math.round(S[1] + Q * F + D * U * b * 2.5);
-            if (V < 0 || G < 0 || V >= s || G >= i) continue;
-            const we = g.get(r[G * s + V]);
+          for (const V of [1, -1]) {
+            const G = Math.round(S[0] + ae * U + oe * V * b * 2.5), K = Math.round(S[1] + Q * U + D * V * b * 2.5);
+            if (G < 0 || K < 0 || G >= s || K >= i) continue;
+            const we = g.get(r[K * s + G]);
             we !== void 0 && we !== M && (ee = we);
           }
           _.push({ raum: M, kante: L, von_px: W * t, bis_px: O * t, partner: ee });
@@ -2653,12 +2653,12 @@ function os(e, t = 2) {
         W = -1;
       };
       for (let O = 0; O <= B; O++) {
-        let F = !1, ee = 0;
-        for (let U = -b; U <= b && !F; U++) {
-          const V = Math.round(S[0] + ae * O + oe * U), G = Math.round(S[1] + Q * O + D * U);
-          ee = V >= 0 && G >= 0 && V < s && G < i && n.dunkel[G * s + V] ? ee + 1 : 0, ee >= k && (F = !0);
+        let U = !1, ee = 0;
+        for (let V = -b; V <= b && !U; V++) {
+          const G = Math.round(S[0] + ae * O + oe * V), K = Math.round(S[1] + Q * O + D * V);
+          ee = G >= 0 && K >= 0 && G < s && K < i && n.dunkel[K * s + G] ? ee + 1 : 0, ee >= k && (U = !0);
         }
-        !F && W < 0 && (W = O), F && W >= 0 && st(O);
+        !U && W < 0 && (W = O), U && W >= 0 && st(O);
       }
       st(B);
     });
@@ -2692,7 +2692,7 @@ var ls = Object.defineProperty, hs = Object.getOwnPropertyDescriptor, x = (e, t,
     (a = e[r]) && (i = (s ? a(t, n, i) : a(i)) || i);
   return s && i && ls(t, n, i), i;
 };
-const R = "raumzonen", cs = 5, H = 12, Tt = 8, us = 30, Et = [1, 3, 8, 12, 24], ds = ["auswahl", "rechteck", "vieleck", "zellen", "umriss", "oeffnung"], q = "anwesenheit", Pt = [
+const R = "raumzonen", cs = 5, H = 12, Tt = 8, us = 30, Et = [1, 3, 8, 12, 24], ds = ["auswahl", "rechteck", "vieleck", "zellen", "umriss", "oeffnung"], j = "anwesenheit", Pt = [
   { tool: "auswahl", icon: "mdi:cursor-default-outline", label: "Auswählen und verschieben" },
   { tool: "rechteck", icon: "mdi:rectangle-outline", label: "Rechteck zeichnen" },
   { tool: "vieleck", icon: "mdi:vector-polygon", label: "Vieleck zeichnen" },
@@ -2748,7 +2748,7 @@ let w = class extends fe {
           b && t.push(...this.outlineOf(g).map(($) => Z($, b)));
         }
       }
-      for (const g of this.zones) t.push(...C(g.form));
+      for (const g of this.zones) t.push(...F(g.form));
       t.push(...this.umriss), t.length < 4 && this.page === "raum" && t.push(...Ne([e.x, e.y], e.winkel, Math.min(e.reichweite_cm, 500), e.oeffnung_grad, 8));
       const n = this.ansichtWinkel, s = t.map((g) => P(g, n)), i = s.map((g) => g[0]), r = s.map((g) => g[1]), [a, o, h, l] = [Math.min(...i), Math.max(...i), Math.min(...r), Math.max(...r)], c = Math.max(200, o - a), d = Math.max(200, l - h), f = Math.min(this.size.w / (c * 1.2), this.size.h / (d * 1.2)), p = P([(a + o) / 2, (h + l) / 2], -n);
       this.view = { cx: p[0], cy: p[1], scale: Math.max(0.05, Math.min(5, f)) };
@@ -3199,7 +3199,7 @@ let w = class extends fe {
     const e = this.plan, t = this.planCmProPx();
     if (!e || !t || !this._hass || !this.data) return;
     const n = this.data.raeume, s = e.g.raeume.map((h, l) => l).filter((h) => e.zuordnung[h]).map((h) => {
-      const l = n.find((p) => p.id === e.zuordnung[h]), c = l.umriss.length >= 3 ? l.umriss : l.zonen.length ? [...l.zonen.flatMap((p) => C(p.form)), [l.sensor.x, l.sensor.y]] : [], d = Rt(e.g, h, t);
+      const l = n.find((p) => p.id === e.zuordnung[h]), c = l.umriss.length >= 3 ? l.umriss : l.zonen.length ? [...l.zonen.flatMap((p) => F(p.form)), [l.sensor.x, l.sensor.y]] : [], d = Rt(e.g, h, t);
       let f = [0, 0];
       if (c.length) {
         const p = se(c), g = se(d.umriss);
@@ -3709,7 +3709,7 @@ let w = class extends fe {
   }
   /** Dreh-Griff einer Zone: über ihrer Mitte, oberhalb der Form. */
   zoneRotateHandle(e) {
-    const t = T(e), n = Math.max(...C(e).map((s) => s[1]));
+    const t = T(e), n = Math.max(...F(e).map((s) => s[1]));
     return [t[0], n + 36 / this.view.scale];
   }
   openSensor() {
@@ -3894,7 +3894,7 @@ let w = class extends fe {
   }
   renderRoom() {
     if (this.umriss.length < 3) return m;
-    const e = this.screenPoints(this.umriss), t = this.kannAendern && this.tool === "auswahl" && this.selected < 0 && !this.sensorOpen, n = this.openingDraft ? [...this.oeffnungen, this.openingDraft] : this.oeffnungen, s = T({ art: "vieleck", punkte: this.umriss }), i = this.istMelder && !!this.live?.zonen[q]?.belegt;
+    const e = this.screenPoints(this.umriss), t = this.kannAendern && this.tool === "auswahl" && this.selected < 0 && !this.sensorOpen, n = this.openingDraft ? [...this.oeffnungen, this.openingDraft] : this.oeffnungen, s = T({ art: "vieleck", punkte: this.umriss }), i = this.istMelder && !!this.live?.zonen[j]?.belegt;
     return v`<polygon class="floor ${i ? "belegt" : ""}" points=${e} />
       <polygon class="wall" points=${e} />
       ${n.map((r, a) => this.renderOpening(r, a === this.selOpening || r === this.openingDraft, s))}
@@ -4151,7 +4151,7 @@ let w = class extends fe {
   }
   /** Melder-Raum: in der Mitte steht, ob jemand da ist. */
   renderMelderLabel() {
-    const e = this.live, t = !!e && e.verfuegbar && !e.problem, n = !!e?.zonen[q]?.belegt, s = this.umriss.length >= 3 ? T({ art: "vieleck", punkte: this.umriss }) : [0, 0], [i, r] = this.toScreen(s);
+    const e = this.live, t = !!e && e.verfuegbar && !e.problem, n = !!e?.zonen[j]?.belegt, s = this.umriss.length >= 3 ? T({ art: "vieleck", punkte: this.umriss }) : [0, 0], [i, r] = this.toScreen(s);
     return v`<text class="label room" x=${i} y=${r}>${t ? n ? "jemand da" : "niemand" : "Melder nicht erreichbar"}</text>
       ${this.umriss.length < 3 ? v`<text class="label sub" x=${i} y=${r + 18}>Wände zeichnen: Werkzeug links</text>` : m}`;
   }
@@ -4174,7 +4174,7 @@ let w = class extends fe {
         return v`<polygon class="zone-shape ${r ? "selected" : ""}" points=${this.screenPoints(l)} fill=${i} fill-opacity=${a} stroke=${i} style="stroke-width:1" />`;
       })}`;
     else {
-      const h = this.screenPoints(C(e.form)), l = r && e.regel.rand_cm > 0 ? this.px(e.regel.rand_cm * 2) : 0;
+      const h = this.screenPoints(F(e.form)), l = r && e.regel.rand_cm > 0 ? this.px(e.regel.rand_cm * 2) : 0;
       o = v`
         ${l ? v`<mask id="rz-band-${t}">
                 <rect x="0" y="0" width=${this.size.w} height=${this.size.h} fill="white" />
@@ -4283,13 +4283,13 @@ let w = class extends fe {
     for (const o of e) {
       const h = this.lagen[o.id];
       if (!h) continue;
-      const l = this.outlineOf(o).map((k) => Z(k, h)), c = o.id === this.hausSel, d = this.hausLive[o.id], f = o.art === "melder" && !!d?.zonen[q]?.belegt;
+      const l = this.outlineOf(o).map((k) => Z(k, h)), c = o.id === this.hausSel, d = this.hausLive[o.id], f = o.art === "melder" && !!d?.zonen[j]?.belegt;
       t.push(v`<polygon class="floor ${f ? "belegt" : ""}" points=${this.screenPoints(l)} />
         <polygon class="wall ${o.umriss.length >= 3 ? "" : "guess"} ${c ? "selected" : ""}" points=${this.screenPoints(l)} />`);
       for (const k of o.zonen) {
         const _ = he(k);
         if (_ === "ignorieren") continue;
-        const y = (k.id ? d?.zonen[k.id]?.belegt : !1) ?? !1, M = C(k.form).map((A) => Z(A, h));
+        const y = (k.id ? d?.zonen[k.id]?.belegt : !1) ?? !1, M = F(k.form).map((A) => Z(A, h));
         t.push(v`<polygon class="zone-shape" points=${this.screenPoints(M)} fill=${de(_)} fill-opacity=${y ? 0.5 : 0.18} stroke=${de(_)} />`);
       }
       for (const k of N(o)) {
@@ -4587,8 +4587,23 @@ let w = class extends fe {
         ${s !== "ignorieren" ? u`<div class="summary">${xt(e)}</div>` : m}
       </div>`;
   }
+  /** Radar-Raum mit Wänden: „Anwesenheit“ für den ganzen Raum kommt von selbst. */
+  renderAnwesenheit() {
+    if (this.istMelder || this.zones.some((s) => s.id === j)) return m;
+    const e = this.live, t = !!e && e.verfuegbar && !e.problem, n = !!e?.zonen[j]?.belegt;
+    return this.umriss.length < 3 ? u`<p class="hint small">„Anwesenheit“ für den ganzen Raum gibt es, sobald die Wände gezeichnet sind (unter „Sensor und Raum“).</p>` : u`<ul class="list">
+      <li class="item">
+        <div class="row static">
+          <span class="marker-icon"><ha-icon icon="mdi:home-account"></ha-icon></span>
+          <span class="name">Anwesenheit<small>ganzer Raum, von selbst (frei 5 s nach dem Letzten)</small></span>
+          <span class="badge ${t ? n ? "on" : "off" : "off unreachable"}" style="--zone:var(--rz-bereich)">${t ? n ? "belegt" : "frei" : "nicht erreichbar"}</span>
+        </div>
+      </li>
+    </ul>`;
+  }
   renderZonesTab() {
     return u`
+      ${this.renderAnwesenheit()}
       ${this.zones.length ? u`<ul class="list">
             ${this.zones.map((e, t) => this.renderZoneItem(e, t))}
           </ul>` : u`<p class="hint">
@@ -4640,7 +4655,7 @@ let w = class extends fe {
     this.zones = e, this.dirty = t > 0 || this.dirty, this.showToast(t ? `${t} Tür-${t === 1 ? "Zone" : "Zonen"} angelegt. Prüfen und „Speichern“.` : "Keine Tür ohne Tür-Zone gefunden.");
   }
   renderMelderTab() {
-    const e = this.live, t = !!e && e.verfuegbar && !e.problem, n = !!e?.zonen[q]?.belegt, s = this.kandidaten, i = (l) => s?.melder.find((c) => c.id === l || c.entity_id === l)?.name ?? l, r = (s?.melder ?? []).filter((l) => !l.benutzt_von || l.benutzt_von === this.raumId || this.melder.includes(l.id)), a = this.melder.filter((l) => !r.some((c) => c.id === l || c.entity_id === l)).map((l) => ({ id: l, entity_id: l, name: "Unbekannter Melder", klasse: "", bereich_id: null, benutzt_von: this.raumId, geraet: null, typ: "nicht mehr in Home Assistant (gelöscht oder abgeschaltet), bitte abwählen" })), o = this.melderAuswahl([...r, ...a], this.raum?.bereich_id, this.melder), h = this.kannAendern ? this.radarFuerRaum() : null;
+    const e = this.live, t = !!e && e.verfuegbar && !e.problem, n = !!e?.zonen[j]?.belegt, s = this.kandidaten, i = (l) => s?.melder.find((c) => c.id === l || c.entity_id === l)?.name ?? l, r = (s?.melder ?? []).filter((l) => !l.benutzt_von || l.benutzt_von === this.raumId || this.melder.includes(l.id)), a = this.melder.filter((l) => !r.some((c) => c.id === l || c.entity_id === l)).map((l) => ({ id: l, entity_id: l, name: "Unbekannter Melder", klasse: "", bereich_id: null, benutzt_von: this.raumId, geraet: null, typ: "nicht mehr in Home Assistant (gelöscht oder abgeschaltet), bitte abwählen" })), o = this.melderAuswahl([...r, ...a], this.raum?.bereich_id, this.melder), h = this.kannAendern ? this.radarFuerRaum() : null;
     return u`${h ? u`<div class="note">
             <p>
               Hier hängt der Radarsensor „${h.name}“. Als <b>Radar-Raum</b> sieht Raumzonen, wo genau jemand ist, und übernimmt die Zonen aus der
@@ -5007,7 +5022,7 @@ let w = class extends fe {
             </div>` : m}
         <ul class="list">
           ${e.filter((i) => this.aufStockwerk(i)).map((i) => {
-      const r = this.hausLive[i.id], a = r ? r.figuren.filter((f) => !f.tags.includes("wiederhergestellt") && !f.tags.includes("stoerung")).length : 0, o = i.id === this.hausSel, h = N(i), l = i.art === "melder", c = l ? !!r?.zonen[q]?.belegt : a > 0, d = !!r && r.verfuegbar && !r.problem;
+      const r = this.hausLive[i.id], a = r ? r.figuren.filter((f) => !f.tags.includes("wiederhergestellt") && !f.tags.includes("stoerung")).length : 0, o = i.id === this.hausSel, h = N(i), l = i.art === "melder", c = l ? !!r?.zonen[j]?.belegt : a > 0, d = !!r && r.verfuegbar && !r.problem;
       return u`<li class="item ${o ? "open" : ""}">
               <div class="row" @click=${() => this.hausSel = o ? "" : i.id}>
                 <span class="marker-icon"><ha-icon icon=${l ? "mdi:motion-sensor" : "mdi:radar"}></ha-icon></span>
@@ -5537,9 +5552,9 @@ let w = class extends fe {
     return e.figur === "kurz" ? "Kurze Spuren" : `${e.hund ? "Hund?" : "Figur"} ${e.nummer}`;
   }
   renderAuswertungTab() {
-    const e = this.ausw, t = (o) => o === q && this.istMelder ? "Jemand da" : this.zones.find((h) => h.id === o)?.name ?? o, n = (o) => {
+    const e = this.ausw, t = (o) => o === j && this.istMelder ? "Jemand da" : this.zones.find((h) => h.id === o)?.name ?? o, n = (o) => {
       const h = this.zones.find((l) => l.id === o);
-      return h ? de(he(h)) : o === q ? "var(--rz-bereich)" : "var(--muted)";
+      return h ? de(he(h)) : o === j ? "var(--rz-bereich)" : "var(--muted)";
     }, s = u`<div class="levels" role="group" aria-label="Zeitraum">
       ${Et.map(
       (o) => u`<button

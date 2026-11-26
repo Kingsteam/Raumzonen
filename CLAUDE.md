@@ -18,7 +18,7 @@ Zone, Spuren, die nicht plötzlich verschwinden. Konzept: `docs/KONZEPT.md`
 (allgemeine Fassung; die vollständige und die Auswertung der Aufnahmen
 liegen in `haus-privat/raumzonen/docs/`).
 
-Stand 0.17.0: **Phase 0 bis 4a, Hausplan, Türen in Wänden.** Rechenkern in reinem Python, getestet gegen
+Stand 0.18.0: **Phase 0 bis 4a, Hausplan, Türen in Wänden.** Rechenkern in reinem Python, getestet gegen
 anonymisierte Aufnahmen; Sensor-Anbindung (MQTT oder Entitäten, nur lesen),
 Entitäten je Zone und Raum, Ereignis `raumzonen_zone`, Einrichtung über den
 Options-Flow; Panel „Raumzonen“ (sehen alle, ändern nur Admins) mit
@@ -87,7 +87,7 @@ Nächstes: 4b (Herkunft, Einstufung, Sicherheit, `hinweis/1`); siehe
 | `discovery.py` | Entitäten des FP400 über `unique_id` finden, Themen-Vorschlag, Software-Zonen des Konverters lesen |
 | `entity.py`, `binary_sensor.py`, `sensor.py` | je Zone „belegt“ (RestoreEntity) und „Personen“, je Raum „Sensor verbunden“ und „Figuren“; Zustand wird nur bei Änderung geschrieben (keine Positionen in Attributen, schont den Recorder) |
 | `const.py` | Konstanten und Grenzen (u. a. `MAX_AUFGESTANDEN_S`) |
-| `model.py` | Datenklassen Raum/Sensor/Zone/Regel/Öffnung, `validate()`, `build_room()`, `remove()`; Melder-Räume (`art` `melder`, `melder` = feste Kennungen im Entitätsregister, eine Zone `anwesenheit` aus `melder_zone()`, weitere Zonen mit `melder` je Zone, `melder_lagen` nur Anzeige); `PlanConfig` mit `winkel`, `zuschnitt`, `stockwerk` |
+| `model.py` | Datenklassen Raum/Sensor/Zone/Regel/Öffnung, `validate()`, `build_room()`, `remove()`; Melder-Räume (`art` `melder`, `melder` = feste Kennungen im Entitätsregister, eine Zone `anwesenheit` aus `melder_zone()`, weitere Zonen mit `melder` je Zone, `melder_lagen` nur Anzeige); Radar-Räume mit Wänden bekommen `anwesenheit_zone()` (ganzer Raum, Vorlage „normal“) automatisch, eine eigene Zone gleicher Kennung geht vor; `PlanConfig` mit `winkel`, `zuschnitt`, `stockwerk` |
 | `serialize.py` | Modell ↔ JSON, je Klasse ausgeschrieben, Standardwerte für fehlende Felder |
 | `store.py` | `Store`-Hülle, Schlüssel `raumzonen`, versioniert; defekte Daten → `ValueError`, nie überschreiben |
 | `core/geometry.py` | Vieleck, gedrehtes Rechteck, Zellen; `contains`, `distance` (negativ innen); `converter_rect` rechnet wie der Konverter |

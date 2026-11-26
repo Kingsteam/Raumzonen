@@ -111,6 +111,11 @@ Kreis im Plan antippen (A, B, … sind Ecken und Plätze vor den Türen; die
 hervorgehobenen liegen weit auseinander), hinstellen, „Messen“, 8 Sekunden
 ruhig stehen. Am Ende „Übernehmen“ und „Speichern“.
 
+**Anwesenheit im ganzen Raum:** Jeder Raum mit Wänden hat in Home Assistant
+die Anzeige „<Raum> Anwesenheit“ (belegt, solange jemand im Raum ist, frei
+5 Sekunden nach dem Letzten). Dafür braucht es keine eigene Zone; in der
+Zonen-Liste steht sie oben als „Anwesenheit · ganzer Raum, von selbst“.
+
 **Wege durchs Haus:** Damit Raumzonen sieht, wer von wo nach wo geht,
 braucht jede Tür (1) eine Verbindung zur Tür gegenüber (siehe oben) und (2)
 in Radar-Räumen eine **Tür-Zone**: im Raum unter „Zonen“ auf **„Tür-Zonen

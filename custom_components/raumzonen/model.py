@@ -379,6 +379,30 @@ def melder_zone(raum: RaumConfig) -> Zone:
     )
 
 
+def anwesenheit_zone(raum: RaumConfig) -> Zone | None:
+    """„Anwesenheit“ für den ganzen Radar-Raum, ohne eigene Zone.
+
+    Nur mit Wänden (sonst ist unklar, was „im Raum“ heißt) und nur, wenn der
+    Raum keine eigene Zone mit dieser Kennung hat. Regel wie „Bereich“: hält
+    auch ruhig Sitzende, frei erst nach einigen Sekunden.
+    """
+    if raum.ist_melder or len(raum.umriss) < 3:
+        return None
+    if any(z.id == MELDER_ZONE_ID for z in raum.zonen):
+        return None
+    return Zone(
+        id=MELDER_ZONE_ID,
+        name="Anwesenheit",
+        shape=Polygon([(x, y) for x, y in raum.umriss]),
+        art=ART_NORMAL,
+        rule=regel_vorlage(ANWESENHEIT_VORLAGE).to_rule(),
+    )
+
+
+# Regel der automatischen „Anwesenheit“ in Radar-Räumen.
+ANWESENHEIT_VORLAGE = "normal"
+
+
 def build_room(raum: RaumConfig) -> Room:
     """Rechenlogik für einen gespeicherten Raum."""
     if raum.ist_melder:
@@ -401,7 +425,7 @@ def build_room(raum: RaumConfig) -> Room:
                 ),
             ]
         )
-    return Room(
+    zonen = [
         Zone(
             id=z.id,
             name=z.name,
@@ -410,7 +434,10 @@ def build_room(raum: RaumConfig) -> Room:
             rule=z.regel.to_rule(),
         )
         for z in raum.zonen
-    )
+    ]
+    if (ganz := anwesenheit_zone(raum)) is not None:
+        zonen.insert(0, ganz)
+    return Room(zonen)
 
 
 # Vorlagen für Regeln (Werte aus vier aufgenommenen Nächten).
