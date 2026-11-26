@@ -568,6 +568,49 @@ export const styles = css`
   .floor.belegt {
     fill: color-mix(in srgb, var(--rz-bereich) 22%, var(--card));
   }
+  /* Assistent Sensor umsetzen */
+  .wiz-marke circle {
+    fill: var(--card);
+    stroke: var(--accent);
+    stroke-width: 2;
+  }
+  .wiz-marke.aktiv circle {
+    fill: color-mix(in srgb, var(--accent) 25%, var(--card));
+    stroke-width: 3;
+  }
+  .wiz-marke text {
+    text-anchor: middle;
+    font-size: 14px;
+    font-weight: 700;
+    fill: var(--primary-text-color);
+  }
+  .wiz-marke,
+  .wiz-neu {
+    pointer-events: none;
+  }
+  .wiz-neu circle {
+    fill: var(--ok);
+  }
+  .wiz-neu line {
+    stroke: var(--ok);
+    stroke-width: 3;
+  }
+  .wiz-stellen {
+    display: flex;
+    gap: 12px;
+    padding: 0;
+    margin: 6px 0;
+    list-style: none;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .wiz-stellen .aktiv {
+    color: var(--primary-text-color);
+    font-weight: 600;
+  }
+  .wiz-stellen .fertig {
+    color: var(--ok);
+  }
   /* Raum hinzufügen */
   .neu-raum {
     border: 2px solid var(--border);

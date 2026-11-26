@@ -59,6 +59,7 @@ import {
   defaultLagen,
   roomOutline,
   sectorPoints,
+  roomToSensor,
   sensorDirection,
   snap,
   toHouse,
@@ -67,6 +68,7 @@ import {
 import { styles } from "./styles";
 import { dauer, dichte, pixel, summe, type HeatCell } from "./heat";
 import { summeDauer, tuerenVon, vereinigen, wechsel, type Tuer } from "./haus";
+import { einmessen, stelle, stellenProblem, type Einmessung } from "./einmessen";
 import type { Auswertung, AuswertungFigur, Form, Hass, Heat, Kandidaten, Live, Oeffnung, Point, Raum, Regel, RoomsResult, Zone } from "./types";
 
 const DOMAIN = "raumzonen";
@@ -75,6 +77,27 @@ const HIT_PX = 12;
 
 type Tool = "auswahl" | "rechteck" | "vieleck" | "zellen" | "umriss" | "oeffnung";
 type Tab = "zonen" | "raum" | "auswertung";
+
+/** Assistent „Sensor umsetzen / einmessen“. */
+interface Wizard {
+  /** umsetzen: vorher 3 Stellen merken, Sensor umhängen, wieder hingehen. einmessen: hinstellen und im Plan antippen. */
+  modus: "umsetzen" | "einmessen";
+  schritt: "vorher" | "umhaengen" | "nachher" | "ergebnis";
+  /** Stellen im Raum (cm). */
+  raum: (Point | null)[];
+  /** Dieselben Stellen, wie der Sensor sie jetzt sieht (Sensorkoordinaten). */
+  sensor: (Point | null)[];
+  /** Welche Stelle gerade gemessen wird oder angetippt werden soll. */
+  aktiv: number;
+  messung?: { bis: number; punkte: Point[]; hinweis: string };
+  tippen?: boolean;
+  ergebnis?: Einmessung;
+  fehler?: string;
+}
+
+/** So lange ruhig stehen, bis eine Stelle gemerkt ist. */
+const MESS_S = 8;
+const MAX_STREUUNG_CM = 30;
 
 const AUSWERTUNG_STUNDEN = [1, 3, 8, 12, 24];
 /** Werkzeuge in Melder-Räumen (keine Zonen, kein Sensor im Plan). */
@@ -177,6 +200,7 @@ export class RaumzonenPanel extends LitElement {
   @state() private auswLaedt = false;
   @state() private auswFehler = "";
   @state() private kandidaten?: Kandidaten;
+  @state() private wiz: Wizard | null = null;
   /** Formular „Raum hinzufügen“ (null = zu). */
   @state() private neuRaum: { name: string; art: "melder" | "radar"; melder: string[]; device_id: string; bereich_id: string } | null = null;
   /** Bewegungsprofil im Hausplan: Raum-ID → Zeitabschnitte mit jemandem darin. */
@@ -212,6 +236,7 @@ export class RaumzonenPanel extends LitElement {
   private unsubLive?: () => Promise<void>;
   private liveRoom = "";
   private heatTimer?: number;
+  private wizTimer?: number;
   private auswTimer?: number;
   private heatBildCache?: { key: string; href: string; x0: number; y0: number; w: number; h: number };
   private toastTimer?: number;
@@ -283,6 +308,10 @@ export class RaumzonenPanel extends LitElement {
       this.aufnahmeTage = raum.aufnahme_tage ?? 30;
       this.melder = [...(raum.melder ?? [])];
       this.nachlauf = raum.melder_nachlauf_s ?? 0;
+      if (changed) {
+        window.clearInterval(this.wizTimer);
+        this.wizLaden();
+      }
       if (raum.art === "melder") {
         if (this.tab === "zonen") this.tab = "raum";
         if (!this.kandidaten) void this.loadKandidaten();
@@ -528,6 +557,142 @@ export class RaumzonenPanel extends LitElement {
     this.dirty = true;
   }
 
+  // -- Assistent: Sensor umsetzen oder einmessen ----------------------------
+
+  private wizKey(): string {
+    return `raumzonen-assistent-${this.raumId}`;
+  }
+
+  /** Stellen „vorher“ überleben das Neuladen der Seite (das Umhängen dauert). */
+  private wizSpeichern(): void {
+    try {
+      if (this.wiz && this.wiz.modus === "umsetzen" && this.wiz.schritt !== "ergebnis") localStorage.setItem(this.wizKey(), JSON.stringify({ ...this.wiz, messung: undefined }));
+      else localStorage.removeItem(this.wizKey());
+    } catch {
+      // Speicher im Browser nicht verfügbar: dann eben nur bis zum Neuladen.
+    }
+  }
+
+  private wizLaden(): void {
+    try {
+      const t = localStorage.getItem(this.wizKey());
+      this.wiz = t ? (JSON.parse(t) as Wizard) : null;
+    } catch {
+      this.wiz = null;
+    }
+  }
+
+  private wizStart(modus: Wizard["modus"]): void {
+    window.clearInterval(this.wizTimer);
+    this.wiz = { modus, schritt: modus === "umsetzen" ? "vorher" : "nachher", raum: [null, null, null], sensor: [null, null, null], aktiv: 0 };
+    this.wizSpeichern();
+  }
+
+  private wizEnde(): void {
+    window.clearInterval(this.wizTimer);
+    this.wiz = null;
+    this.wizSpeichern();
+  }
+
+  /** Genau eine Person sichtbar? Dann ihre Lage im Raum (wie gemeldet). */
+  private wizPerson(): { punkt: Point | null; hinweis: string } {
+    const live = this.live;
+    if (!live || !live.verfuegbar || live.problem) return { punkt: null, hinweis: "Sensor nicht erreichbar." };
+    const f = live.figuren.filter((x) => !x.gehalten && !x.tags.some((t) => ["wiederhergestellt", "stoerung", "hund", "echo"].includes(t)));
+    if (f.length === 0) return { punkt: null, hinweis: "Der Sensor sieht gerade niemanden." };
+    if (f.length > 1) return { punkt: null, hinweis: "Der Sensor sieht mehr als eine Person. Bitte allein im Raum sein." };
+    return { punkt: [f[0].x, f[0].y], hinweis: "" };
+  }
+
+  private wizMessen(): void {
+    const w = this.wiz;
+    if (!w) return;
+    window.clearInterval(this.wizTimer);
+    this.wiz = { ...w, fehler: undefined, messung: { bis: Date.now() + MESS_S * 1000, punkte: [], hinweis: "" } };
+    // Alle 250 ms den Stand nehmen: in Ruhe meldet der Sensor kaum Rahmen.
+    this.wizTimer = window.setInterval(() => {
+      const cur = this.wiz;
+      if (!cur?.messung) return;
+      const { punkt, hinweis } = this.wizPerson();
+      const punkte = punkt ? [...cur.messung.punkte, punkt] : cur.messung.punkte;
+      if (Date.now() < cur.messung.bis) {
+        this.wiz = { ...cur, messung: { ...cur.messung, punkte, hinweis } };
+        return;
+      }
+      window.clearInterval(this.wizTimer);
+      const st = stelle(punkte);
+      if (!st || punkte.length < 8) {
+        this.wiz = { ...cur, messung: undefined, fehler: hinweis || "Zu wenig gesehen. Noch einmal versuchen." };
+        return;
+      }
+      if (st.streuung_cm > MAX_STREUUNG_CM) {
+        this.wiz = { ...cur, messung: undefined, fehler: `Zu unruhig (Punkte streuen ${Math.round(st.streuung_cm)} cm). Bitte ruhig stehen und noch einmal.` };
+        return;
+      }
+      this.wizGemessen(st.punkt);
+    }, 250);
+  }
+
+  /** Eine Stelle ist gemessen (Raumkoordinaten mit der gespeicherten Lage). */
+  private wizGemessen(punkt: Point): void {
+    const w = this.wiz;
+    const gespeichert = this.raum?.sensor;
+    if (!w || !gespeichert) return;
+    const i = w.aktiv;
+    if (w.schritt === "vorher") {
+      const raum = w.raum.map((p, k) => (k === i ? punkt : p));
+      const fertig = raum.every(Boolean);
+      const problem = fertig ? stellenProblem(raum as Point[]) : "";
+      this.wiz = { ...w, raum, messung: undefined, aktiv: fertig ? 0 : i + 1, schritt: fertig && !problem ? "umhaengen" : "vorher", fehler: problem || undefined };
+      if (problem) this.wiz = { ...this.wiz, raum: [null, null, null], aktiv: 0 };
+    } else {
+      // Was der Sensor jetzt sieht, in seinen eigenen Koordinaten.
+      const sensor = w.sensor.map((p, k) => (k === i ? roomToSensor(punkt, gespeichert) : p));
+      this.wiz = { ...w, sensor, messung: undefined, tippen: w.modus === "einmessen" };
+      if (w.modus === "umsetzen") this.wizWeiter();
+    }
+    this.wizSpeichern();
+  }
+
+  /** Einmessen: die Stelle im Plan angetippt. */
+  private wizAngetippt(p: Point): void {
+    const w = this.wiz;
+    if (!w) return;
+    const raum = w.raum.map((q, k) => (k === w.aktiv ? p : q));
+    this.wiz = { ...w, raum, tippen: false };
+    this.wizWeiter();
+  }
+
+  private wizWeiter(): void {
+    const w = this.wiz;
+    if (!w) return;
+    const i = w.aktiv;
+    if (i < 2) {
+      this.wiz = { ...w, aktiv: i + 1 };
+      return;
+    }
+    const raum = w.raum as Point[];
+    const problem = stellenProblem(raum);
+    const e = einmessen(w.sensor as Point[], raum);
+    if (!e || problem) {
+      this.wiz = { ...w, schritt: "nachher", aktiv: 0, sensor: [null, null, null], raum: w.modus === "einmessen" ? [null, null, null] : w.raum, fehler: problem || "Konnte nicht rechnen. Noch einmal." };
+      return;
+    }
+    this.wiz = { ...w, schritt: "ergebnis", ergebnis: e };
+    this.wizSpeichern();
+  }
+
+  /** Neue Lage übernehmen. Zonen bleiben, wo sie im Raum sind. */
+  private wizUebernehmen(): void {
+    const e = this.wiz?.ergebnis;
+    if (!e) return;
+    this.remember();
+    this.sensor = { ...this.sensor, x: e.x, y: e.y, winkel: e.winkel };
+    this.dirty = true;
+    this.wizEnde();
+    this.showToast("Neue Lage eingetragen. Zum Behalten oben „Speichern“ tippen.");
+  }
+
   private async loadKandidaten(): Promise<void> {
     if (!this._hass || !this.kannAendern) return;
     try {
@@ -668,6 +833,7 @@ export class RaumzonenPanel extends LitElement {
     window.removeEventListener("keydown", this.onKey);
     window.clearInterval(this.heatTimer);
     window.clearInterval(this.auswTimer);
+    window.clearInterval(this.wizTimer);
     this.resize?.disconnect();
     this.resize = undefined;
     void this.unsubscribeLive();
@@ -895,6 +1061,10 @@ export class RaumzonenPanel extends LitElement {
     const p = this.snapped(raw);
     svgEl.setPointerCapture(event.pointerId);
 
+    if (this.wiz?.tippen && this.page === "raum") {
+      this.wizAngetippt(p);
+      return;
+    }
     if (this.page === "haus") {
       const hit = this.hausRoomAt(raw);
       this.hausSel = hit;
@@ -1409,6 +1579,27 @@ export class RaumzonenPanel extends LitElement {
     return svg`<image class="heat" href=${bild.href} x=${sx} y=${sy} width=${this.px(bild.w)} height=${this.px(bild.h)} preserveAspectRatio="none" />`;
   }
 
+  /** Stellen des Assistenten als 1, 2, 3 im Plan; dazu die neue Lage des Sensors. */
+  private renderWizMarken(): TemplateResult | typeof nothing {
+    const w = this.wiz;
+    if (!w) return nothing;
+    const marken = w.raum.map((p, i) => {
+      if (!p) return nothing;
+      const [x, y] = this.toScreen(p);
+      const on = i === w.aktiv && w.schritt === "nachher";
+      return svg`<g class="wiz-marke ${on ? "aktiv" : ""}"><circle cx=${x} cy=${y} r="14" /><text x=${x} y=${y + 5}>${i + 1}</text></g>`;
+    });
+    const e = w.ergebnis;
+    let neu: TemplateResult | typeof nothing = nothing;
+    if (e) {
+      const [x, y] = this.toScreen([e.x, e.y]);
+      const r = Math.max(30, this.px(80));
+      const [dx, dy] = sensorDirection(e.winkel);
+      neu = svg`<g class="wiz-neu"><circle cx=${x} cy=${y} r="9" /><line x1=${x} y1=${y} x2=${x + dx * r} y2=${y - dy * r} /></g>`;
+    }
+    return svg`${marken}${neu}`;
+  }
+
   /** Melder-Raum: in der Mitte steht, ob jemand da ist. */
   private renderMelderLabel(): TemplateResult {
     const live = this.live;
@@ -1708,7 +1899,7 @@ export class RaumzonenPanel extends LitElement {
             : svg`${this.renderRoom()} ${this.renderHeat()} ${this.renderCoverage()}
               ${this.zones.map((z, i) => this.renderZone(z, i))} ${this.renderLive()}
               ${this.zones.map((z) => this.renderZoneLabel(z))} ${this.renderSensor()}
-              ${this.renderHandles()} ${this.renderDraft()}`}
+              ${this.renderHandles()} ${this.renderDraft()} ${this.renderWizMarken()}`}
       </svg>
       <div class="tools" role="toolbar" aria-label="Werkzeuge" @pointerdown=${(e: Event) => e.stopPropagation()}>
         ${this.kannAendern && this.page === "raum"
@@ -2007,7 +2198,87 @@ export class RaumzonenPanel extends LitElement {
             : nothing}
         </li>
       </ul>
-      ${this.kannAendern ? this.renderRoomEdit() : nothing}`;
+      ${this.kannAendern ? html`${this.renderWizard()} ${this.renderRoomEdit()}` : nothing}`;
+  }
+
+  private renderWizard(): TemplateResult {
+    const w = this.wiz;
+    if (!w) {
+      return html`<h3>Sensor umsetzen</h3>
+        <p class="hint small">
+          Hängt der Sensor an einer neuen Stelle? Der Assistent rechnet aus drei Stellen im Raum aus, wo er jetzt hängt und wohin er schaut.
+          Die Zonen bleiben, wo sie sind.
+        </p>
+        <div class="actions">
+          <button class="text small" @click=${() => this.wizStart("umsetzen")}><ha-icon icon="mdi:map-marker-path"></ha-icon>Vor dem Umhängen starten</button>
+          <button class="text small" @click=${() => this.wizStart("einmessen")}><ha-icon icon="mdi:crosshairs-gps"></ha-icon>Sensor hängt schon: einmessen</button>
+        </div>`;
+    }
+    const nr = w.aktiv + 1;
+    const m = w.messung;
+    const rest = m ? Math.max(0, Math.ceil((m.bis - Date.now()) / 1000)) : 0;
+    const messKnopf = (label: string) =>
+      m
+        ? html`<div class="note">Bitte ruhig stehen … noch ${rest} s${m.hinweis ? html`<br />${m.hinweis}` : nothing}</div>`
+        : html`<div class="actions"><span class="spacer"></span><button class="primary" ?disabled=${this.dirty} @click=${this.wizMessen}><ha-icon icon="mdi:human-handsdown"></ha-icon>${label}</button></div>`;
+    const punkte = html`<ol class="wiz-stellen">
+      ${[0, 1, 2].map((i) => {
+        const fertig = w.schritt === "vorher" ? !!w.raum[i] : w.modus === "umsetzen" ? !!w.sensor[i] : !!w.sensor[i] && !!w.raum[i];
+        return html`<li class=${fertig ? "fertig" : i === w.aktiv ? "aktiv" : ""}>Stelle ${i + 1}${fertig ? " ✓" : ""}</li>`;
+      })}
+    </ol>`;
+    let inhalt: TemplateResult;
+    if (w.schritt === "vorher") {
+      inhalt = html`<p class="hint small">
+          Allein im Raum: Stell dich auf Stelle ${nr} und tippe auf „Merken“. Die drei Stellen sollen mindestens 1 m auseinander liegen und
+          ein Dreieck bilden, z. B. Bettkante, Tür, Fenster. Merk sie dir gut (im Plan als ${nr} markiert).
+        </p>
+        ${punkte} ${messKnopf(`Stelle ${nr} merken`)}`;
+    } else if (w.schritt === "umhaengen") {
+      inhalt = html`<p class="hint small">Alle drei Stellen sind gemerkt. Jetzt den Sensor umhängen und neu ausrichten. Danach hier weiter.</p>
+        <div class="actions"><span class="spacer"></span><button class="primary" @click=${() => (this.wiz = { ...w, schritt: "nachher", aktiv: 0 })}>Sensor hängt neu</button></div>`;
+    } else if (w.schritt === "nachher") {
+      const tippen = w.modus === "einmessen" && w.tippen;
+      inhalt = tippen
+        ? html`<p class="note">Jetzt im Plan antippen, wo du bei Stelle ${nr} gestanden bist.</p>
+            ${punkte}`
+        : html`<p class="hint small">
+              ${w.modus === "umsetzen"
+                ? html`Stell dich wieder auf Stelle ${nr} (im Plan markiert) und tippe auf „Messen“.`
+                : html`Allein im Raum: Stell dich an eine Stelle, die du im Plan gut findest (z. B. Bettecke, Türmitte), und tippe auf „Messen“.
+                    Danach tippst du sie im Plan an. Drei Stellen, mindestens 1 m auseinander, nicht auf einer Linie.`}
+            </p>
+            ${punkte} ${messKnopf(`Stelle ${nr} messen`)}`;
+    } else {
+      const e = w.ergebnis!;
+      const gut = e.rest_cm <= 15;
+      const alt = this.raum!.sensor;
+      const weg = Math.round(Math.hypot(e.x - alt.x, e.y - alt.y));
+      let dreh = Math.round(((((e.winkel - alt.winkel) % 360) + 540) % 360) - 180);
+      if (dreh === -180) dreh = 180;
+      const drehText = dreh === 0 ? "gleich ausgerichtet" : `um ${Math.abs(dreh)}° ${dreh > 0 ? "nach links" : "nach rechts"} gedreht`;
+      inhalt = html`<p class="summary">
+          ${w.modus === "umsetzen" || weg > 0
+            ? html`Der Sensor hängt jetzt ${weg < 10 ? "fast an derselben Stelle" : `${weg} cm von der alten Stelle entfernt`} und ist ${drehText}.`
+            : nothing}
+          Genauigkeit: etwa ± ${Math.max(1, Math.round(e.rest_cm))} cm.
+        </p>
+        ${gut ? nothing : html`<p class="note warn">Ungenau. Besser noch einmal messen, ruhig stehen und genau dieselben Stellen treffen.</p>`}
+        <p class="hint small">Im Plan zeigt der grüne Punkt die neue Lage. Die Zonen bleiben, wo sie im Raum sind.</p>
+        <div class="actions">
+          <button class="text small" @click=${() => this.wizStart(w.modus)}>Noch einmal</button>
+          <span class="spacer"></span>
+          <button class="primary" @click=${this.wizUebernehmen}><ha-icon icon="mdi:check"></ha-icon>Übernehmen</button>
+        </div>`;
+    }
+    return html`<div class="neu-raum">
+      <h3>${w.modus === "umsetzen" ? "Sensor umsetzen" : "Sensor einmessen"}</h3>
+      ${this.dirty && w.schritt !== "ergebnis" ? html`<p class="note warn">Erst speichern oder verwerfen, dann messen.</p>` : nothing}
+      ${w.fehler ? html`<p class="note warn">${w.fehler}</p>` : nothing} ${inhalt}
+      <div class="actions">
+        <button class="text small" @click=${this.wizEnde}>Abbrechen</button>
+      </div>
+    </div>`;
   }
 
   private renderSensorEdit(field: (key: "reichweite_cm" | "oeffnung_grad", label: string, unit: string, min: number, max: number) => TemplateResult): TemplateResult {

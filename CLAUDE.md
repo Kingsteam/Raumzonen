@@ -18,12 +18,12 @@ Zone, Spuren, die nicht plötzlich verschwinden. Konzept: `docs/KONZEPT.md`
 (allgemeine Fassung; die vollständige und die Auswertung der Aufnahmen
 liegen in `haus-privat/raumzonen/docs/`).
 
-Stand 0.8.0: **Phase 0 bis 4a, Hausplan, Türen in Wänden.** Rechenkern in reinem Python, getestet gegen
+Stand 0.9.0: **Phase 0 bis 4a, Hausplan, Türen in Wänden.** Rechenkern in reinem Python, getestet gegen
 anonymisierte Aufnahmen; Sensor-Anbindung (MQTT oder Entitäten, nur lesen),
 Entitäten je Zone und Raum, Ereignis `raumzonen_zone`, Einrichtung über den
 Options-Flow; Panel „Raumzonen“ (sehen alle, ändern nur Admins) mit
 Raumplan, Zonen zeichnen, Sensor-Lage mit Abdeckung, Live-Figuren und
-Bewegungskarte, Hausplan (Räume anordnen, anlegen, übernehmen, löschen, Türen verbinden, Bewegungsprofil), Melder-Räume (nur Bewegungs-/Präsenzmelder), Auswertung „wer war wann wo“ aus der Aufnahme; eigene Aufnahme je Raum (`fp400-trace/2`); Zonenart
+Bewegungskarte, Hausplan (Räume anordnen, anlegen, übernehmen, löschen, Türen verbinden, Bewegungsprofil), Melder-Räume (nur Bewegungs-/Präsenzmelder), Assistent „Sensor umsetzen/einmessen“, Auswertung „wer war wann wo“ aus der Aufnahme; eigene Aufnahme je Raum (`fp400-trace/2`); Zonenart
 „Stelle“, Tür „führt zu“; Schnittstelle `raumzonen/1` für das Homebrain
 (`docs/homebrain/VERTRAG-raumzonen-1.md`); simulierte Test-Instanz.
 **Keine Steuerung.** Nicht mit echter Hardware getestet.
@@ -102,7 +102,7 @@ Nächstes: 4b (Herkunft, Einstufung, Sicherheit, `hinweis/1`); siehe
 | `tests/daten/` | nur die Konverter-Zonen des Schlafzimmers (Aufnahmen: privat, `RAUMZONEN_AUFNAHMEN`) |
 | `tests/` | pytest; `test_traces.py` = Ziele des Besitzers an echten Aufnahmen; `test_vertrag.py` prüft auch die Beispiele in `docs/homebrain/beispiele/` |
 | `docs/` | `KONZEPT.md`, `DATENFORMAT.md`, `HANDBUCH.md`; `homebrain/` (Vertrag `raumzonen/1`, Beispiele) |
-| `frontend-src/` | Quelltext des Panels: TypeScript + Lit, Vite, vitest. `heat.ts` (weiche Bewegungskarte: Gauß-Filter, Bild, `dauer`), `haus.ts` (Türen aller Räume `tuerenVon`, Profil `vereinigen`/`wechsel`), `geometry.ts` (wie `core/geometry.py`/`pose.py`, dazu `moveWithSensor`, Hausplan `toHouse`/`roomOutline`/`defaultLagen`), `editor.ts` (Bearbeitungsschritte, Rückgängig, Rollen `ROLLEN`/`rolleOf`/`applyRolle`, `regelSatz`, `rotateForm`, `edgeMidpoints`, Öffnungen `openingFromDrag`/`shiftOpenings`/`clampOpenings`), `panel.ts` (Oberfläche), `styles.ts` (Gestaltung wie das Panel „Bewässerung“ aus FlowerPower), `types.ts` |
+| `frontend-src/` | Quelltext des Panels: TypeScript + Lit, Vite, vitest. `heat.ts` (weiche Bewegungskarte: Gauß-Filter, Bild, `dauer`), `haus.ts` (Türen aller Räume `tuerenVon`, Profil `vereinigen`/`wechsel`), `einmessen.ts` (Lage des Sensors aus drei Stellen: `einmessen`, `stellenProblem`, `stelle`), `geometry.ts` (wie `core/geometry.py`/`pose.py`, dazu `moveWithSensor`, Hausplan `toHouse`/`roomOutline`/`defaultLagen`), `editor.ts` (Bearbeitungsschritte, Rückgängig, Rollen `ROLLEN`/`rolleOf`/`applyRolle`, `regelSatz`, `rotateForm`, `edgeMidpoints`, Öffnungen `openingFromDrag`/`shiftOpenings`/`clampOpenings`), `panel.ts` (Oberfläche), `styles.ts` (Gestaltung wie das Panel „Bewässerung“ aus FlowerPower), `types.ts` |
 | `custom_components/raumzonen/frontend/` | **gebautes** Panel, nie von Hand ändern; CI prüft, dass es zum Quelltext passt |
 | `devtools/testinstanz/` | simulierte Test-Instanz: `start.py` (Ersteinrichtung, Schlafzimmer und Flur über den Options-Flow, Hausplan), Simulator `raumzonen_sim` (Schlafzimmer: erfundene Szene oder private Aufnahmen über `RAUMZONEN_AUFNAHMEN`, im Flur geht eine erfundene Figur, zwei Bewegungsmelder in den Bereichen Küche und Bad) |
 | `docs/bilder/` | Bilder fürs Handbuch aus der Test-Instanz (256 Farben) |

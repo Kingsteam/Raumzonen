@@ -58,6 +58,22 @@ Raum gehen; rot wird, wo der Sensor jemanden gesehen hat.
 
 ![Sensor und Raum](bilder/02-sensor.png)
 
+### Sensor umsetzen oder einmessen
+
+Unter **Sensor und Raum → Sensor umsetzen** (nur Admins):
+
+* **Vor dem Umhängen starten:** allein im Raum auf drei Stellen stellen
+  (mindestens 1 m auseinander, ein Dreieck, z. B. Bettkante, Tür, Fenster)
+  und jeweils „Merken“ tippen; 8 Sekunden ruhig stehen. Dann den Sensor
+  umhängen, „Sensor hängt neu“ tippen und dieselben Stellen in derselben
+  Reihenfolge wieder aufsuchen (im Plan als 1, 2, 3 markiert).
+* **Sensor hängt schon: einmessen:** an eine Stelle stellen, „Messen“
+  tippen, dann im Plan antippen, wo du standest. Dreimal.
+
+Raumzonen zeigt die neue Lage als grünen Punkt und sagt, wie genau sie ist
+(z. B. „± 6 cm“). „Übernehmen“ trägt sie ein, „Speichern“ behält sie. Die
+Zonen bleiben, wo sie im Raum sind.
+
 ### Räume anlegen, auch nur mit Bewegungsmeldern
 
 Im Hausplan (oben **Haus**) unter **Raum hinzufügen** (nur Admins):

@@ -4,6 +4,21 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.9.0] - 2026-11-26
+
+### Hinzugefügt
+
+- Assistent „Sensor umsetzen“ (Sensor und Raum, nur Admins): vor dem
+  Umhängen drei Stellen im Raum merken, Sensor umhängen, dieselben Stellen
+  wieder aufsuchen; Raumzonen rechnet die neue Lage und Blickrichtung aus
+  (starre Abbildung aus drei Punkten, die dritte als Probe) und sagt, wie
+  genau sie ist. Die Zonen bleiben, wo sie im Raum sind.
+- „Sensor hängt schon: einmessen“: an drei Stellen stehen und sie im Plan
+  antippen; so lässt sich ein Sensor ohne Ausrichten von Hand einmessen.
+- Je Stelle 8 s ruhig stehen (Median, warnt bei Unruhe, mehr als einer
+  Person, Stellen zu nah oder auf einer Linie). Die Stellen „vorher“
+  bleiben im Browser gespeichert, falls die Seite beim Umhängen neu lädt.
+
 ## [0.8.0] - 2026-11-26
 
 ### Hinzugefügt
