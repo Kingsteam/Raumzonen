@@ -40,7 +40,7 @@ from homeassistant.helpers.event import (
 from homeassistant.util import dt as dt_util
 
 from .aufnahme import Aufnahme
-from .const import DOMAIN, EVENT_ZONE, LOGGER, QUELLE_MQTT
+from .const import DOMAIN, EVENT_ZONE, LOGGER, MELDER_ZONE_ID, QUELLE_MQTT
 from .core.fp400 import (
     parse_availability,
     parse_payload,
@@ -90,8 +90,8 @@ class RoomController:
         self.auswertung_cache: dict[int, tuple[datetime, dict[str, Any]]] = {}
         # Nur Melder-Räume
         self._melder_ids: list[str] = []
-        self._melder_punkt = (0.0, 0.0)
-        self._melder_an: bool | None = None
+        self._melder_punkte: dict[str, list[tuple[int, tuple[float, float]]]] = {}
+        self._melder_an: tuple[int, ...] | None = None
         self.aufnahme: Aufnahme | None = (
             Aufnahme(hass, raum.id, raum.aufnahme_tage) if raum.aufnahme else None
         )
@@ -190,10 +190,26 @@ class RoomController:
         ids = self.melder_entities()
         if not ids:
             raise RuntimeError("Melder nicht gefunden (gelöscht oder umbenannt?)")
-        zone = next(iter(self.room.zones.values()))
-        cx, cy = inner_point(zone.shape)
+        registry = er.async_get(self.hass)
+        # Kennung → entity_id, und je Melder die Punkte, an denen er eine Figur
+        # zeigt: in jeder Zone, die er meldet; sonst in der Raummitte.
         self._melder_ids = ids
-        self._melder_punkt = (cx, cy)
+        zuordnung: dict[str, str] = {}
+        for key in self.raum.melder:
+            entity_id = er.async_resolve_entity_id(registry, key)
+            if entity_id is not None:
+                zuordnung[key] = entity_id
+        mitte = inner_point(self.room.zones[MELDER_ZONE_ID].shape)
+        self._melder_punkte = {}
+        for nummer, zone in enumerate(self.raum.zonen, start=2):
+            punkt = inner_point(self.room.zones[zone.id].shape)
+            for key in zone.melder:
+                if key in zuordnung:
+                    self._melder_punkte.setdefault(zuordnung[key], []).append(
+                        (nummer, punkt)
+                    )
+        for entity_id in ids:
+            self._melder_punkte.setdefault(entity_id, [(1, mitte)])
 
         @callback
         def _on_change(_event: Event[EventStateChangedData]) -> None:
@@ -203,29 +219,28 @@ class RoomController:
         self._frame_from_melder()
 
     def _frame_from_melder(self) -> None:
-        states = [self.hass.states.get(e) for e in self._melder_ids]
-        bekannt = [
-            s
-            for s in states
-            if s is not None
-            and s.state
-            not in (
-                STATE_UNAVAILABLE,
-                STATE_UNKNOWN,
-            )
-        ]
+        states = {e: self.hass.states.get(e) for e in self._melder_ids}
+        bekannt = {
+            e: s
+            for e, s in states.items()
+            if s is not None and s.state not in (STATE_UNAVAILABLE, STATE_UNKNOWN)
+        }
         if not bekannt:
             if self.room.available:
                 self._frame(None)
             return
-        an = any(s.state == STATE_ON for s in bekannt)
+        punkte: dict[int, tuple[float, float]] = {}
+        for entity_id, state in bekannt.items():
+            if state.state == STATE_ON:
+                for nummer, punkt in self._melder_punkte.get(entity_id, []):
+                    punkte[nummer] = punkt
+        an = tuple(sorted(punkte))
         if an == self._melder_an and self.room.available:
             return  # nur Attribute geändert
         self._melder_an = an
-        x, y = self._melder_punkt
         self._frame(
-            [Target(1, x, y)] if an else [],
-            [{"id": 1, "x": x, "y": y, "melder": True}] if an else [],
+            [Target(n, x, y) for n, (x, y) in punkte.items()],
+            [{"id": n, "x": x, "y": y, "melder": True} for n, (x, y) in punkte.items()],
         )
 
     # -- Empfang ---------------------------------------------------------------

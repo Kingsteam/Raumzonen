@@ -82,6 +82,10 @@ erkannt hat: nummerierte Räume, grün die Türen, grau die Fenster.
 4. **Übernehmen**: Wände, Türen (mit „führt zu“) und die Lage im Haus
    werden gesetzt. Bei Räumen mit Radarsensor danach den Sensor einmessen.
 
+Liegt das Bild nicht genau unter den Räumen: im Hausplan unter
+**Grundrisse → Ausrichten** das Bild ziehen, drehen (90°, 5°, 1°) und an
+den runden Ecken zuschneiden, dann „Speichern“.
+
 Das Bild wird in deinem Home Assistant gespeichert (nicht im Recorder) und
 liegt dann im Hausplan und beim Zeichnen im Raum im Hintergrund; ein- und
 ausblenden mit dem Bild-Knopf links. Ein Bild ohne erkannte Räume (z. B.
@@ -118,8 +122,11 @@ Im Hausplan (oben **Haus**) unter **Raum hinzufügen** (nur Admins):
 * **Selbst anlegen:** Name, Art (Bewegungsmelder oder Radarsensor FP400),
   Melder oder Gerät wählen, optional den Bereich.
 
-Ein **Melder-Raum** zeigt nur „jemand da“ oder „niemand“, ohne Positionen
-und ohne Zonen. In Home Assistant entsteht je Raum „Anwesenheit“. Unter
+Ein **Melder-Raum** zeigt „jemand da“ oder „niemand“ für den ganzen Raum.
+Unter „Melder und Raum“ lässt sich jeder Melder **im Plan platzieren**
+(ziehen, am Griff drehen; nur zur Anzeige). Mit **„Zone für diesen
+Melder“** zeichnest du den Bereich, den dieser Melder meldet, z. B. eine
+Zone eines Aqara FP2; jede Zone bekommt eine eigene Belegt-Anzeige. In Home Assistant entsteht je Raum „Anwesenheit“. Unter
 „Melder und Raum“ lassen sich Melder hinzufügen oder entfernen und ein
 **Nachlauf** einstellen (so lange bleibt der Raum belegt, nachdem alle
 Melder „aus“ melden). Wände und Türen zeichnet man wie bei jedem Raum; im

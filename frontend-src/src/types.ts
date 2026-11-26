@@ -28,6 +28,17 @@ export interface Zone {
   regel: Regel;
   /** Nur bei Türen: "aussen", eine andere Raum-ID oder leer (weiß nicht). */
   fuehrt_zu?: string;
+  /** Nur in Melder-Räumen: diese Melder melden die Zone. */
+  melder?: string[];
+}
+
+/** Wo ein Melder im Raum hängt (nur Anzeige). */
+export interface MelderLage {
+  x: number;
+  y: number;
+  winkel: number;
+  reichweite_cm: number;
+  oeffnung_grad: number;
 }
 
 export interface Sensor {
@@ -67,6 +78,8 @@ export interface Raum {
   bereich_id?: string;
   /** Stockwerke (IDs aus Home Assistant); leer = das Stockwerk des Bereichs. */
   stockwerke?: string[];
+  /** Nur Melder-Räume: Lage der Melder (Kennung → Lage). */
+  melder_lagen?: Record<string, MelderLage>;
   sensor: Sensor;
   zonen: Zone[];
   ansicht_winkel: number;
@@ -93,6 +106,10 @@ export interface Plan {
   y: number;
   /** Stockwerk (ID aus Home Assistant), leer = keins. */
   stockwerk?: string;
+  /** Drehung um den Bildursprung (oben links), Grad. */
+  winkel?: number;
+  /** Zuschnitt in Bildpunkten [x0, y0, x1, y1]; leer = ganzes Bild. */
+  zuschnitt?: number[];
 }
 
 export interface Stockwerk {
@@ -182,13 +199,15 @@ export interface KandidatMelder {
   klasse: string;
   bereich_id: string | null;
   benutzt_von: string | null;
+  /** Gerät, zu dem der Melder gehört (zum Gruppieren). */
+  geraet: string | null;
 }
 
 export interface Kandidaten {
   melder: KandidatMelder[];
   fp400: { device_id: string; name: string; bereich_id: string | null; mqtt_topic: string; benutzt: boolean }[];
   bereiche: { bereich_id: string; name: string }[];
-  vorschlaege: { bereich_id: string; name: string; melder: string[] }[];
+  vorschlaege: { bereich_id: string; name: string; art: "melder" | "radar"; melder: string[]; device_id?: string }[];
 }
 
 export interface Hass {

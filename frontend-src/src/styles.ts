@@ -659,6 +659,16 @@ export const styles = css`
     font-size: 11px;
     fill: var(--rz-tuer);
   }
+  .plan-rahmen {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-dasharray: 8 6;
+    pointer-events: none;
+  }
+  image.plan-hintergrund.edit {
+    opacity: 0.7;
+  }
   image.plan-hintergrund {
     pointer-events: none;
     opacity: 0.45;
@@ -741,6 +751,20 @@ export const styles = css`
     padding: 0;
     max-height: 260px;
     overflow: auto;
+  }
+  .melder-aktionen {
+    margin: 0 0 6px 30px;
+  }
+  .melder-punkt {
+    fill: var(--rz-bereich);
+    stroke: var(--card);
+    stroke-width: 2;
+  }
+  .melder-liste .gruppe {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin: 8px 0 2px;
   }
   .melder-liste .check {
     margin: 4px 0;

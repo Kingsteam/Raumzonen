@@ -78,7 +78,7 @@ def test_modell_prueft_melder_raeume() -> None:
         model_from_dict(data)
     data["raeume"][1]["melder"] = ["abc"]
     data["raeume"][1]["zonen"] = example_model()["raeume"][0]["zonen"][:1]
-    with pytest.raises(ValueError, match="keine eigenen Zonen"):
+    with pytest.raises(ValueError, match="Melder wählen"):
         model_from_dict(data)
 
 
@@ -124,6 +124,7 @@ async def test_melder_raum_anlegen_und_belegen(
     assert {m["entity_id"] for m in k["melder"]} >= {eins.entity_id}
     [vorschlag] = [v for v in k["vorschlaege"] if v["bereich_id"] == flur.id]
     assert len(vorschlag["melder"]) == 2
+    assert vorschlag["art"] == "melder"
     assert [f["name"] for f in k["fp400"]] == ["Testsensor"]
     assert k["fp400"][0]["benutzt"] is True
 
@@ -499,3 +500,130 @@ def api_raeume(hass: HomeAssistant) -> list:
     from custom_components.raumzonen.api import get_api
 
     return get_api(hass).raeume()
+
+
+async def test_zonen_je_melder(
+    hass: HomeAssistant,
+    loaded: MockConfigEntry,
+    hass_ws_client,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Ein Melder meldet eine Zone (z. B. Zone eines FP2), der andere den Raum."""
+    raum_m = melder(hass, "raum")
+    sofa_m = melder(hass, "sofa")
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/room/create",
+            "name": "Wohnen",
+            "art": "melder",
+            "melder": [raum_m.entity_id, sofa_m.entity_id],
+        }
+    )
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/room/save",
+            "raum_id": "wohnen",
+            "umriss": [[0, 0], [500, 0], [500, 400], [0, 400]],
+            "zonen": [
+                {
+                    "name": "Sofa",
+                    "art": "normal",
+                    "form": {
+                        "art": "vieleck",
+                        "punkte": [[300, 250], [480, 250], [480, 380], [300, 380]],
+                    },
+                    "melder": [sofa_m.entity_id],
+                }
+            ],
+            "melder_lagen": {
+                sofa_m.entity_id: {
+                    "x": 250,
+                    "y": 0,
+                    "winkel": 0,
+                    "reichweite_cm": 500,
+                    "oeffnung_grad": 100,
+                }
+            },
+        }
+    )
+    msg = await client.receive_json()
+    assert msg["success"], msg
+    await hass.async_block_till_done()
+    raum = loaded.runtime_data.store.model.raum("wohnen")
+    assert raum.zonen[0].melder == [sofa_m.id]
+    assert list(raum.melder_lagen) == [sofa_m.id]
+    reg = er.async_get(hass)
+    sofa = reg.async_get_entity_id(
+        "binary_sensor", DOMAIN, f"{loaded.entry_id}_wohnen_sofa_belegt"
+    )
+    ganz = reg.async_get_entity_id(
+        "binary_sensor", DOMAIN, f"{loaded.entry_id}_wohnen_anwesenheit_belegt"
+    )
+    hass.states.async_set(raum_m.entity_id, "on")
+    await hass.async_block_till_done()
+    assert (hass.states.get(ganz).state, hass.states.get(sofa).state) == ("on", "off")
+    hass.states.async_set(sofa_m.entity_id, "on")
+    await hass.async_block_till_done()
+    assert hass.states.get(sofa).state == "on"
+    hass.states.async_set(sofa_m.entity_id, "off")
+    await hass.async_block_till_done()
+    for _ in range(3):  # Haltezeit, dann Nachlauf der Zone
+        freezer.tick(timedelta(seconds=15))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+    assert (hass.states.get(ganz).state, hass.states.get(sofa).state) == ("on", "off")
+
+    # Zone ohne Melder: abgelehnt.
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/room/save",
+            "raum_id": "wohnen",
+            "zonen": [
+                {
+                    "name": "Leer",
+                    "art": "normal",
+                    "form": {"art": "vieleck", "punkte": [[0, 0], [50, 0], [50, 50]]},
+                }
+            ],
+        }
+    )
+    assert (await client.receive_json())["error"]["code"] == "invalid"
+
+
+async def test_fp400_ist_kein_melder(
+    hass: HomeAssistant, loaded: MockConfigEntry, hass_ws_client
+) -> None:
+    """Belegt-Anzeigen eines FP400 stehen nicht als Melder da; er wird Radar-Raum."""
+    kueche = ar.async_get(hass).async_create("Kueche")
+    # Zweiter FP400 (noch keinem Raum zugeordnet) mit Belegt-Anzeige.
+    mqtt_entry = MockConfigEntry(domain="mqtt")
+    mqtt_entry.add_to_hass(hass)
+    dev = dr.async_get(hass).async_get_or_create(
+        config_entry_id=mqtt_entry.entry_id,
+        identifiers={("mqtt", "zigbee2mqtt_0xzwei")},
+        name="Radar Kueche",
+    )
+    dr.async_get(hass).async_update_device(dev.id, area_id=kueche.id)
+    reg = er.async_get(hass)
+    reg.async_get_or_create(
+        "sensor", "mqtt", "0xzwei_targets_xy_zigbee2mqtt", device_id=dev.id
+    )
+    belegt = reg.async_get_or_create(
+        "binary_sensor",
+        "mqtt",
+        "0xzwei_occupancy_1",
+        device_id=dev.id,
+        original_device_class="occupancy",
+    )
+    eins = melder(hass, "eins", kueche.id)
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id({"type": f"{DOMAIN}/kandidaten/get"})
+    k = (await client.receive_json())["result"]
+    ids = {m["entity_id"] for m in k["melder"]}
+    assert belegt.entity_id not in ids
+    assert eins.entity_id in ids
+    [v] = [v for v in k["vorschlaege"] if v["bereich_id"] == kueche.id]
+    assert (v["art"], v["device_id"]) == ("radar", dev.id)

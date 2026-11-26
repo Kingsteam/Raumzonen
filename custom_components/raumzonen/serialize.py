@@ -10,6 +10,7 @@ from typing import Any
 
 from .const import DEFAULT_AUFNAHME_TAGE
 from .model import (
+    MelderLage,
     OeffnungConfig,
     PlanConfig,
     RaumConfig,
@@ -58,6 +59,7 @@ def zone_from_dict(data: dict[str, Any]) -> ZoneConfig:
         art=str(data.get("art", "normal")),
         regel=regel_from_dict(data.get("regel", {})),
         fuehrt_zu=str(data.get("fuehrt_zu", "")),
+        melder=[str(m) for m in data.get("melder", [])],
     )
 
 
@@ -70,6 +72,7 @@ def zone_to_dict(zone: ZoneConfig) -> dict[str, Any]:
         "art": zone.art,
         "regel": regel_to_dict(zone.regel),
         "fuehrt_zu": zone.fuehrt_zu,
+        "melder": list(zone.melder),
     }
 
 
@@ -109,7 +112,34 @@ def raum_from_dict(data: dict[str, Any]) -> RaumConfig:
         melder=[str(m) for m in data.get("melder", [])],
         melder_nachlauf_s=float(data.get("melder_nachlauf_s", 0.0)),
         stockwerke=[str(x) for x in data.get("stockwerke", [])],
+        melder_lagen={
+            str(k): melder_lage_from_dict(v)
+            for k, v in data.get("melder_lagen", {}).items()
+        },
     )
+
+
+def melder_lage_from_dict(data: dict[str, Any]) -> MelderLage:
+    """Lage eines Melders aus JSON."""
+    d = MelderLage()
+    return MelderLage(
+        x=float(data.get("x", d.x)),
+        y=float(data.get("y", d.y)),
+        winkel=float(data.get("winkel", d.winkel)),
+        reichweite_cm=float(data.get("reichweite_cm", d.reichweite_cm)),
+        oeffnung_grad=float(data.get("oeffnung_grad", d.oeffnung_grad)),
+    )
+
+
+def melder_lage_to_dict(lage: MelderLage) -> dict[str, Any]:
+    """Lage eines Melders als JSON."""
+    return {
+        "x": lage.x,
+        "y": lage.y,
+        "winkel": lage.winkel,
+        "reichweite_cm": lage.reichweite_cm,
+        "oeffnung_grad": lage.oeffnung_grad,
+    }
 
 
 def oeffnung_from_dict(data: dict[str, Any]) -> OeffnungConfig:
@@ -169,6 +199,9 @@ def raum_to_dict(raum: RaumConfig) -> dict[str, Any]:
         "melder": list(raum.melder),
         "melder_nachlauf_s": raum.melder_nachlauf_s,
         "stockwerke": list(raum.stockwerke),
+        "melder_lagen": {
+            k: melder_lage_to_dict(v) for k, v in raum.melder_lagen.items()
+        },
     }
 
 
@@ -184,6 +217,8 @@ def plan_from_dict(data: dict[str, Any]) -> PlanConfig:
         x=float(data.get("x", 0.0)),
         y=float(data.get("y", 0.0)),
         stockwerk=str(data.get("stockwerk", "")),
+        winkel=float(data.get("winkel", 0.0)),
+        zuschnitt=[float(v) for v in data.get("zuschnitt", [])],
     )
 
 
@@ -199,6 +234,8 @@ def plan_to_dict(plan: PlanConfig) -> dict[str, Any]:
         "x": plan.x,
         "y": plan.y,
         "stockwerk": plan.stockwerk,
+        "winkel": plan.winkel,
+        "zuschnitt": list(plan.zuschnitt),
     }
 
 

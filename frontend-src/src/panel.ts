@@ -64,6 +64,7 @@ import {
   sensorDirection,
   snap,
   fromHouse,
+  rotate,
   toHouse,
   type HausLage,
 } from "./geometry";
@@ -73,7 +74,7 @@ import { fehlerText } from "./fehler";
 import { summeDauer, tuerenVon, vereinigen, wechsel, type Tuer } from "./haus";
 import { einmessen, stelle, stellenProblem, type Einmessung } from "./einmessen";
 import { bbox, erkenneGrundriss, jpegAusPdf, uebernehmen, type Grundriss } from "./grundriss";
-import type { Auswertung, AuswertungFigur, Form, Hass, Heat, Kandidaten, Plan, Live, Oeffnung, Point, Raum, Regel, RoomsResult, Zone } from "./types";
+import type { Auswertung, AuswertungFigur, Form, Hass, Heat, Kandidaten, MelderLage, Plan, Live, Oeffnung, Point, Raum, Regel, RoomsResult, Zone } from "./types";
 
 const DOMAIN = "raumzonen";
 const SNAP_CM = 5;
@@ -105,7 +106,7 @@ const MAX_STREUUNG_CM = 30;
 
 const AUSWERTUNG_STUNDEN = [1, 3, 8, 12, 24];
 /** Werkzeuge in Melder-Räumen (keine Zonen, kein Sensor im Plan). */
-const MELDER_TOOLS: Tool[] = ["auswahl", "umriss", "oeffnung"];
+const MELDER_TOOLS: Tool[] = ["auswahl", "rechteck", "vieleck", "zellen", "umriss", "oeffnung"];
 /** Die eine Zone eines Melder-Raums (der ganze Raum). */
 const MELDER_ZONE = "anwesenheit";
 /** Ein Raum oder das ganze Haus. */
@@ -139,6 +140,10 @@ type Drag =
   | { kind: "haus-raum"; id: string; last: Point }
   | { kind: "opening"; kante: number; start: Point }
   | { kind: "opening-end"; index: number; ende: "von" | "bis" }
+  | { kind: "melder"; key: string }
+  | { kind: "plan-move"; id: string; last: Point }
+  | { kind: "plan-crop"; id: string; ecke: number }
+  | { kind: "melder-rotate"; key: string }
   | { kind: "opening-move"; index: number; start: number; von: number; bis: number }
   | { kind: "rotate-zone"; center: Point; start: number; anchor: Form };
 
@@ -254,6 +259,10 @@ export class RaumzonenPanel extends LitElement {
   @state() private planLaedt = false;
   /** Bilder der Grundrisse (Plan-ID → Objekt-URL). */
   @state() private planBilder: Record<string, string> = {};
+  /** Grundriss wird ausgerichtet (verschieben, drehen, zuschneiden). */
+  @state() private planEdit: string = "";
+  /** Geänderte Lage/Zuschnitt der Grundrisse bis zum Speichern. */
+  @state() private planAenderung: Record<string, { x: number; y: number; winkel: number; zuschnitt: number[] }> = {};
   @state() private zeigePlan = lesen("raumzonen-zeige-plan", true);
   @state() private masse = lesen("raumzonen-masse", false);
   /** Gewähltes Stockwerk im Hausplan ("" = alle). */
@@ -287,6 +296,9 @@ export class RaumzonenPanel extends LitElement {
   /** Nur Melder-Räume: Melder und Nachlauf (bearbeitbar). */
   @state() private melder: string[] = [];
   @state() private nachlauf = 0;
+  @state() private melderLagen: Record<string, MelderLage> = {};
+  /** Nächste gezeichnete Zone gehört zu diesem Melder (aus „+ Zone“). */
+  private zoneFuerMelder = "";
   @state() private aufnahmeTage = 30;
 
   private _hass?: Hass;
@@ -367,13 +379,13 @@ export class RaumzonenPanel extends LitElement {
       this.aufnahme = raum.aufnahme ?? true;
       this.aufnahmeTage = raum.aufnahme_tage ?? 30;
       this.melder = [...(raum.melder ?? [])];
+      this.melderLagen = structuredClone(raum.melder_lagen ?? {});
       this.nachlauf = raum.melder_nachlauf_s ?? 0;
       if (changed) {
         window.clearInterval(this.wizTimer);
         this.wizLaden();
       }
       if (raum.art === "melder") {
-        if (this.tab === "zonen") this.tab = "raum";
         if (!this.kandidaten) void this.loadKandidaten();
       }
     }
@@ -472,7 +484,14 @@ export class RaumzonenPanel extends LitElement {
   private async save(): Promise<void> {
     if (!this._hass || !this.raum || !this.kannAendern) return;
     const melder = this.istMelder;
-    const problem = melder ? (this.melder.length ? "" : "Mindestens einen Melder wählen.") : zonesProblem(this.zones);
+    const ohne = melder ? this.zones.find((z) => !(z.melder ?? []).some((m) => this.melder.includes(m))) : undefined;
+    const problem = melder
+      ? !this.melder.length
+        ? "Mindestens einen Melder wählen."
+        : ohne
+          ? `Zone „${ohne.name}“: bitte den Melder wählen, der sie meldet.`
+          : zonesProblem(this.zones)
+      : zonesProblem(this.zones);
     if (problem) {
       this.showToast(problem);
       return;
@@ -483,8 +502,14 @@ export class RaumzonenPanel extends LitElement {
       await this._hass.callWS({
         type: `${DOMAIN}/room/save`,
         raum_id: this.raumId,
-        zonen: melder ? [] : this.zones,
-        ...(melder ? { melder: this.melder, melder_nachlauf_s: this.nachlauf } : { sensor: this.sensor }),
+        zonen: melder ? this.zones.map((z) => ({ ...z, melder: (z.melder ?? []).filter((m) => this.melder.includes(m)) })) : this.zones,
+        ...(melder
+          ? {
+              melder: this.melder,
+              melder_nachlauf_s: this.nachlauf,
+              melder_lagen: Object.fromEntries(Object.entries(this.melderLagen).filter(([k]) => this.melder.includes(k))),
+            }
+          : { sensor: this.sensor }),
         umriss: this.umriss,
         oeffnungen: clampOpenings(this.umriss, this.oeffnungen),
         aufnahme: this.aufnahme,
@@ -571,6 +596,8 @@ export class RaumzonenPanel extends LitElement {
     this.page = "haus";
     this.hausSel = "";
     this.hausExtra = {};
+    this.planAenderung = {};
+    this.planEdit = "";
     this.tool = "auswahl";
     this.dirty = false;
     void this.unsubscribeLive();
@@ -977,10 +1004,13 @@ export class RaumzonenPanel extends LitElement {
       await this._hass.callWS({
         type: `${DOMAIN}/haus/save`,
         raeume: Object.entries(this.lagen).map(([raum_id, l]) => ({ raum_id, x: Math.round(l.x), y: Math.round(l.y), winkel: l.winkel, ...(this.hausExtra[raum_id] ?? {}) })),
+        plaene: Object.entries(this.planAenderung).map(([plan_id, l]) => ({ plan_id, x: Math.round(l.x), y: Math.round(l.y), winkel: l.winkel, zuschnitt: l.zuschnitt })),
         tueren,
       });
       this.dirty = false;
       this.hausExtra = {};
+      this.planAenderung = {};
+      this.planEdit = "";
       this.showToast("Hausplan gespeichert.");
       await this.unsubscribeHaus();
       await new Promise((res) => window.setTimeout(res, 1500));
@@ -1138,7 +1168,16 @@ export class RaumzonenPanel extends LitElement {
   private addZone(form: Form): void {
     if (!this.data) return;
     this.remember();
-    this.zones = [...this.zones, newZone(form, this.zones, this.data.vorlagen)];
+    const zone = newZone(form, this.zones, this.data.vorlagen);
+    if (this.istMelder) {
+      // In Melder-Räumen meldet ein Melder die Zone.
+      const m = this.zoneFuerMelder || (this.melder.length === 1 ? this.melder[0] : "");
+      zone.melder = m ? [m] : [];
+      zone.regel = { ...zone.regel, frei_nach_s: 0 };
+      if (m) zone.name = this.melderName(m);
+      this.zoneFuerMelder = "";
+    }
+    this.zones = [...this.zones, zone];
     this.select(this.zones.length - 1);
     this.dirty = true;
   }
@@ -1245,6 +1284,28 @@ export class RaumzonenPanel extends LitElement {
       this.wizAngetippt(p);
       return;
     }
+    if (this.page === "haus" && this.planEdit) {
+      const p = this.data?.plaene?.find((x) => x.id === this.planEdit);
+      if (p && this.kannAendern) {
+        const [x0, y0, x1, y1] = this.planZuschnitt(p);
+        const ecken: Point[] = [
+          [x0, y0],
+          [x1, y0],
+          [x1, y1],
+          [x0, y1],
+        ];
+        const ecke = ecken.findIndex(([px, py]) => this.near(raw, this.planZuHaus(p, px, py), HIT_PX + 4));
+        if (ecke >= 0) {
+          this.drag = { kind: "plan-crop", id: p.id, ecke };
+          return;
+        }
+        const [px, py] = this.hausZuPlan(p, raw);
+        if (px >= x0 && px <= x1 && py >= y0 && py <= y1) {
+          this.drag = { kind: "plan-move", id: p.id, last: raw };
+          return;
+        }
+      }
+    }
     if (this.page === "haus") {
       const hit = this.hausRoomAt(raw);
       this.hausSel = hit;
@@ -1300,6 +1361,22 @@ export class RaumzonenPanel extends LitElement {
       return;
     }
 
+    // Melder (nur Melder-Räume): Dreh-Griff, dann der Punkt selbst.
+    if (this.istMelder) {
+      for (const [key, l] of Object.entries(this.melderLagen)) {
+        if (!this.melder.includes(key)) continue;
+        if (this.near(raw, this.melderGriff(l), HIT_PX + 2)) {
+          this.remember();
+          this.drag = { kind: "melder-rotate", key };
+          return;
+        }
+        if (this.near(raw, [l.x, l.y], HIT_PX + 4)) {
+          this.remember();
+          this.drag = { kind: "melder", key };
+          return;
+        }
+      }
+    }
     // Auswählen: Griffe der gewählten Öffnung, dann der Zone, Sensor, Zonen, Wände, Ansicht.
     const so = this.oeffnungen[this.selOpening];
     if (so && this.umriss.length >= 3) {
@@ -1576,6 +1653,49 @@ export class RaumzonenPanel extends LitElement {
         this.openingDraft = openingFromDrag(this.umriss, drag.kante, drag.start, raw);
         break;
       }
+      case "plan-move": {
+        const p = this.data?.plaene?.find((x) => x.id === drag.id);
+        if (!p) break;
+        // In 5-cm-Schritten.
+        const dx = Math.round((raw[0] - drag.last[0]) / 5) * 5;
+        const dy = Math.round((raw[1] - drag.last[1]) / 5) * 5;
+        if (!dx && !dy) break;
+        const l = this.planLage(p);
+        this.planAendern(p, { x: l.x + dx, y: l.y + dy });
+        this.drag = { ...drag, last: [drag.last[0] + dx, drag.last[1] + dy] };
+        break;
+      }
+      case "plan-crop": {
+        const p = this.data?.plaene?.find((x) => x.id === drag.id);
+        if (!p) break;
+        const [px, py] = this.hausZuPlan(p, raw);
+        let [x0, y0, x1, y1] = this.planZuschnitt(p);
+        const cx = Math.max(0, Math.min(p.breite_px, px));
+        const cy = Math.max(0, Math.min(p.hoehe_px, py));
+        const min = 20;
+        if (drag.ecke === 0 || drag.ecke === 3) x0 = Math.min(cx, x1 - min);
+        else x1 = Math.max(cx, x0 + min);
+        if (drag.ecke === 0 || drag.ecke === 1) y0 = Math.min(cy, y1 - min);
+        else y1 = Math.max(cy, y0 + min);
+        this.planAendern(p, { zuschnitt: [x0, y0, x1, y1].map((v) => Math.round(v)) });
+        break;
+      }
+      case "melder": {
+        const l = this.melderLagen[drag.key];
+        if (l) this.melderLagen = { ...this.melderLagen, [drag.key]: { ...l, x: p[0], y: p[1] } };
+        this.dirty = true;
+        break;
+      }
+      case "melder-rotate": {
+        const l = this.melderLagen[drag.key];
+        if (!l) break;
+        let winkel = headingTo([l.x, l.y], raw);
+        if (!event.shiftKey) winkel = Math.round(winkel / 5) * 5;
+        if (winkel <= -180) winkel += 360;
+        this.melderLagen = { ...this.melderLagen, [drag.key]: { ...l, winkel } };
+        this.dirty = true;
+        break;
+      }
       case "opening-end": {
         const o = this.oeffnungen[drag.index];
         if (!o) break;
@@ -1829,6 +1949,48 @@ export class RaumzonenPanel extends LitElement {
     return svg`${marken}${neu}`;
   }
 
+  /** Lage eines Grundrisses (mit ungespeicherten Änderungen). */
+  private planLage(p: Plan): { x: number; y: number; winkel: number; zuschnitt: number[] } {
+    return this.planAenderung[p.id] ?? { x: p.x, y: p.y, winkel: p.winkel ?? 0, zuschnitt: p.zuschnitt ?? [] };
+  }
+
+  /** Bildpunkt → Haus. */
+  private planZuHaus(p: Plan, px: number, py: number): Point {
+    const l = this.planLage(p);
+    const [dx, dy] = rotate([px * p.cm_pro_px, (p.hoehe_px - py) * p.cm_pro_px], l.winkel);
+    return [l.x + dx, l.y + dy];
+  }
+
+  /** Haus → Bildpunkt. */
+  private hausZuPlan(p: Plan, h: Point): Point {
+    const l = this.planLage(p);
+    const [dx, dy] = rotate([h[0] - l.x, h[1] - l.y], -l.winkel);
+    return [dx / p.cm_pro_px, p.hoehe_px - dy / p.cm_pro_px];
+  }
+
+  private planZuschnitt(p: Plan): [number, number, number, number] {
+    const z = this.planLage(p).zuschnitt;
+    return z.length === 4 ? [z[0], z[1], z[2], z[3]] : [0, 0, p.breite_px, p.hoehe_px];
+  }
+
+  private planAendern(p: Plan, patch: Partial<{ x: number; y: number; winkel: number; zuschnitt: number[] }>): void {
+    this.planAenderung = { ...this.planAenderung, [p.id]: { ...this.planLage(p), ...patch } };
+    this.dirty = true;
+  }
+
+  private planDrehen(p: Plan, deg: number): void {
+    // Um die Mitte des sichtbaren Ausschnitts drehen, damit das Bild an seinem Platz bleibt.
+    const [x0, y0, x1, y1] = this.planZuschnitt(p);
+    const mitte = this.planZuHaus(p, (x0 + x1) / 2, (y0 + y1) / 2);
+    const l = this.planLage(p);
+    let winkel = (((l.winkel + deg) % 360) + 540) % 360 - 180;
+    if (winkel === -180) winkel = 180;
+    this.planAendern(p, { winkel });
+    const neu = this.planZuHaus(p, (x0 + x1) / 2, (y0 + y1) / 2);
+    const l2 = this.planLage(p);
+    this.planAendern(p, { x: l2.x + mitte[0] - neu[0], y: l2.y + mitte[1] - neu[1] });
+  }
+
   private async ladePlanBilder(): Promise<void> {
     const plaene = this.data?.plaene ?? [];
     for (const plan of plaene) {
@@ -1862,12 +2024,33 @@ export class RaumzonenPanel extends LitElement {
     }
     return svg`${plaene.map((p) => {
       // Bildpunkt → Haus → (Raum) → Bildschirm; affin, darum reichen drei Punkte.
-      const k = p.cm_pro_px;
-      const haus = (px: number, py: number): Point => [p.x + px * k, p.y + (p.hoehe_px - py) * k];
-      const bild = (px: number, py: number): Point => this.toScreen(zuRaum ? zuRaum(haus(px, py)) : haus(px, py));
+      const bild = (px: number, py: number): Point => {
+        const h = this.planZuHaus(p, px, py);
+        return this.toScreen(zuRaum ? zuRaum(h) : h);
+      };
       const [o, ex, ey] = [bild(0, 0), bild(1, 0), bild(0, 1)];
       const m = [ex[0] - o[0], ex[1] - o[1], ey[0] - o[0], ey[1] - o[1], o[0], o[1]].map((v) => v.toFixed(5)).join(" ");
-      return svg`<image class="plan-hintergrund" href=${this.planBilder[p.id]} x="0" y="0" width=${p.breite_px} height=${p.hoehe_px} transform="matrix(${m})" preserveAspectRatio="none" />`;
+      const [x0, y0, x1, y1] = this.planZuschnitt(p);
+      const edit = this.page === "haus" && this.planEdit === p.id;
+      const griffe = edit
+        ? [
+            [x0, y0],
+            [x1, y0],
+            [x1, y1],
+            [x0, y1],
+          ].map(([px, py]) => {
+            const [sx, sy] = bild(px, py);
+            return svg`<circle class="handle plan-griff" cx=${sx} cy=${sy} r="9" />`;
+          })
+        : nothing;
+      const rahmen = edit
+        ? svg`<polygon class="plan-rahmen" points=${pointsAttr([bild(x0, y0), bild(x1, y0), bild(x1, y1), bild(x0, y1)])} />`
+        : nothing;
+      return svg`<g transform="matrix(${m})">
+          <clipPath id=${`zuschnitt-${p.id}`}><rect x=${x0} y=${y0} width=${x1 - x0} height=${y1 - y0} /></clipPath>
+          <image class="plan-hintergrund ${edit ? "edit" : ""}" href=${this.planBilder[p.id]} x="0" y="0" width=${p.breite_px} height=${p.hoehe_px} preserveAspectRatio="none" clip-path=${`url(#zuschnitt-${p.id})`} />
+        </g>
+        ${rahmen}${griffe}`;
     })}`;
   }
 
@@ -1896,6 +2079,45 @@ export class RaumzonenPanel extends LitElement {
       return svg`<text class="mass-text klein" x=${sx} y=${sy} dy="-0.8em">${meter(o.bis - o.von)}</text>`;
     });
     return svg`<g>${texte}${oeff}</g>`;
+  }
+
+  private melderPlatzieren(key: string): void {
+    this.remember();
+    const mitte: Point = this.umriss.length >= 3 ? formCenter({ art: "vieleck", punkte: this.umriss }) : [0, 0];
+    const n = Object.keys(this.melderLagen).length;
+    this.melderLagen = { ...this.melderLagen, [key]: { x: Math.round(mitte[0] + n * 40), y: Math.round(mitte[1]), winkel: 0, reichweite_cm: 500, oeffnung_grad: 100 } };
+    this.dirty = true;
+    this.showToast("Melder in die Raummitte gesetzt: an seinen Platz ziehen und am Griff drehen.");
+  }
+
+  /** Anzeigename eines Melders (aus der Liste der Kandidaten, sonst die Kennung). */
+  private melderName(key: string): string {
+    const m = this.kandidaten?.melder.find((x) => x.id === key || x.entity_id === key);
+    return m?.name ?? key;
+  }
+
+  private melderGriff(lage: MelderLage): Point {
+    const [dx, dy] = sensorDirection(lage.winkel);
+    const len = 40 / this.view.scale;
+    return [lage.x + dx * len, lage.y + dy * len];
+  }
+
+  /** Melder im Plan: Punkt mit Sichtbereich, ziehen und am Griff drehen. */
+  private renderMelderLagen(): TemplateResult | typeof nothing {
+    const eintraege = Object.entries(this.melderLagen).filter(([k]) => this.melder.includes(k));
+    if (!eintraege.length) return nothing;
+    return svg`${eintraege.map(([key, l]) => {
+      const [x, y] = this.toScreen([l.x, l.y]);
+      const [hx, hy] = this.toScreen(this.melderGriff(l));
+      return svg`<g class="melder-lage">
+        <polygon class="coverage" points=${this.screenPoints(sectorPoints([l.x, l.y], l.winkel, l.reichweite_cm, l.oeffnung_grad))} />
+        ${this.kannAendern
+          ? svg`<line class="sensor-line" x1=${x} y1=${y} x2=${hx} y2=${hy} /><circle class="handle angle" cx=${hx} cy=${hy} r="7" />`
+          : nothing}
+        <circle class="melder-punkt" cx=${x} cy=${y} r="9" />
+        <text class="label sub" x=${x} y=${y + 24}>${this.melderName(key)}</text>
+      </g>`;
+    })}`;
   }
 
   /** Melder-Raum: in der Mitte steht, ob jemand da ist. */
@@ -2215,7 +2437,9 @@ export class RaumzonenPanel extends LitElement {
         ${this.page === "haus"
           ? this.renderHausPlan()
           : this.istMelder
-            ? svg`${this.renderPlanBilder()} ${this.renderRoom()} ${this.renderMasse()} ${this.renderMelderLabel()} ${this.renderDraft()}`
+            ? svg`${this.renderPlanBilder()} ${this.renderRoom()} ${this.renderMasse()} ${this.renderMelderLagen()}
+              ${this.zones.map((z, i) => this.renderZone(z, i))} ${this.zones.map((z) => this.renderZoneLabel(z))}
+              ${this.renderMelderLabel()} ${this.renderHandles()} ${this.renderDraft()}`
             : svg`${this.renderPlanBilder()} ${this.renderRoom()} ${this.renderMasse()} ${this.renderHeat()} ${this.renderCoverage()}
               ${this.zones.map((z, i) => this.renderZone(z, i))} ${this.renderLive()}
               ${this.zones.map((z) => this.renderZoneLabel(z))} ${this.renderSensor()}
@@ -2327,6 +2551,27 @@ export class RaumzonenPanel extends LitElement {
       >`;
     const problem = formProblem(zone.form);
     const andere = (this.data?.raeume ?? []).filter((x) => x.id !== this.raumId);
+    const melderWahl = this.istMelder
+      ? html`<div class="label-text">Welcher Melder meldet diese Zone?</div>
+          <ul class="melder-liste">
+            ${this.melder.map(
+              (m) => html`<li>
+                <label class="check"
+                  ><input
+                    type="checkbox"
+                    .checked=${(zone.melder ?? []).includes(m)}
+                    @change=${(e: Event) => {
+                      const on = (e.target as HTMLInputElement).checked;
+                      const liste = (zone.melder ?? []).filter((x) => x !== m);
+                      this.updateZone(index, { melder: on ? [...liste, m] : liste });
+                    }}
+                  /><span>${this.melderName(m)}</span></label
+                >
+              </li>`,
+            )}
+          </ul>
+          ${(zone.melder ?? []).length ? nothing : html`<p class="note warn">Ohne Melder lässt sich die Zone nicht speichern.</p>`}`
+      : nothing;
     if (!this.kannAendern) {
       return html`<div class="inspector">
         <p class="hint small">${rolleInfo(rolle).text}</p>
@@ -2335,6 +2580,7 @@ export class RaumzonenPanel extends LitElement {
       </div>`;
     }
     return html`<div class="inspector">
+      ${melderWahl}
       <label class="field"
         >Name<input
           type="text"
@@ -2421,7 +2667,13 @@ export class RaumzonenPanel extends LitElement {
         ? html`<ul class="list">
             ${this.zones.map((z, i) => this.renderZoneItem(z, i))}
           </ul>`
-        : html`<p class="hint">${this.kannAendern ? "Noch keine Zonen. Mit den Werkzeugen links am Plan zeichnen, z. B. ein Rechteck über das Bett." : "Noch keine Zonen eingezeichnet."}</p>`}
+        : html`<p class="hint">
+            ${!this.kannAendern
+              ? "Noch keine Zonen eingezeichnet."
+              : this.istMelder
+                ? "Noch keine Zonen. Eine Zone ist der Bereich, den ein Melder meldet (z. B. eine Zone eines FP2). Unter „Melder und Raum“ beim Melder „Zone für diesen Melder“ tippen, oder hier links zeichnen und dann den Melder wählen. „Anwesenheit“ für den ganzen Raum gibt es immer."
+                : "Noch keine Zonen. Mit den Werkzeugen links am Plan zeichnen, z. B. ein Rechteck über das Bett."}
+          </p>`}
       ${this.kannAendern ? this.renderNewZone() : nothing}`;
   }
 
@@ -2432,9 +2684,11 @@ export class RaumzonenPanel extends LitElement {
         <button class="text small" @click=${() => this.setTool("vieleck")}><ha-icon icon="mdi:vector-polygon"></ha-icon>Vieleck</button>
         <button class="text small" @click=${() => this.setTool("zellen")}><ha-icon icon="mdi:grid"></ha-icon>Zellen</button>
       </div>
-      <div class="actions">
-        <button class="text small" @click=${this.importConverter}><ha-icon icon="mdi:import"></ha-icon>Aus dem Konverter übernehmen</button>
-      </div>`;
+      ${this.istMelder
+        ? nothing
+        : html`<div class="actions">
+            <button class="text small" @click=${this.importConverter}><ha-icon icon="mdi:import"></ha-icon>Aus dem Konverter übernehmen</button>
+          </div>`}`;
   }
 
   private renderMelderTab(): TemplateResult {
@@ -2443,7 +2697,12 @@ export class RaumzonenPanel extends LitElement {
     const da = !!live?.zonen[MELDER_ZONE]?.belegt;
     const k = this.kandidaten;
     const name = (id: string) => k?.melder.find((m) => m.id === id || m.entity_id === id)?.name ?? id;
-    const auswahl = (k?.melder ?? []).filter((m) => !m.benutzt_von || m.benutzt_von === this.raumId || this.melder.includes(m.id));
+    const bekannt = (k?.melder ?? []).filter((m) => !m.benutzt_von || m.benutzt_von === this.raumId || this.melder.includes(m.id));
+    // Melder des Raums, die nicht (mehr) in der Liste stehen, z. B. Anzeigen eines Radarsensors.
+    const fehlend = this.melder
+      .filter((id) => !bekannt.some((m) => m.id === id || m.entity_id === id))
+      .map((id) => ({ id, entity_id: id, name: id, klasse: "", bereich_id: null, benutzt_von: this.raumId, geraet: "nicht mehr angeboten" }));
+    const auswahl = [...bekannt, ...fehlend];
     return html`<h3>Melder</h3>
       <ul class="list">
         <li class="item">
@@ -2467,10 +2726,35 @@ export class RaumzonenPanel extends LitElement {
                           @change=${(e: Event) => {
                             const on = (e.target as HTMLInputElement).checked;
                             this.melder = on ? [...this.melder, m.id] : this.melder.filter((x) => x !== m.id && x !== m.entity_id);
+                            if (!on) {
+                              // Zonen und Lage dieses Melders mit entfernen.
+                              const { [m.id]: _alt, ...rest } = this.melderLagen;
+                              this.melderLagen = rest;
+                              this.zones = this.zones.map((z) => ({ ...z, melder: (z.melder ?? []).filter((x) => x !== m.id) }));
+                            }
                             this.dirty = true;
                           }}
                         /><span>${m.name}<small>${this.bereichName(m.bereich_id)}</small></span></label
                       >
+                      ${an
+                        ? html`<div class="actions melder-aktionen">
+                            ${this.melderLagen[m.id]
+                              ? nothing
+                              : html`<button class="text small" @click=${() => this.melderPlatzieren(m.id)}>
+                                  <ha-icon icon="mdi:map-marker-plus-outline"></ha-icon>Im Plan platzieren
+                                </button>`}
+                            <button
+                              class="text small"
+                              @click=${() => {
+                                this.zoneFuerMelder = m.id;
+                                this.setTool("rechteck");
+                                this.showToast(`Zone für „${m.name}“: im Plan ein Rechteck aufziehen.`);
+                              }}
+                            >
+                              <ha-icon icon="mdi:shape-rectangle-plus"></ha-icon>Zone für diesen Melder
+                            </button>
+                          </div>`
+                        : nothing}
                     </li>`;
                   })}
                 </ul>`
@@ -2866,8 +3150,44 @@ export class RaumzonenPanel extends LitElement {
             <div class="row static">
               <span class="marker-icon"><ha-icon icon="mdi:image-outline"></ha-icon></span>
               <span class="name">${p.name}<small>${this.planBilder[p.id] ? "im Hintergrund" : "Bild fehlt"}</small></span>
-              <button class="text small danger" ?disabled=${this.saving} @click=${() => this.planLoeschen(p)}><ha-icon icon="mdi:delete-outline"></ha-icon>Löschen</button>
+              <button
+                class="text small"
+                @click=${() => {
+                  this.planEdit = this.planEdit === p.id ? "" : p.id;
+                  if (this.planEdit) {
+                    this.zeigePlan = true;
+                    this.showToast("Bild ziehen zum Verschieben, Ecken ziehen zum Zuschneiden.");
+                  }
+                }}
+              >
+                <ha-icon icon="mdi:crop-rotate"></ha-icon>${this.planEdit === p.id ? "Fertig" : "Ausrichten"}
+              </button>
             </div>
+            ${this.planEdit === p.id
+              ? html`<div class="inspector">
+                  <div class="label-text">Drehen</div>
+                  <div class="actions">
+                    ${(
+                      [
+                        [90, "mdi:rotate-left", "90°"],
+                        [-90, "mdi:rotate-right", "90°"],
+                        [5, "mdi:rotate-left", "5°"],
+                        [-5, "mdi:rotate-right", "5°"],
+                        [1, "mdi:rotate-left", "1°"],
+                        [-1, "mdi:rotate-right", "1°"],
+                      ] as const
+                    ).map(([d, icon, label]) => html`<button class="text small" @click=${() => this.planDrehen(p, d)}><ha-icon icon=${icon}></ha-icon>${label}</button>`)}
+                  </div>
+                  <p class="hint small">Das Bild ziehen, bis es unter den Räumen liegt. Die runden Ecken ziehen, um wegzuschneiden, was nicht dazugehört. Danach oben „Speichern“.</p>
+                  <div class="actions">
+                    <button class="text small" ?disabled=${!this.planLage(p).zuschnitt.length} @click=${() => this.planAendern(p, { zuschnitt: [] })}>
+                      <ha-icon icon="mdi:crop-free"></ha-icon>Zuschnitt zurücksetzen
+                    </button>
+                    <span class="spacer"></span>
+                    <button class="text small danger" ?disabled=${this.saving} @click=${() => this.planLoeschen(p)}><ha-icon icon="mdi:delete-outline"></ha-icon>Löschen</button>
+                  </div>
+                </div>`
+              : nothing}
           </li>`,
         )}
       </ul>`;
@@ -3117,6 +3437,16 @@ export class RaumzonenPanel extends LitElement {
         : nothing}`;
   }
 
+  /** Melder nach Gerät gruppieren (ein FP2 liefert z. B. einen Melder je Zone). */
+  private melderGruppen(liste: Kandidaten["melder"]): [string, Kandidaten["melder"]][] {
+    const m = new Map<string, Kandidaten["melder"]>();
+    for (const x of liste) {
+      const key = x.geraet ?? "ohne Gerät";
+      m.set(key, [...(m.get(key) ?? []), x]);
+    }
+    return [...m.entries()];
+  }
+
   private renderNeuRaum(): TemplateResult {
     const k = this.kandidaten;
     const f = this.neuRaum;
@@ -3170,9 +3500,24 @@ export class RaumzonenPanel extends LitElement {
                     ${vorschlaege.map(
                       (v) => html`<li class="item">
                         <div class="row static">
-                          <span class="marker-icon"><ha-icon icon="mdi:motion-sensor"></ha-icon></span>
-                          <span class="name">${v.name}<small>${v.melder.length} ${v.melder.length === 1 ? "Melder" : "Melder"} in diesem Bereich</small></span>
-                          <button class="text small" ?disabled=${this.saving} @click=${() => this.createRoom({ name: v.name, art: "melder", melder: v.melder, bereich_id: v.bereich_id })}>
+                          <span class="marker-icon"><ha-icon icon=${v.art === "radar" ? "mdi:radar" : "mdi:motion-sensor"}></ha-icon></span>
+                          <span class="name"
+                            >${v.name}<small
+                              >${v.art === "radar"
+                                ? `Radarsensor ${k.fp400.find((g) => g.device_id === v.device_id)?.name ?? ""}`
+                                : `${v.melder.length} Melder in diesem Bereich`}</small
+                            ></span
+                          >
+                          <button
+                            class="text small"
+                            ?disabled=${this.saving}
+                            @click=${() =>
+                              this.createRoom(
+                                v.art === "radar"
+                                  ? { name: v.name, art: "radar", device_id: v.device_id, bereich_id: v.bereich_id }
+                                  : { name: v.name, art: "melder", melder: v.melder, bereich_id: v.bereich_id },
+                              )}
+                          >
                             Übernehmen
                           </button>
                         </div>
@@ -3189,7 +3534,10 @@ export class RaumzonenPanel extends LitElement {
             ${f.art === "melder"
               ? k.melder.length
                 ? html`<ul class="melder-liste">
-                    ${k.melder.map(melderZeile)}
+                    ${this.melderGruppen(k.melder).map(
+                      ([geraet, liste]) => html`<li class="gruppe">${geraet}</li>
+                        ${liste.map(melderZeile)}`,
+                    )}
                   </ul>`
                 : html`<p class="hint small">Keine Bewegungs- oder Präsenzmelder in Home Assistant gefunden.</p>`
               : freieGeraete.length
@@ -3406,9 +3754,7 @@ export class RaumzonenPanel extends LitElement {
     if (this.page === "haus") return this.renderHausSide();
     return html`<aside class="side">
       <div class="tabs" role="tablist">
-        ${this.istMelder
-          ? nothing
-          : html`<button class=${this.tab === "zonen" ? "active" : ""} role="tab" @click=${() => this.openTab("zonen")}><ha-icon icon="mdi:shape-outline"></ha-icon>Zonen</button>`}
+        <button class=${this.tab === "zonen" ? "active" : ""} role="tab" @click=${() => this.openTab("zonen")}><ha-icon icon="mdi:shape-outline"></ha-icon>Zonen</button>
         <button class=${this.tab === "raum" ? "active" : ""} role="tab" @click=${() => this.openTab("raum")}><ha-icon icon="mdi:floor-plan"></ha-icon>${this.istMelder ? "Melder und Raum" : "Sensor und Raum"}</button>
         ${this.kannAendern
           ? html`<button class=${this.tab === "auswertung" ? "active" : ""} role="tab" @click=${() => this.openTab("auswertung")}><ha-icon icon="mdi:chart-bubble"></ha-icon>Auswertung</button>`

@@ -83,6 +83,7 @@ from .discovery import converter_zones, find_fp400_entities, suggest_topic
 from .model import REGEL_VORLAGEN, PlanConfig, RaumConfig, SensorConfig
 from .panel import async_reload_keep_panel
 from .serialize import (
+    melder_lage_from_dict,
     oeffnung_from_dict,
     plan_to_dict,
     raum_to_dict,
@@ -185,6 +186,15 @@ ZONE_SCHEMA = vol.Schema(
         vol.Optional("regel", default={}): dict,
         # Nur bei Türen: "aussen", eine andere Raum-ID oder leer (weiß nicht).
         vol.Optional("fuehrt_zu", default=""): vol.Any(None, str),
+        # Nur in Melder-Räumen: welche Melder die Zone melden.
+        vol.Optional("melder", default=[]): [str],
+    }
+)
+
+MELDER_LAGE_SCHEMA = vol.Schema(
+    {
+        vol.Required(key): vol.Coerce(float)
+        for key in ("x", "y", "winkel", "reichweite_cm", "oeffnung_grad")
     }
 )
 
@@ -224,6 +234,7 @@ ZONE_SCHEMA = vol.Schema(
         # Nur Melder-Räume
         vol.Optional("melder"): [str],
         vol.Optional("melder_nachlauf_s"): vol.Coerce(float),
+        vol.Optional("melder_lagen"): {str: MELDER_LAGE_SCHEMA},
     }
 )
 @websocket_api.require_admin
@@ -257,6 +268,9 @@ async def ws_room_save(
                         **data,
                         "id": zone_id,
                         "fuehrt_zu": data.get("fuehrt_zu") or "",
+                        "melder": [
+                            _melder_key(hass, m) for m in data.get("melder", [])
+                        ],
                         "regel": regel_to_dict(regel_from_dict(data.get("regel", {}))),
                     }
                 )
@@ -275,6 +289,11 @@ async def ws_room_save(
             ]
         if "melder" in msg:
             raum.melder = [_melder_key(hass, m) for m in msg["melder"]]
+        if "melder_lagen" in msg:
+            raum.melder_lagen = {
+                _melder_key(hass, k): melder_lage_from_dict(v)
+                for k, v in msg["melder_lagen"].items()
+            }
         for key in ("aufnahme", "aufnahme_tage", "melder_nachlauf_s"):
             if key in msg:
                 setattr(raum, key, msg[key])
@@ -402,6 +421,18 @@ def ws_converter_zones(
                 }
             )
         ],
+        # Lage und Zuschnitt der Grundrisse im Hintergrund.
+        vol.Optional("plaene", default=[]): [
+            vol.Schema(
+                {
+                    vol.Required("plan_id"): str,
+                    vol.Required("x"): vol.Coerce(float),
+                    vol.Required("y"): vol.Coerce(float),
+                    vol.Optional("winkel", default=0.0): vol.Coerce(float),
+                    vol.Optional("zuschnitt", default=[]): [vol.Coerce(float)],
+                }
+            )
+        ],
         # Wohin Türen führen (wie im Raum), damit ein Speichern reicht.
         vol.Optional("tueren", default=[]): [
             vol.Schema(
@@ -440,6 +471,12 @@ async def ws_haus_save(
                 raum.stockwerke = list(dict.fromkeys(lage["stockwerke"]))
             if "bereich_id" in lage:
                 raum.bereich_id = lage["bereich_id"] or ""
+        for daten in msg["plaene"]:
+            plan = next(p for p in model.plaene if p.id == daten["plan_id"])
+            plan.x, plan.y = daten["x"], daten["y"]
+            w = (daten["winkel"] + 180) % 360 - 180
+            plan.winkel = 180.0 if w == -180 else w
+            plan.zuschnitt = [round(v, 1) for v in daten["zuschnitt"]]
         for tuer in msg["tueren"]:
             raum = model.raum(tuer["raum_id"])
             ziel = tuer["fuehrt_zu"] or ""
@@ -640,6 +677,12 @@ def kandidaten(hass: HomeAssistant, raeume: list[RaumConfig]) -> dict[str, Any]:
         for key in raum.melder:
             benutzt[key] = raum.id
     geraete_benutzt = {r.sensor.device_id for r in raeume if not r.ist_melder}
+    # Radarsensoren (FP400) erkennen: ihre Belegt-Anzeigen sind keine Melder.
+    fp400_ids: set[str] = set()
+    for device in devices.devices.values():
+        found = find_fp400_entities(hass, device.id)
+        if found.targets_xy is not None or found.last_update is not None:
+            fp400_ids.add(device.id)
     melder = []
     for entry in entities.entities.values():
         if entry.domain != "binary_sensor" or entry.disabled_by is not None:
@@ -649,7 +692,10 @@ def kandidaten(hass: HomeAssistant, raeume: list[RaumConfig]) -> dict[str, Any]:
             continue
         if entry.platform == DOMAIN:
             continue  # eigene Entitäten nicht als Melder anbieten
+        if entry.device_id in fp400_ids:
+            continue  # gehört zu einem Radarsensor: der wird als Radar-Raum angelegt
         state = hass.states.get(entry.entity_id)
+        device = devices.async_get(entry.device_id) if entry.device_id else None
         melder.append(
             {
                 "id": entry.id,
@@ -661,13 +707,13 @@ def kandidaten(hass: HomeAssistant, raeume: list[RaumConfig]) -> dict[str, Any]:
                 "klasse": klasse,
                 "bereich_id": _area_of(entry, devices),
                 "benutzt_von": benutzt.get(entry.id) or benutzt.get(entry.entity_id),
+                "geraet": (device.name_by_user or device.name) if device else None,
             }
         )
     melder.sort(key=lambda m: (m["bereich_id"] or "~", m["name"]))
     fp400 = []
     for device in devices.devices.values():
-        found = find_fp400_entities(hass, device.id)
-        if found.targets_xy is None and found.last_update is None:
+        if device.id not in fp400_ids:
             continue
         fp400.append(
             {
@@ -692,8 +738,16 @@ def kandidaten(hass: HomeAssistant, raeume: list[RaumConfig]) -> dict[str, Any]:
             for m in melder
             if m["bereich_id"] == b["bereich_id"] and not m["benutzt_von"]
         ]
-        if frei:
-            vorschlaege.append({**b, "melder": frei[:MAX_MELDER]})
+        radar = [
+            g for g in fp400 if g["bereich_id"] == b["bereich_id"] and not g["benutzt"]
+        ]
+        if radar:
+            # Ein Radarsensor im Bereich: der ist genauer als Bewegungsmelder.
+            vorschlaege.append(
+                {**b, "art": "radar", "device_id": radar[0]["device_id"], "melder": []}
+            )
+        elif frei:
+            vorschlaege.append({**b, "art": "melder", "melder": frei[:MAX_MELDER]})
     return {
         "melder": melder,
         "fp400": fp400,

@@ -106,6 +106,19 @@ class ZoneConfig:
     regel: RegelConfig = field(default_factory=RegelConfig)
     # Nur für Türen (Art „ausgang“): Raum-ID des Nachbarraums oder „aussen“.
     fuehrt_zu: str = ""
+    # Nur in Melder-Räumen: diese Melder melden die Zone (einer an = belegt).
+    melder: list[str] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class MelderLage:
+    """Wo ein Melder im Raum hängt und wohin er schaut (nur Anzeige)."""
+
+    x: float = 0.0
+    y: float = 0.0
+    winkel: float = 0.0
+    reichweite_cm: float = 500.0
+    oeffnung_grad: float = 100.0
 
 
 @dataclass(slots=True)
@@ -190,6 +203,8 @@ class RaumConfig:
     # Stockwerke (IDs aus Home Assistant), auf denen der Raum liegt; eine
     # Treppe liegt auf zwei. Leer: das Stockwerk seines Bereichs.
     stockwerke: list[str] = field(default_factory=list)
+    # Nur Melder-Räume: Lage der Melder im Plan (Kennung → Lage).
+    melder_lagen: dict[str, MelderLage] = field(default_factory=dict)
 
     @property
     def ist_melder(self) -> bool:
@@ -215,6 +230,10 @@ class PlanConfig:
     y: float = 0.0
     # Stockwerk (ID aus Home Assistant), leer = keins.
     stockwerk: str = ""
+    # Drehung um den Bildursprung (oben links), Grad gegen den Uhrzeigersinn.
+    winkel: float = 0.0
+    # Zuschnitt in Bildpunkten [x0, y0, x1, y1]; leer = ganzes Bild.
+    zuschnitt: list[float] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -258,6 +277,15 @@ class RaumzonenModel:
                 _range(name, getattr(plan, name), -100_000, 100_000)
             if plan.stockwerk and not _floor_id(plan.stockwerk):
                 raise ValueError(f"Grundriss {plan.id}: Stockwerk ungültig")
+            _range("Grundriss winkel", plan.winkel, -180, 180)
+            if plan.zuschnitt:
+                z = plan.zuschnitt
+                if (
+                    len(z) != 4
+                    or not 0 <= z[0] < z[2] <= plan.breite_px
+                    or not 0 <= z[1] < z[3] <= plan.hoehe_px
+                ):
+                    raise ValueError(f"Grundriss {plan.id}: Zuschnitt ungültig")
         _unique("Raum", [r.id for r in self.raeume])
         for raum in self.raeume:
             _ident("Raum", raum.id)
@@ -297,6 +325,8 @@ class RaumzonenModel:
                 _ident("Zone", zone.id)
                 if not zone.name.strip():
                     raise ValueError(f"Zone {zone.id}: Name fehlt")
+                if zone.melder and not raum.ist_melder:
+                    raise ValueError(f"Zone {zone.id}: Melder nur in Melder-Räumen")
                 if zone.art not in ZONE_ARTEN:
                     raise ValueError(f"Zone {zone.id}: unbekannte Art {zone.art!r}")
                 if zone.fuehrt_zu:
@@ -330,7 +360,25 @@ def melder_zone(raum: RaumConfig) -> Zone:
 def build_room(raum: RaumConfig) -> Room:
     """Rechenlogik für einen gespeicherten Raum."""
     if raum.ist_melder:
-        return Room([melder_zone(raum)])
+        return Room(
+            [
+                melder_zone(raum),
+                *(
+                    Zone(
+                        id=z.id,
+                        name=z.name,
+                        shape=shape_from_dict(z.form),
+                        art=z.art,
+                        rule=ZoneRule(
+                            belegt_nach_s=0.0,
+                            frei_nach_s=z.regel.frei_nach_s,
+                            rand_cm=0,
+                        ),
+                    )
+                    for z in raum.zonen
+                ),
+            ]
+        )
     return Room(
         Zone(
             id=z.id,
@@ -376,9 +424,22 @@ def _check_melder(raum: RaumConfig) -> None:
     _unique(f"Melder in {raum.id}", raum.melder)
     if any(not isinstance(m, str) or not m or len(m) > 255 for m in raum.melder):
         raise ValueError(f"Raum {raum.id}: Melder ungültig")
-    if raum.zonen:
-        raise ValueError(f"Raum {raum.id}: Melder-Räume haben keine eigenen Zonen")
+    for zone in raum.zonen:
+        if not zone.melder:
+            raise ValueError(f"Zone {zone.name}: Melder wählen, der sie meldet")
+        if any(m not in raum.melder for m in zone.melder):
+            raise ValueError(f"Zone {zone.name}: Melder gehört nicht zum Raum")
+        if zone.id == MELDER_ZONE_ID:
+            raise ValueError(f"Zone {zone.id}: Kennung ist vergeben")
     _range("melder_nachlauf_s", raum.melder_nachlauf_s, 0, MAX_NACHLAUF_S)
+    for key, lage in raum.melder_lagen.items():
+        if key not in raum.melder:
+            raise ValueError(f"Raum {raum.id}: Lage für unbekannten Melder")
+        for name in ("x", "y"):
+            _range(name, getattr(lage, name), -MAX_KOORDINATE_CM, MAX_KOORDINATE_CM)
+        _range("Melder winkel", lage.winkel, -180, 180)
+        _range("reichweite_cm", lage.reichweite_cm, 50, MAX_REICHWEITE_CM)
+        _range("oeffnung_grad", lage.oeffnung_grad, 10, 360)
 
 
 def _check_ziel(was: str, ziel: str, raum_id: str, raum_ids: set[str]) -> None:

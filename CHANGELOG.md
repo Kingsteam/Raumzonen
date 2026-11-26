@@ -4,6 +4,25 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.13.0] - 2026-11-26
+
+### Hinzugefügt
+
+- Melder-Räume: Melder im Plan platzieren (Punkt mit Sichtbereich, ziehen
+  und am Griff drehen) und Zonen zeichnen, die je ein Melder meldet (z. B.
+  die Zonen eines Aqara FP2). Jede Zone bekommt „belegt“ in Home Assistant;
+  „Anwesenheit“ für den ganzen Raum bleibt. Beim Melder „Zone für diesen
+  Melder“ legt die Zone gleich mit der Zuordnung an.
+- Grundriss ausrichten (Hausplan → Grundrisse → „Ausrichten“): Bild unter
+  die Räume ziehen, um 90°, 5° oder 1° drehen, an den Ecken zuschneiden.
+- „Aus Home Assistant übernehmen“ schlägt für Bereiche mit einem
+  Radarsensor einen Radar-Raum vor; Melder sind nach Gerät gruppiert.
+
+### Geändert
+
+- Belegt-Anzeigen eines FP400 werden nicht mehr als Bewegungsmelder
+  angeboten (der FP400 wird als Radar-Raum angelegt).
+
 ## [0.12.0] - 2026-11-26
 
 ### Hinzugefügt
