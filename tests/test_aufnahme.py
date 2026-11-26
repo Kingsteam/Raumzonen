@@ -185,3 +185,40 @@ async def test_abruf_hoechstens_24_h(
     )
     msg = await client.receive_json()
     assert msg["error"]["code"] == "invalid"
+
+
+async def test_auswertung(hass: HomeAssistant, sim: SimFp400, hass_ws_client) -> None:
+    """Wer war wann wo: aus der Aufnahme, auch ohne Rahmen in der Ruhe."""
+    for _ in range(5):
+        await sim.frame((0, -150, 200))
+        await sim.wait(1)
+    await sim.wait(120)  # Sensor schweigt, die Figur liegt ruhig
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/auswertung/get", "raum_id": "schlafzimmer", "stunden": 1}
+    )
+    msg = await client.receive_json()
+    assert msg["success"], msg
+    result = msg["result"]
+    assert result["stunden"] == 1
+    assert result["zelle_cm"] == 5
+    [figur] = result["figuren"]
+    assert figur["sekunden"] >= 120
+    assert figur["zellen"]
+    assert {z["zone_id"] for z in result["zonen"]} == {
+        z["id"] for z in example_model()["raeume"][0]["zonen"]
+    }
+
+
+async def test_auswertung_ohne_aufnahme(
+    hass: HomeAssistant, hass_ws_client, model: dict[str, Any], sim: SimFp400
+) -> None:
+    for entry in hass.config_entries.async_loaded_entries(DOMAIN):
+        for controller in entry.runtime_data.controllers.values():
+            controller.aufnahme = None
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/auswertung/get", "raum_id": "schlafzimmer", "stunden": 3}
+    )
+    msg = await client.receive_json()
+    assert msg["error"]["code"] == "off"

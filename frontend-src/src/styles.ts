@@ -427,6 +427,41 @@ export const styles = css`
     border-color: var(--accent);
     color: var(--primary-text-color);
   }
+  /* Auswertung: Zeitleisten */
+  .ausw .item {
+    padding-bottom: 8px;
+  }
+  .row.static {
+    cursor: default;
+  }
+  .row.static:hover {
+    background: none;
+  }
+  .dauer {
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  svg.leiste {
+    display: block;
+    width: calc(100% - 38px);
+    height: 10px;
+    margin: 0 8px 0 30px;
+  }
+  .leiste-grund {
+    fill: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
+  }
+  .achse {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted);
+    margin: 0 8px 8px 30px;
+  }
+  image.heat {
+    pointer-events: none;
+  }
   .summary {
     font-size: 13px;
     line-height: 1.45;

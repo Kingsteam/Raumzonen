@@ -24,6 +24,8 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, LOGGER
+from .core.auswertung import MAX_RUHE_S, Auswertung
+from .core.geometry import Shape
 from .core.tracks import HELD, Track
 
 FORMAT = "fp400-trace/2"
@@ -31,6 +33,7 @@ FLUSH_EVERY = timedelta(seconds=10)
 # Höchstens so viel auf einmal abrufen (schützt Browser und Speicher).
 MAX_ABRUF = timedelta(hours=24)
 MAX_ZEILEN = 200_000
+_ZEIT = '{"zeit":"'
 
 
 def aufnahme_dir(hass: HomeAssistant, raum_id: str) -> Path:
@@ -142,6 +145,17 @@ class Aufnahme:
         await self.async_flush()
         return await self.hass.async_add_executor_job(_read, self.folder, von, bis)
 
+    async def async_auswerten(
+        self, von: datetime, bis: datetime, zonen: dict[str, Shape]
+    ) -> dict[str, Any]:
+        """Wer war wann wo (``core/auswertung.py``), höchstens 24 h."""
+        if bis <= von or bis - von > MAX_ABRUF:
+            raise ValueError("Zeitraum muss größer 0 und höchstens 24 h sein")
+        await self.async_flush()
+        return await self.hass.async_add_executor_job(
+            _auswerten, self.folder, von, bis, zonen
+        )
+
 
 def _write(
     folder: Path, buffer: list[tuple[date, dict[str, Any]]], prune_before: date | None
@@ -165,6 +179,44 @@ def _write(
                     path.unlink()
             except ValueError:
                 continue
+
+
+def _lines(folder: Path, von: datetime, bis: datetime):
+    """Zeilen der Tagesdateien rund um den Zeitraum, in Dateireihenfolge."""
+    day = dt_util.as_local(von).date() - timedelta(days=1)
+    last = dt_util.as_local(bis).date() + timedelta(days=1)
+    while day <= last:
+        path = folder / f"{day.isoformat()}.jsonl.gz"
+        day += timedelta(days=1)
+        if not path.exists():
+            continue
+        try:
+            with gzip.open(path, "rt", encoding="utf-8") as f:
+                for text in f:
+                    if text.strip():
+                        yield text
+        except (OSError, EOFError) as err:
+            # Eine angefangene Datei (Absturz beim Schreiben) liest bis zum Fehler.
+            LOGGER.debug("Aufnahme %s nur teilweise lesbar: %s", path.name, err)
+
+
+def _auswerten(
+    folder: Path, von: datetime, bis: datetime, zonen: dict[str, Shape]
+) -> dict[str, Any]:
+    aus = Auswertung(zonen, von.timestamp(), bis.timestamp())
+    # Zeilen beginnen mit der Zeit in UTC (gleich lang, Text vergleichbar):
+    # alles deutlich vor dem Beginn überspringen, ohne es zu lesen.
+    vorlauf = dt_util.as_utc(von) - timedelta(seconds=MAX_RUHE_S)
+    lo = vorlauf.isoformat(timespec="milliseconds")
+    for text in _lines(folder, von, bis):
+        if text.startswith(_ZEIT) and text[len(_ZEIT) : len(_ZEIT) + len(lo)] < lo:
+            continue
+        try:
+            line = json.loads(text)
+        except ValueError:
+            continue
+        aus.add(line)
+    return aus.ergebnis(min(bis.timestamp(), dt_util.utcnow().timestamp()))
 
 
 def _read(folder: Path, von: datetime, bis: datetime) -> list[dict[str, Any]]:

@@ -4,6 +4,25 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.8.0] - 2026-11-26
+
+### Hinzugefügt
+
+- Reiter „Auswertung“ im Panel (nur Admins): Wer war wann wo, für die
+  letzten 1, 3, 8, 12 oder 24 Stunden. Gerechnet aus der eigenen Aufnahme
+  des Raums, darum auch nach einem Neustart vollständig.
+  - Feine Bewegungskarte (5-cm-Zellen, weiche Flecken statt Kästchen):
+    man sieht, wo genau im Bett jemand lag.
+  - Je Zone: wie lange dort jemand war, welche Figuren, Zeitleiste.
+  - Je Figur (Spur vom Auftauchen bis zum Verschwinden, Hund erkannt):
+    Dauer, von bis, Zonen, Zeitleiste; antippen zeigt nur diese Figur.
+  - WebSocket `raumzonen/auswertung/get`; ein ganzer Tag ist in wenigen
+    Sekunden gerechnet, das Ergebnis wird eine Minute lang wiederverwendet.
+
+### Geändert
+
+- Die Bewegungskarte unter „Ebenen“ zeigt ebenfalls weiche Flecken.
+
 ## [0.7.0] - 2026-11-26
 
 ### Hinzugefügt

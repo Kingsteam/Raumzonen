@@ -27,11 +27,14 @@ Vertrag ``raumzonen/1`` (``vertrag.py``, ``api.py``):
   ``geladen`` (alle).
 * ``raumzonen/aufnahme/get``: eigene Aufnahme eines Raums, höchstens 24 h am
   Stück. Nur Admins.
+* ``raumzonen/auswertung/get``: aus der Aufnahme der letzten Stunden: wer war
+  wann in welcher Zone, feine Bewegungskarte je Figur. Nur Admins.
 """
 
 from __future__ import annotations
 
 import copy
+from datetime import timedelta
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components import websocket_api
@@ -70,6 +73,9 @@ if TYPE_CHECKING:
 
 LIVE_MIN_INTERVAL_S = 0.2
 HEAT_MINUTES = (15, 60, 24 * 60)
+AUSWERTUNG_STUNDEN = (1, 3, 8, 12, 24)
+# Gleiche Frage innerhalb dieser Zeit: Ergebnis wiederverwenden.
+AUSWERTUNG_CACHE_S = 60.0
 
 
 def _entry(hass: HomeAssistant) -> RaumzonenConfigEntry | None:
@@ -99,6 +105,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_v1_snapshot,
         ws_v1_subscribe,
         ws_aufnahme_get,
+        ws_auswertung_get,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -487,3 +494,42 @@ async def ws_aufnahme_get(
         connection.send_error(msg["id"], "invalid", str(err))
         return
     connection.send_result(msg["id"], {"zeilen": zeilen})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/auswertung/get",
+        vol.Required("raum_id"): str,
+        vol.Required("stunden"): vol.In(AUSWERTUNG_STUNDEN),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_auswertung_get(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Wer war wann wo, aus der eigenen Aufnahme (nur Admins)."""
+    controller = _controller(hass, msg["raum_id"])
+    if controller is None:
+        connection.send_error(msg["id"], "not_found", "Raum nicht gefunden")
+        return
+    if controller.aufnahme is None:
+        connection.send_error(msg["id"], "off", "Aufnahme ist für diesen Raum aus")
+        return
+    stunden = msg["stunden"]
+    now = dt_util.utcnow()
+    cached = controller.auswertung_cache.get(stunden)
+    if cached and (now - cached[0]).total_seconds() < AUSWERTUNG_CACHE_S:
+        connection.send_result(msg["id"], cached[1])
+        return
+    zonen = {z: zone.shape for z, zone in controller.room.zones.items()}
+    try:
+        result = await controller.aufnahme.async_auswerten(
+            now - timedelta(hours=stunden), now, zonen
+        )
+    except (OSError, ValueError) as err:
+        connection.send_error(msg["id"], "failed", str(err))
+        return
+    result["stunden"] = stunden
+    controller.auswertung_cache[stunden] = (now, result)
+    connection.send_result(msg["id"], result)

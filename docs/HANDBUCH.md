@@ -58,6 +58,24 @@ Raum gehen; rot wird, wo der Sensor jemanden gesehen hat.
 
 ![Sensor und Raum](bilder/02-sensor.png)
 
+### Auswertung: wer war wann wo
+
+Reiter **Auswertung** (nur für Admins). Oben den Zeitraum wählen: die
+letzten 1, 3, 8, 12 oder 24 Stunden. Gerechnet wird aus der eigenen
+Aufnahme des Raums (Tab „Sensor und Raum“ → Aufnahme), darum fehlt auch nach
+einem Neustart nichts.
+
+* **Karte:** weiche Flecken in 5-cm-Auflösung, je dunkler, desto länger war
+  dort jemand. So sieht man z. B., wo genau im Bett jemand lag.
+* **Zonen:** wie lange dort jemand war, welche Figuren, und eine Zeitleiste.
+* **Figuren:** jede Spur vom Auftauchen bis zum Verschwinden, mit Dauer, von
+  bis, Zonen und Zeitleiste. „Hund?“ heißt: als Hund erkannt. Eine Figur
+  antippen zeigt nur sie auf der Karte; noch einmal antippen zeigt wieder
+  alle.
+
+Welche Person eine Figur ist, weiß Raumzonen noch nicht. Wer aufsteht und
+wiederkommt, kann eine neue Nummer bekommen.
+
 ### Zonen zeichnen
 
 | Werkzeug (links) | So geht's |

@@ -65,14 +65,17 @@ import {
   type HausLage,
 } from "./geometry";
 import { styles } from "./styles";
-import type { Form, Hass, Heat, Live, Oeffnung, Point, Raum, Regel, RoomsResult, Zone } from "./types";
+import { dauer, dichte, pixel, summe, type HeatCell } from "./heat";
+import type { Auswertung, AuswertungFigur, Form, Hass, Heat, Live, Oeffnung, Point, Raum, Regel, RoomsResult, Zone } from "./types";
 
 const DOMAIN = "raumzonen";
 const SNAP_CM = 5;
 const HIT_PX = 12;
 
 type Tool = "auswahl" | "rechteck" | "vieleck" | "zellen" | "umriss" | "oeffnung";
-type Tab = "zonen" | "raum";
+type Tab = "zonen" | "raum" | "auswertung";
+
+const AUSWERTUNG_STUNDEN = [1, 3, 8, 12, 24];
 /** Ein Raum oder das ganze Haus. */
 type Page = "raum" | "haus";
 
@@ -164,6 +167,12 @@ export class RaumzonenPanel extends LitElement {
   @state() private live?: Live;
   @state() private heat?: Heat;
   @state() private heatMin = 0;
+  @state() private ausw?: Auswertung;
+  @state() private auswStunden = 8;
+  @state() private auswLaedt = false;
+  @state() private auswFehler = "";
+  /** Gewählte Figur der Auswertung ("" = alle). */
+  @state() private auswFigur = "";
   @state() private layersOpen = false;
   @state() private layers = { figuren: true, spuren: true, ziele: false, abdeckung: true };
   @state() private dirty = false;
@@ -188,6 +197,8 @@ export class RaumzonenPanel extends LitElement {
   private unsubLive?: () => Promise<void>;
   private liveRoom = "";
   private heatTimer?: number;
+  private auswTimer?: number;
+  private heatBildCache?: { key: string; href: string; x0: number; y0: number; w: number; h: number };
   private toastTimer?: number;
   private resize?: ResizeObserver;
   private viewTouched = false;
@@ -264,6 +275,11 @@ export class RaumzonenPanel extends LitElement {
     }
     void this.subscribeLive();
     void this.loadHeat();
+    if (changed) {
+      this.ausw = undefined;
+      this.auswFigur = "";
+      if (this.tab === "auswertung") void this.loadAuswertung();
+    }
   }
 
   private async subscribeLive(): Promise<void> {
@@ -291,6 +307,36 @@ export class RaumzonenPanel extends LitElement {
       } catch {
         // Verbindung schon zu (z. B. nach dem Neuladen der Integration).
       }
+    }
+  }
+
+  private openTab(tab: Tab): void {
+    this.tab = tab;
+    window.clearInterval(this.auswTimer);
+    if (tab !== "auswertung") return;
+    void this.loadAuswertung();
+    // Solange die Auswertung offen ist, jede Minute nachziehen.
+    this.auswTimer = window.setInterval(() => void this.loadAuswertung(), 60_000);
+  }
+
+  private async loadAuswertung(): Promise<void> {
+    if (!this._hass || !this.raumId || !this.kannAendern) return;
+    const raumId = this.raumId;
+    const stunden = this.auswStunden;
+    this.auswLaedt = true;
+    try {
+      const result = await this._hass.callWS<Auswertung>({ type: `${DOMAIN}/auswertung/get`, raum_id: raumId, stunden });
+      if (raumId !== this.raumId || stunden !== this.auswStunden) return;
+      this.ausw = result;
+      this.auswFehler = "";
+      if (this.auswFigur && !result.figuren.some((f) => f.figur === this.auswFigur)) this.auswFigur = "";
+    } catch (err) {
+      if (raumId !== this.raumId) return;
+      const e = err as { code?: string; message?: string };
+      this.ausw = undefined;
+      this.auswFehler = e.code === "off" ? "off" : `Auswertung fehlgeschlagen: ${e.message ?? err}`;
+    } finally {
+      this.auswLaedt = false;
     }
   }
 
@@ -491,12 +537,14 @@ export class RaumzonenPanel extends LitElement {
     window.addEventListener("keydown", this.onKey);
     if (this._hass && this.page === "haus") void this.subscribeHaus();
     else if (this._hass && this.raumId) void this.subscribeLive();
+    if (this._hass && this.tab === "auswertung") this.openTab("auswertung");
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
     window.removeEventListener("keydown", this.onKey);
     window.clearInterval(this.heatTimer);
+    window.clearInterval(this.auswTimer);
     this.resize?.disconnect();
     this.resize = undefined;
     void this.unsubscribeLive();
@@ -643,7 +691,7 @@ export class RaumzonenPanel extends LitElement {
     if (index >= 0) this.selOpening = -1;
     if (index >= 0) {
       this.sensorOpen = false;
-      this.tab = "zonen";
+      this.openTab("zonen");
     }
   }
 
@@ -861,7 +909,7 @@ export class RaumzonenPanel extends LitElement {
         this.selected = -1;
         this.selOpening = oi;
         this.sensorOpen = false;
-        this.tab = "raum";
+        this.openTab("raum");
         return;
       }
     }
@@ -967,7 +1015,7 @@ export class RaumzonenPanel extends LitElement {
   private openSensor(): void {
     this.selected = -1;
     this.sensorOpen = true;
-    this.tab = "raum";
+    this.openTab("raum");
   }
 
   private onPointerMove(event: PointerEvent): void {
@@ -1078,7 +1126,7 @@ export class RaumzonenPanel extends LitElement {
         this.oeffnungen = [...this.oeffnungen, o];
         this.selOpening = this.oeffnungen.length - 1;
         this.selected = -1;
-        this.tab = "raum";
+        this.openTab("raum");
         this.dirty = true;
         this.tool = "auswahl";
       } else {
@@ -1196,15 +1244,44 @@ export class RaumzonenPanel extends LitElement {
     return svg`<g class="plus"><circle cx=${x} cy=${y} r="6" /><path d="M ${x - 3} ${y} H ${x + 3} M ${x} ${y - 3} V ${y + 3}" /></g>`;
   }
 
+  /** Zellen, die gerade als Bewegungskarte gezeigt werden. */
+  private heatQuelle(): { key: string; zellen: HeatCell[]; zelle: number; sigma: number } | null {
+    if (this.tab === "auswertung" && this.ausw) {
+      const a = this.ausw;
+      const figs = this.auswFigur ? a.figuren.filter((f) => f.figur === this.auswFigur) : a.figuren;
+      // Feine Zellen (5 cm), weich wie die Ungenauigkeit des Sensors.
+      return { key: `a|${a.bis}|${a.stunden}|${this.auswFigur}`, zellen: summe(figs.map((f) => f.zellen)), zelle: a.zelle_cm, sigma: 8 };
+    }
+    if (this.heat?.zellen.length) {
+      const h = this.heat;
+      return { key: `h|${h.minuten}|${h.zellen.length}|${h.zellen.reduce((s, c) => s + c[2], 0)}`, zellen: h.zellen, zelle: h.zelle_cm, sigma: h.zelle_cm * 0.75 };
+    }
+    return null;
+  }
+
+  private heatRgb(): [number, number, number] {
+    const v = getComputedStyle(this).getPropertyValue("--rz-heat").split(",").map((x) => Number(x.trim()));
+    return v.length === 3 && v.every((n) => Number.isFinite(n)) ? [v[0], v[1], v[2]] : [255, 87, 34];
+  }
+
   private renderHeat(): TemplateResult | typeof nothing {
-    if (!this.heat?.zellen.length) return nothing;
-    const max = Math.max(...this.heat.zellen.map((c) => c[2]));
-    const s = this.heat.zelle_cm;
-    return svg`<g>${this.heat.zellen.map(([i, j, sec]) => {
-      const [sx, sy] = this.toScreen([i * s, (j + 1) * s]);
-      const a = Math.min(0.8, 0.12 + Math.log1p(sec) / Math.log1p(max));
-      return svg`<rect x=${sx} y=${sy} width=${this.px(s) + 0.5} height=${this.px(s) + 0.5} fill="rgba(var(--rz-heat), ${a.toFixed(2)})" />`;
-    })}</g>`;
+    const q = this.heatQuelle();
+    if (!q || !q.zellen.length) return nothing;
+    let bild = this.heatBildCache;
+    if (bild?.key !== q.key) {
+      const d = dichte(q.zellen, q.zelle, q.sigma);
+      if (!d) return nothing;
+      const canvas = document.createElement("canvas");
+      canvas.width = d.nx;
+      canvas.height = d.ny;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return nothing;
+      ctx.putImageData(new ImageData(pixel(d, this.heatRgb()), d.nx, d.ny), 0, 0);
+      bild = { key: q.key, href: canvas.toDataURL(), x0: d.x0, y0: d.y0, w: d.nx * d.zelle, h: d.ny * d.zelle };
+      this.heatBildCache = bild;
+    }
+    const [sx, sy] = this.toScreen([bild.x0, bild.y0 + bild.h]);
+    return svg`<image class="heat" href=${bild.href} x=${sx} y=${sy} width=${this.px(bild.w)} height=${this.px(bild.h)} preserveAspectRatio="none" />`;
   }
 
   private renderCoverage(): TemplateResult | typeof nothing {
@@ -1463,7 +1540,7 @@ export class RaumzonenPanel extends LitElement {
       ${toggle("abdeckung", "Abdeckung des Sensors")} ${toggle("ziele", "Rohpunkte des Sensors")}
       <div class="label-text">Bewegungskarte: wo war jemand?</div>
       <div class="levels">${heat(0, "aus")}${heat(15, "15 min")}${heat(60, "1 h")}${heat(1440, "24 h")}</div>
-      <p class="hint small">Zählt seit dem letzten Neustart von Home Assistant.</p>
+      <p class="hint small">Zählt seit dem letzten Neustart von Home Assistant.${this.kannAendern ? " Länger zurück und feiner: Reiter „Auswertung“." : ""}</p>
     </div>`;
   }
 
@@ -1933,14 +2010,113 @@ export class RaumzonenPanel extends LitElement {
     </aside>`;
   }
 
+  private uhr(ts: number): string {
+    return new Date(ts * 1000).toLocaleTimeString("de-AT", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  /** Zeitleiste: wann im gewählten Zeitraum jemand da war. */
+  private renderLeiste(abschnitte: [number, number][], farbe: string): TemplateResult {
+    const a = this.ausw!;
+    const span = Math.max(1, a.bis - a.von);
+    return html`<svg class="leiste" viewBox="0 0 1000 10" preserveAspectRatio="none" aria-hidden="true">
+      <rect class="leiste-grund" x="0" y="0" width="1000" height="10" rx="2" />
+      ${abschnitte.map(([t0, t1]) => {
+        const x = ((t0 - a.von) / span) * 1000;
+        const w = Math.max(3, ((t1 - t0) / span) * 1000);
+        return svg`<rect x=${x.toFixed(1)} y="0" width=${w.toFixed(1)} height="10" fill=${farbe} />`;
+      })}
+    </svg>`;
+  }
+
+  private figurName(f: AuswertungFigur): string {
+    if (f.figur === "kurz") return "Kurze Spuren";
+    return `${f.hund ? "Hund?" : "Figur"} ${f.nummer}`;
+  }
+
+  private renderAuswertungTab(): TemplateResult {
+    const a = this.ausw;
+    const zoneName = (id: string) => this.zones.find((z) => z.id === id)?.name ?? id;
+    const zoneFarbe = (id: string) => {
+      const z = this.zones.find((zz) => zz.id === id);
+      return z ? roleColor(rolleOf(z)) : "var(--muted)";
+    };
+    const stunden = html`<div class="levels" role="group" aria-label="Zeitraum">
+      ${AUSWERTUNG_STUNDEN.map(
+        (h) => html`<button
+          class=${this.auswStunden === h ? "active" : ""}
+          @click=${() => {
+            this.auswStunden = h;
+            void this.loadAuswertung();
+          }}
+        >
+          ${h} h
+        </button>`,
+      )}
+    </div>`;
+    const kopf = html`<h3>Wer war wann wo?</h3>
+      <div class="label-text">Die letzten</div>
+      ${stunden}`;
+    if (this.auswFehler === "off") {
+      return html`${kopf}<p class="note">Die Aufnahme ist für diesen Raum aus. Einschalten unter <b>Sensor und Raum → Aufnahme</b>; ausgewertet wird ab dann.</p>`;
+    }
+    if (this.auswFehler) return html`${kopf}<p class="note warn">${this.auswFehler}</p>`;
+    if (!a) return html`${kopf}<p class="hint">${this.auswLaedt ? "Rechnet …" : "Noch keine Daten."}</p>`;
+    const zonen = a.zonen.filter((z) => z.sekunden > 0).sort((x, y) => y.belegt_s - x.belegt_s);
+    const achse = html`<div class="achse"><span>${this.uhr(a.von)}</span><span>${this.uhr(a.bis)}</span></div>`;
+    return html`${kopf}
+      <p class="hint small">${this.auswLaedt ? "Rechnet …" : `${this.uhr(a.von)} bis ${this.uhr(a.bis)}. Die Karte zeigt, wo jemand war: je dunkler, desto länger. Bei den Zonen steht, wie lange dort jemand war.`}</p>
+      <h3>Zonen</h3>
+      ${zonen.length
+        ? html`<ul class="list ausw">
+            ${zonen.map(
+              (z) => html`<li class="item" style="--zone:${zoneFarbe(z.zone_id)}">
+                <div class="row static">
+                  <span class="dot"></span>
+                  <span class="name">${zoneName(z.zone_id)}<small>${z.figuren.length ? z.figuren.map((k) => this.figurName(a.figuren.find((f) => f.figur === k)!)).join(", ") : "nur kurz"}</small></span>
+                  <span class="dauer" title=${z.sekunden > z.belegt_s + 60 ? `Alle Figuren zusammen: ${dauer(z.sekunden)}` : ""}>${dauer(z.belegt_s)}</span>
+                </div>
+                ${this.renderLeiste(z.abschnitte, "var(--zone)")}
+              </li>`,
+            )}
+          </ul>
+          ${achse}`
+        : html`<p class="hint">In diesem Zeitraum war niemand in einer Zone.</p>`}
+      <h3>Figuren</h3>
+      ${a.figuren.length
+        ? html`<ul class="list ausw">
+            ${a.figuren.map((f) => {
+              const on = this.auswFigur === f.figur;
+              const farbe = f.hund ? "var(--rz-tier)" : "var(--rz-person)";
+              const haupt = Object.keys(f.zonen).slice(0, 2).map(zoneName).join(", ");
+              return html`<li class="item ${on ? "open" : ""}" style="--zone:${farbe}">
+                <div class="row" role="button" aria-pressed=${on ? "true" : "false"} title="Nur diese Figur auf der Karte zeigen" @click=${() => (this.auswFigur = on ? "" : f.figur)}>
+                  <span class="dot"></span>
+                  <span class="name">${this.figurName(f)}<small>${this.uhr(f.erst)} bis ${this.uhr(f.zuletzt)}${haupt ? ` · ${haupt}` : ""}</small></span>
+                  <span class="dauer">${dauer(f.sekunden)}</span>
+                </div>
+                ${this.renderLeiste(f.abschnitte, "var(--zone)")}
+              </li>`;
+            })}
+          </ul>
+          ${achse}
+          <p class="hint small">
+            Antippen zeigt nur diese Figur auf der Karte. Eine Figur ist eine Spur vom Auftauchen bis zum Verschwinden. Wer aufsteht und
+            später wiederkommt, kann eine neue Nummer bekommen. Welche Person es ist, weiß Raumzonen noch nicht.
+          </p>`
+        : html`<p class="hint">Keine Figuren in diesem Zeitraum.</p>`}`;
+  }
+
   private renderSide(): TemplateResult {
     if (this.page === "haus") return this.renderHausSide();
     return html`<aside class="side">
       <div class="tabs" role="tablist">
-        <button class=${this.tab === "zonen" ? "active" : ""} role="tab" @click=${() => (this.tab = "zonen")}><ha-icon icon="mdi:shape-outline"></ha-icon>Zonen</button>
-        <button class=${this.tab === "raum" ? "active" : ""} role="tab" @click=${() => (this.tab = "raum")}><ha-icon icon="mdi:floor-plan"></ha-icon>Sensor und Raum</button>
+        <button class=${this.tab === "zonen" ? "active" : ""} role="tab" @click=${() => this.openTab("zonen")}><ha-icon icon="mdi:shape-outline"></ha-icon>Zonen</button>
+        <button class=${this.tab === "raum" ? "active" : ""} role="tab" @click=${() => this.openTab("raum")}><ha-icon icon="mdi:floor-plan"></ha-icon>Sensor und Raum</button>
+        ${this.kannAendern
+          ? html`<button class=${this.tab === "auswertung" ? "active" : ""} role="tab" @click=${() => this.openTab("auswertung")}><ha-icon icon="mdi:chart-bubble"></ha-icon>Auswertung</button>`
+          : nothing}
       </div>
-      <div class="side-body">${this.tab === "zonen" ? this.renderZonesTab() : this.renderRoomTab()}</div>
+      <div class="side-body">${this.tab === "zonen" ? this.renderZonesTab() : this.tab === "raum" ? this.renderRoomTab() : this.renderAuswertungTab()}</div>
     </aside>`;
   }
 

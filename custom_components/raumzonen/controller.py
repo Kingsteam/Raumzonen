@@ -80,6 +80,8 @@ class RoomController:
         self.first_frame_t: float | None = None
         self.unvollstaendig: bool | None = None
         self.last_raw: dict[int, dict[str, Any]] = {}
+        # Auswertung der Aufnahme (WebSocket), kurz zwischengespeichert.
+        self.auswertung_cache: dict[int, tuple[datetime, dict[str, Any]]] = {}
         self.aufnahme: Aufnahme | None = (
             Aufnahme(hass, raum.id, raum.aufnahme_tage) if raum.aufnahme else None
         )

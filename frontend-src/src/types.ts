@@ -110,6 +110,37 @@ export interface Heat {
   zellen: [number, number, number][];
 }
 
+/** Auswertung der Aufnahme (WebSocket ``raumzonen/auswertung/get``, nur Admins). */
+export interface AuswertungFigur {
+  figur: string;
+  nummer: number;
+  hund: boolean;
+  sekunden: number;
+  erst: number;
+  zuletzt: number;
+  zonen: Record<string, number>;
+  abschnitte: [number, number][];
+  zellen: [number, number, number][];
+}
+
+export interface AuswertungZone {
+  zone_id: string;
+  sekunden: number;
+  belegt_s: number;
+  abschnitte: [number, number][];
+  figuren: string[];
+}
+
+export interface Auswertung {
+  von: number;
+  bis: number;
+  stunden: number;
+  zelle_cm: number;
+  zeilen: number;
+  zonen: AuswertungZone[];
+  figuren: AuswertungFigur[];
+}
+
 export interface Hass {
   callWS<T>(msg: Record<string, unknown>): Promise<T>;
   connection: {

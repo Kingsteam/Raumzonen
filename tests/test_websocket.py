@@ -88,6 +88,7 @@ async def test_non_admins_read_only(
             "von": "2000-01-01T00:00:00+00:00",
             "bis": "2000-01-01T01:00:00+00:00",
         },
+        {"type": f"{DOMAIN}/auswertung/get", "raum_id": "schlafzimmer", "stunden": 1},
     ):
         await client.send_json_auto_id(message)
         msg = await client.receive_json()
