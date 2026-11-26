@@ -72,7 +72,7 @@ import { styles } from "./styles";
 import { dauer, dichte, flecken, pixel, summe, type HeatCell } from "./heat";
 import { fehlerText } from "./fehler";
 import { hatTuerZone, naechsteTuer, oeffnungMitte, oeffnungName, summeDauer, tuerenVon, tuerZone, vereinigen, wechsel, type Tuer } from "./haus";
-import { einmessen, stelle, stellenProblem, type Einmessung } from "./einmessen";
+import { ankerStellen, besteDrei, einmessen, stelle, stellenProblem, type Anker, type Einmessung } from "./einmessen";
 import { bbox, erkenneGrundriss, jpegsAusPdf, uebernehmen, type Grundriss } from "./grundriss";
 import type { Auswertung, AuswertungFigur, Form, Hass, Heat, Kandidaten, MelderLage, Plan, Live, Oeffnung, Point, Raum, Regel, RoomsResult, Zone } from "./types";
 
@@ -104,6 +104,8 @@ interface Wizard {
   aktiv: number;
   messung?: { bis: number; punkte: Point[]; hinweis: string };
   tippen?: boolean;
+  /** Einmessen: Namen der gewählten Stellen („Ecke 2“, „vor Tür zum Flur“). */
+  namen?: (string | null)[];
   ergebnis?: Einmessung;
   fehler?: string;
 }
@@ -248,6 +250,9 @@ export class RaumzonenPanel extends LitElement {
   @state() private auswFehler = "";
   @state() private kandidaten?: Kandidaten;
   @state() private wiz: Wizard | null = null;
+  /** Assistent in der Handy-Ansicht (großer Plan, ein Schritt unten). */
+  @state() private handyVoll = false;
+  private startParam = new URLSearchParams(window.location.search).get("assistent");
   /** Grundriss übernehmen (null = zu). */
   @state() private plan: {
     bild: string;
@@ -332,6 +337,7 @@ export class RaumzonenPanel extends LitElement {
   private heatBildCache?: { key: string; href: string; x0: number; y0: number; w: number; h: number };
   private toastTimer?: number;
   private resize?: ResizeObserver;
+  private beobachtet?: Element;
   private viewTouched = false;
   private sensorAnchor: { sensor: SensorLage; zones: Zone[] } | null = null;
   private hausUnsubs: (() => Promise<void>)[] = [];
@@ -355,6 +361,13 @@ export class RaumzonenPanel extends LitElement {
       this.data = data;
       void this.ladePlanBilder();
       this.error = "";
+      // Link „Am Handy öffnen“: /raumzonen?assistent=<raum>
+      if (this.startParam && data.raeume.some((r) => r.id === this.startParam)) {
+        this.raumId = this.startParam;
+        this.page = "raum";
+        this.handyVoll = true;
+        this.startParam = null;
+      }
       const keep = data.raeume.some((r) => r.id === this.raumId);
       if (this.page === "haus" && data.raeume.length) {
         this.raumId = keep ? this.raumId : data.raeume[0].id;
@@ -757,19 +770,61 @@ export class RaumzonenPanel extends LitElement {
     } else {
       // Was der Sensor jetzt sieht, in seinen eigenen Koordinaten.
       const sensor = w.sensor.map((p, k) => (k === i ? roomToSensor(punkt, gespeichert) : p));
-      this.wiz = { ...w, sensor, messung: undefined, tippen: w.modus === "einmessen" };
-      if (w.modus === "umsetzen") this.wizWeiter();
+      this.wiz = { ...w, sensor, messung: undefined };
+      this.wizWeiter();
     }
     this.wizSpeichern();
   }
 
-  /** Einmessen: die Stelle im Plan angetippt. */
-  private wizAngetippt(p: Point): void {
+  /** Handy-Ansicht des Assistenten: großer Plan, ein Schritt unten. */
+  private get handyAktiv(): boolean {
+    return this.page === "raum" && this.kannAendern && !this.istMelder && (this.handyVoll || (this.narrow && !!this.wiz));
+  }
+
+  /** Link zum Assistenten dieses Raums (für die App am Handy). */
+  private async handyLink(): Promise<void> {
+    const url = `${window.location.origin}/raumzonen?assistent=${encodeURIComponent(this.raumId)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      this.showToast("Link kopiert. Am Handy öffnen (z. B. als Nachricht an dich schicken).");
+    } catch {
+      window.prompt("Diesen Link am Handy öffnen:", url);
+    }
+  }
+
+  /** Feste Stellen zum Hinstellen: Ecken und vor den Türen. */
+  private wizAnker(): Anker[] {
+    const tueren = this.oeffnungen
+      .map((o, i) => ({ punkt: oeffnungMitte(this.umriss, o), name: oeffnungName(o, i) }))
+      .filter((t): t is { punkt: Point; name: string } => !!t.punkt);
+    return ankerStellen(this.umriss, tueren);
+  }
+
+  /** Einmessen: wählt gerade jemand die nächste Stelle (vor dem Messen)? */
+  private get wizWaehlt(): boolean {
+    const w = this.wiz;
+    return !!w && w.modus === "einmessen" && w.schritt === "nachher" && !w.messung && this.page === "raum";
+  }
+
+  /** Einmessen: Stelle gewählt (Anker antippen rastet ein, sonst der angetippte Punkt). */
+  private wizStelle(p: Point, name?: string): void {
     const w = this.wiz;
     if (!w) return;
-    const raum = w.raum.map((q, k) => (k === w.aktiv ? p : q));
-    this.wiz = { ...w, raum, tippen: false };
-    this.wizWeiter();
+    let punkt = p;
+    let n = name ?? "die angetippte Stelle";
+    if (!name) {
+      const [sx, sy] = this.toScreen(p);
+      let best = 40;
+      for (const a of this.wizAnker()) {
+        const [ax, ay] = this.toScreen(a.punkt);
+        const d = Math.hypot(ax - sx, ay - sy);
+        if (d < best) [best, punkt, n] = [d, a.punkt, a.name];
+      }
+    }
+    const raum = w.raum.map((q, k) => (k === w.aktiv ? punkt : q));
+    const namen = [...(w.namen ?? [null, null, null])];
+    namen[w.aktiv] = n;
+    this.wiz = { ...w, raum, namen, fehler: undefined };
   }
 
   private wizWeiter(): void {
@@ -1252,7 +1307,14 @@ export class RaumzonenPanel extends LitElement {
   protected updated(changed: PropertyValues): void {
     super.updated(changed);
     const stage = this.renderRoot.querySelector(".stage");
+    // Beim Wechsel in die Handy-Ansicht entsteht ein neues Element: neu beobachten.
+    if (stage && this.resize && stage !== this.beobachtet) {
+      this.resize.disconnect();
+      this.resize = undefined;
+      this.viewTouched = false;
+    }
     if (stage && !this.resize) {
+      this.beobachtet = stage;
       this.resize = new ResizeObserver((entries) => {
         const box = entries[0].contentRect;
         if (!box.width || !box.height) return;
@@ -1494,8 +1556,13 @@ export class RaumzonenPanel extends LitElement {
     const p = this.snapped(raw);
     svgEl.setPointerCapture(event.pointerId);
 
-    if (this.wiz?.tippen && this.page === "raum") {
-      this.wizAngetippt(p);
+    if (this.wizWaehlt) {
+      this.wizStelle(raw);
+      return;
+    }
+    if (this.handyAktiv) {
+      // Handy-Ansicht: nur verschieben, nichts versehentlich ändern.
+      this.drag = { kind: "pan", start: [event.clientX, event.clientY], view: { cx: this.view.cx, cy: this.view.cy } };
       return;
     }
     if (this.page === "haus" && this.planEdit && this.planMessen && this.planMessen.punkte.length < 2) {
@@ -2180,6 +2247,16 @@ export class RaumzonenPanel extends LitElement {
       const on = i === w.aktiv && w.schritt === "nachher";
       return svg`<g class="wiz-marke ${on ? "aktiv" : ""}"><circle cx=${x} cy=${y} r="14" /><text x=${x} y=${y + 5}>${i + 1}</text></g>`;
     });
+    let anker: TemplateResult | typeof nothing = nothing;
+    if (this.wizWaehlt) {
+      const alle = this.wizAnker();
+      const vorschlag = new Set(besteDrei(alle));
+      anker = svg`${alle.map((a, i) => {
+        const [x, y] = this.toScreen(a.punkt);
+        const belegt = w.raum.some((q) => q && q[0] === a.punkt[0] && q[1] === a.punkt[1]);
+        return belegt ? nothing : svg`<g class="wiz-anker ${vorschlag.has(i) ? "vorschlag" : ""}"><circle cx=${x} cy=${y} r="16" /><text x=${x} y=${y + 5}>${String.fromCharCode(65 + i)}</text></g>`;
+      })}`;
+    }
     const e = w.ergebnis;
     let neu: TemplateResult | typeof nothing = nothing;
     if (e) {
@@ -2188,7 +2265,7 @@ export class RaumzonenPanel extends LitElement {
       const [dx, dy] = sensorDirection(e.winkel);
       neu = svg`<g class="wiz-neu"><circle cx=${x} cy=${y} r="9" /><line x1=${x} y1=${y} x2=${x + dx * r} y2=${y - dy * r} /></g>`;
     }
-    return svg`${marken}${neu}`;
+    return svg`${anker}${marken}${neu}`;
   }
 
   /** Lage eines Grundrisses (mit ungespeicherten Änderungen). */
@@ -3250,7 +3327,14 @@ export class RaumzonenPanel extends LitElement {
         <div class="actions">
           <button class="text small" @click=${() => this.wizStart("umsetzen")}><ha-icon icon="mdi:map-marker-path"></ha-icon>Vor dem Umhängen starten</button>
           <button class="text small" @click=${() => this.wizStart("einmessen")}><ha-icon icon="mdi:crosshairs-gps"></ha-icon>Sensor hängt schon: einmessen</button>
-        </div>`;
+        </div>
+        ${this.handyVoll
+          ? nothing
+          : html`<p class="hint small">Am besten mit dem Handy im Raum: in der Home-Assistant-App öffnen, dann kommt eine eigene Ansicht mit großem Plan.</p>
+              <div class="actions">
+                <button class="text small" @click=${() => void this.handyLink()}><ha-icon icon="mdi:cellphone-link"></ha-icon>Link fürs Handy kopieren</button>
+                <button class="text small" @click=${() => (this.handyVoll = true)}><ha-icon icon="mdi:fullscreen"></ha-icon>Große Ansicht</button>
+              </div>`}`;
     }
     const nr = w.aktiv + 1;
     const m = w.messung;
@@ -3275,12 +3359,26 @@ export class RaumzonenPanel extends LitElement {
     } else if (w.schritt === "umhaengen") {
       inhalt = html`<p class="hint small">Alle drei Stellen sind gemerkt. Jetzt den Sensor umhängen und neu ausrichten. Danach hier weiter.</p>
         <div class="actions"><span class="spacer"></span><button class="primary" @click=${() => (this.wiz = { ...w, schritt: "nachher", aktiv: 0 })}>Sensor hängt neu</button></div>`;
+    } else if (w.schritt === "nachher" && w.modus === "einmessen") {
+      const gewaehlt = w.raum[w.aktiv];
+      const alle = this.wizAnker();
+      const vorschlag = besteDrei(alle).filter((i) => !w.raum.some((q) => q && q[0] === alle[i].punkt[0] && q[1] === alle[i].punkt[1]));
+      inhalt = !gewaehlt
+        ? html`<p class="wiz-text">Wo stellst du dich für Stelle ${nr} hin? Tippe einen Kreis im Plan an oder wähle hier:</p>
+            ${punkte}
+            <div class="wiz-wahl">
+              ${(vorschlag.length ? vorschlag : alle.map((_, i) => i)).slice(0, 4).map(
+                (i) => html`<button class="text" @click=${() => this.wizStelle(alle[i].punkt, alle[i].name)}>
+                  <span class="wiz-buchstabe">${String.fromCharCode(65 + i)}</span>${alle[i].name}
+                </button>`,
+              )}
+            </div>
+            <p class="hint small">Am besten die hervorgehobenen Kreise: sie liegen weit auseinander. Du kannst auch irgendwo anders hintippen.</p>`
+        : html`<p class="wiz-text">Stell dich auf <b>Stelle ${nr}: ${w.namen?.[w.aktiv] ?? "die gewählte Stelle"}</b> (Kreis ${nr} im Plan), allein im Raum, und tippe auf „Messen“. Dann ${MESS_S} s ruhig stehen.</p>
+            ${punkte} ${messKnopf(`Stelle ${nr} messen`)}
+            ${m ? nothing : html`<div class="actions"><button class="text small" @click=${() => (this.wiz = { ...w, raum: w.raum.map((q, k) => (k === w.aktiv ? null : q)) })}>Andere Stelle wählen</button></div>`}`;
     } else if (w.schritt === "nachher") {
-      const tippen = w.modus === "einmessen" && w.tippen;
-      inhalt = tippen
-        ? html`<p class="note">Jetzt im Plan antippen, wo du bei Stelle ${nr} gestanden bist.</p>
-            ${punkte}`
-        : html`<p class="hint small">
+      inhalt = html`<p class="hint small">
               ${w.modus === "umsetzen"
                 ? html`Stell dich wieder auf Stelle ${nr} (im Plan markiert) und tippe auf „Messen“.`
                 : html`Allein im Raum: Stell dich an eine Stelle, die du im Plan gut findest (z. B. Bettecke, Türmitte), und tippe auf „Messen“.
@@ -4396,6 +4494,16 @@ export class RaumzonenPanel extends LitElement {
             hinzufügen</b> an. Danach erscheint er hier zum Einzeichnen.
           </p>
         </div>`;
+    }
+    if (this.handyAktiv) {
+      return html`${this.renderHeader()}
+        <div class="layout handy">${this.renderStage()}<div class="handy-sheet">${this.renderWizard()}
+          <div class="actions"><button class="text small" @click=${() => {
+            this.handyVoll = false;
+            if (!this.wiz) return;
+            this.wizEnde();
+          }}><ha-icon icon="mdi:close"></ha-icon>Assistent schließen</button></div></div></div>
+        ${this.toast ? html`<div class="toast" role="status">${this.toast}</div>` : nothing}`;
     }
     return html`${this.renderHeader()}
       <div class="layout">${this.renderStage()} ${this.renderSide()}</div>

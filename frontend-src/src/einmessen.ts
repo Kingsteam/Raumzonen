@@ -75,3 +75,79 @@ export function stelle(punkte: Point[]): { punkt: Point; streuung_cm: number } |
   const abst = punkte.map((q) => Math.hypot(q[0] - p[0], q[1] - p[1]));
   return { punkt: [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10], streuung_cm: Math.round(med(abst) * 10) / 10 };
 }
+
+export interface Anker {
+  punkt: Point;
+  name: string;
+}
+
+function drinnen([x, y]: Point, poly: Point[]): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i];
+    const [xj, yj] = poly[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+/**
+ * Stellen, an die man sich leicht genau hinstellt: jede Ecke (etwa 50 cm von
+ * beiden Wänden) und vor jeder Tür (50 cm im Raum). `tueren` sind Mitte der
+ * Tür in der Wand und ihr Name.
+ */
+export function ankerStellen(umriss: Point[], tueren: { punkt: Point; name: string }[] = [], abstand = 50): Anker[] {
+  const n = umriss.length;
+  if (n < 3) return [];
+  const out: Anker[] = [];
+  const einheit = ([x, y]: Point): Point => {
+    const l = Math.hypot(x, y) || 1;
+    return [x / l, y / l];
+  };
+  umriss.forEach((v, i) => {
+    const a = einheit([umriss[(i + n - 1) % n][0] - v[0], umriss[(i + n - 1) % n][1] - v[1]]);
+    const b = einheit([umriss[(i + 1) % n][0] - v[0], umriss[(i + 1) % n][1] - v[1]]);
+    let bis = einheit([a[0] + b[0], a[1] + b[1]]);
+    // Halber Winkel der Ecke: so weit entlang der Winkelhalbierenden, dass beide Wände `abstand` weg sind.
+    const sinHalb = Math.sqrt(Math.max(0.05, (1 - (a[0] * b[0] + a[1] * b[1])) / 2));
+    const d = Math.min(abstand / sinHalb, 3 * abstand);
+    let p: Point = [v[0] + bis[0] * d, v[1] + bis[1] * d];
+    if (!drinnen(p, umriss)) {
+      bis = [-bis[0], -bis[1]];
+      p = [v[0] + bis[0] * d, v[1] + bis[1] * d];
+    }
+    if (drinnen(p, umriss)) out.push({ punkt: [Math.round(p[0]), Math.round(p[1])], name: `Ecke ${i + 1}` });
+  });
+  for (const t of tueren) {
+    // Die Wand an dieser Stelle finden und senkrecht in den Raum gehen.
+    for (const [dx, dy] of [
+      [abstand, 0],
+      [-abstand, 0],
+      [0, abstand],
+      [0, -abstand],
+    ] as Point[]) {
+      const p: Point = [t.punkt[0] + dx, t.punkt[1] + dy];
+      if (drinnen(p, umriss) && !drinnen([t.punkt[0] - dx, t.punkt[1] - dy], umriss)) {
+        out.push({ punkt: [Math.round(p[0]), Math.round(p[1])], name: `vor ${t.name}` });
+        break;
+      }
+    }
+  }
+  return out;
+}
+
+/** Drei Stellen, die ein möglichst großes Dreieck bilden (für genaues Einmessen). */
+export function besteDrei(anker: Anker[]): number[] {
+  let best: number[] = [];
+  let bestF = 0;
+  for (let i = 0; i < anker.length; i++)
+    for (let j = i + 1; j < anker.length; j++)
+      for (let k = j + 1; k < anker.length; k++) {
+        const pts = [anker[i].punkt, anker[j].punkt, anker[k].punkt];
+        if (stellenProblem(pts)) continue;
+        const [a, b, c] = pts;
+        const f = Math.abs((b[0] - a[0]) * (c[1] - a[1]) - (c[0] - a[0]) * (b[1] - a[1]));
+        if (f > bestF) [best, bestF] = [[i, j, k], f];
+      }
+  return best;
+}

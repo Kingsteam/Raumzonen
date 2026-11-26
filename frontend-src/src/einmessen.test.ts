@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { einmessen, stelle, stellenProblem } from "./einmessen";
+import { ankerStellen, besteDrei, einmessen, stelle, stellenProblem } from "./einmessen";
 import { roomToSensor, sensorToRoom } from "./geometry";
 import type { Point } from "./types";
 
@@ -54,5 +54,28 @@ describe("stellen", () => {
     const s = stelle([[100, 100], [102, 99], [98, 101], [101, 100], [300, 300]])!;
     expect(s.punkt).toEqual([101, 100]);
     expect(s.streuung_cm).toBeLessThan(3);
+  });
+});
+
+describe("ankerStellen", () => {
+  it("Ecken und Türen eines Rechtecks, drei weit auseinander", () => {
+    const wand: Point[] = [
+      [0, 0],
+      [400, 0],
+      [400, 300],
+      [0, 300],
+    ];
+    const a = ankerStellen(wand, [{ punkt: [200, 0], name: "Tür" }]);
+    expect(a.map((x) => x.punkt)).toEqual([
+      [50, 50],
+      [350, 50],
+      [350, 250],
+      [50, 250],
+      [200, 50],
+    ]);
+    expect(a[4].name).toBe("vor Tür");
+    const drei = besteDrei(a);
+    expect(drei).toHaveLength(3);
+    expect(stellenProblem(drei.map((i) => a[i].punkt))).toBe("");
   });
 });

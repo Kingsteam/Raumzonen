@@ -17,6 +17,18 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 - „Tür-Zonen anlegen“ (Raum → Zonen, Radar-Räume): vor jede Tür in der Wand
   eine Zone mit der Rolle „Tür“, so breit wie die Tür, mit Name und Ziel der
   Tür.
+- Assistent „Sensor einmessen“ fürs Handy: eigene Ansicht mit großem Plan
+  oben und einem Schritt unten (große Knöpfe, ohne Werkzeuge, nichts lässt
+  sich versehentlich verschieben). Kommt von selbst auf schmalen Bildschirmen,
+  per „Große Ansicht“ oder über „Link fürs Handy kopieren“
+  (`/raumzonen?assistent=<raum>`).
+
+### Geändert
+
+- Einmessen: erst die Stelle wählen, dann hinstellen und messen. Raumzonen
+  schlägt feste Stellen vor (jede Ecke etwa 50 cm von den Wänden, vor jeder
+  Tür), drei weit auseinander sind hervorgehoben; Antippen in der Nähe rastet
+  auf die Stelle ein. Kein Zielen mehr auf einen Punkt nach dem Messen.
 
 ## [0.16.0] - 2026-11-26
 

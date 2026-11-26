@@ -103,6 +103,14 @@ Hausplan steht bei jeder Tür ohne Ziel ein Vorschlag („Nächste Tür: …“)
 „Türen automatisch verbinden“ übernimmt alle Vorschläge auf einmal. Danach
 „Speichern“. Eine Verbindung gilt immer in beide Richtungen.
 
+**Sensor einmessen am Handy:** Unter „Sensor und Raum“ → „Link fürs Handy
+kopieren“ und den Link am Handy öffnen (oder am Handy einfach den Raum
+öffnen: auf schmalen Bildschirmen kommt die Handy-Ansicht von selbst).
+„Sensor hängt schon: einmessen“, dann für jede der drei Stellen: einen
+Kreis im Plan antippen (A, B, … sind Ecken und Plätze vor den Türen; die
+hervorgehobenen liegen weit auseinander), hinstellen, „Messen“, 8 Sekunden
+ruhig stehen. Am Ende „Übernehmen“ und „Speichern“.
+
 **Wege durchs Haus:** Damit Raumzonen sieht, wer von wo nach wo geht,
 braucht jede Tür (1) eine Verbindung zur Tür gegenüber (siehe oben) und (2)
 in Radar-Räumen eine **Tür-Zone**: im Raum unter „Zonen“ auf **„Tür-Zonen

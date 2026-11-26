@@ -588,6 +588,82 @@ export const styles = css`
   .wiz-neu {
     pointer-events: none;
   }
+  .wiz-anker circle {
+    fill: var(--card);
+    stroke: var(--rz-stelle);
+    stroke-width: 2;
+    stroke-dasharray: 4 3;
+  }
+  .wiz-anker.vorschlag circle {
+    fill: color-mix(in srgb, var(--rz-stelle) 25%, var(--card));
+    stroke-dasharray: none;
+    stroke-width: 3;
+  }
+  .wiz-anker text {
+    text-anchor: middle;
+    font-size: 14px;
+    font-weight: 700;
+    fill: var(--primary-text-color);
+    pointer-events: none;
+  }
+  .wiz-text {
+    font-size: 1.05rem;
+    line-height: 1.45;
+    margin: 8px 0;
+  }
+  .wiz-wahl {
+    display: grid;
+    gap: 8px;
+    margin: 8px 0;
+  }
+  .wiz-wahl button {
+    justify-content: flex-start;
+    min-height: 48px;
+    border: 2px solid var(--line);
+    border-radius: 8px;
+    gap: 10px;
+  }
+  .wiz-buchstabe {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--rz-stelle);
+    font-weight: 700;
+    color: var(--primary-text-color);
+  }
+  /* Handy-Assistent: großer Plan oben, ein Schritt unten, große Knöpfe. */
+  .layout.handy {
+    flex-direction: column;
+  }
+  .layout.handy .stage {
+    flex: 1 1 55%;
+    min-height: 40vh;
+  }
+  .layout.handy .tools,
+  .layout.handy .handle,
+  .layout.handy .plus {
+    display: none;
+  }
+  .handy-sheet {
+    flex: 0 1 auto;
+    max-height: 55vh;
+    overflow: auto;
+    padding: 8px 16px 16px;
+    border-top: 2px solid var(--line);
+    background: var(--card);
+  }
+  .handy-sheet button.primary {
+    width: 100%;
+    min-height: 56px;
+    font-size: 1.1rem;
+    justify-content: center;
+  }
+  .handy-sheet .actions .spacer {
+    display: none;
+  }
   .wiz-neu circle {
     fill: var(--ok);
   }
