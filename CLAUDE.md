@@ -18,12 +18,12 @@ Zone, Spuren, die nicht plötzlich verschwinden. Konzept: `docs/KONZEPT.md`
 (allgemeine Fassung; die vollständige und die Auswertung der Aufnahmen
 liegen in `haus-privat/raumzonen/docs/`).
 
-Stand 0.10.1: **Phase 0 bis 4a, Hausplan, Türen in Wänden.** Rechenkern in reinem Python, getestet gegen
+Stand 0.11.0: **Phase 0 bis 4a, Hausplan, Türen in Wänden.** Rechenkern in reinem Python, getestet gegen
 anonymisierte Aufnahmen; Sensor-Anbindung (MQTT oder Entitäten, nur lesen),
 Entitäten je Zone und Raum, Ereignis `raumzonen_zone`, Einrichtung über den
 Options-Flow; Panel „Raumzonen“ (sehen alle, ändern nur Admins) mit
 Raumplan, Zonen zeichnen, Sensor-Lage mit Abdeckung, Live-Figuren und
-Bewegungskarte, Hausplan (Räume anordnen, anlegen, übernehmen, löschen, Türen verbinden, Bewegungsprofil), Melder-Räume (nur Bewegungs-/Präsenzmelder), Assistent „Sensor umsetzen/einmessen“, Grundriss übernehmen (UniFi-PDF), Zonen-Vorschläge, Auswertung „wer war wann wo“ aus der Aufnahme; eigene Aufnahme je Raum (`fp400-trace/2`); Zonenart
+Bewegungskarte, Hausplan (Räume anordnen, anlegen, übernehmen, löschen, Türen verbinden, Bewegungsprofil), Melder-Räume (nur Bewegungs-/Präsenzmelder), Assistent „Sensor umsetzen/einmessen“, Grundriss übernehmen (UniFi-PDF, Bilder) samt Hintergrund im Plan, Maße, Öffnungen mit Griffen, Zonen-Vorschläge, Auswertung „wer war wann wo“ aus der Aufnahme; eigene Aufnahme je Raum (`fp400-trace/2`); Zonenart
 „Stelle“, Tür „führt zu“; Schnittstelle `raumzonen/1` für das Homebrain
 (`docs/homebrain/VERTRAG-raumzonen-1.md`); simulierte Test-Instanz.
 **Keine Steuerung.** Nicht mit echter Hardware getestet.
@@ -79,9 +79,10 @@ Nächstes: 4b (Herkunft, Einstufung, Sicherheit, `hinweis/1`); siehe
 | `options_flow.py` | Raum hinzufügen (Gerät, Quelle, MQTT-Thema), Zonen aus dem Konverter übernehmen (Rolle → Art + Regel-Vorlage), Zone einstellen/löschen, Raum löschen. Jede Aktion: Kopie, prüfen, speichern, neu laden |
 | `controller.py` | `RoomController`: Quelle verbinden (MQTT: Rahmen nur bei neuem `tracking_last_update`, `<thema>/availability`; Entitäten: Rahmen bei neuer Zeit in `tracking_last_update`; Melder: „an“ = Figur in der Raummitte, alle nicht erreichbar = Ausfall), Rechenkern füttern, Zeitregeln mit `async_track_point_in_utc_time`, Ereignis `raumzonen_zone`, `restore_zone` |
 | `panel.py` | Panel `/raumzonen` (für alle Nutzer, `mdi:floor-plan`), statische Dateien unter `/raumzonen_static`, `?v=<sha256>`; eigenes Neuladen `async_reload_keep_panel`, damit das Panel beim Speichern offen bleibt |
-| `websocket_api.py` | Lesen für alle: `rooms/get` (mit `darf_aendern`), `live/subscribe` (gedrosselt 5/s), `heat/get`, `v1/schema`, `v1/snapshot`, `v1/subscribe`. Nur Admins: `room/save` (Zonen, Sensor-Lage, Umriss, Aufnahme; ganzes Modell prüfen, speichern, neu laden), `converter_zones/get`, `aufnahme/get`, `auswertung/get`, `haus/save` (Lage der Räume, Ziele der Türen: Zonen und Öffnungen), `kandidaten/get` (FP400, Melder, Bereiche als Vorschlag), `room/create`, `room/delete`, `plan/import` (Wände, Türen, Lage mehrerer Räume) |
+| `websocket_api.py` | Lesen für alle: `rooms/get` (mit `darf_aendern`), `live/subscribe` (gedrosselt 5/s), `heat/get`, `v1/schema`, `v1/snapshot`, `v1/subscribe`. Nur Admins: `room/save` (Zonen, Sensor-Lage, Umriss, Aufnahme; ganzes Modell prüfen, speichern, neu laden), `converter_zones/get`, `aufnahme/get`, `auswertung/get`, `haus/save` (Lage der Räume, Ziele der Türen: Zonen und Öffnungen), `kandidaten/get` (FP400, Melder, Bereiche als Vorschlag), `room/create`, `room/delete`, `plan/import` (Wände, Türen, Lage mehrerer Räume, Bild), `plan/delete`; für alle zusätzlich `plan/bild/get` |
 | `vertrag.py` | baut die Daten des Vertrags `raumzonen/1` (Aufbau, Momentaufnahme, Zone, Sensor, Spur, Stelle) |
 | `api.py` | `get_api(hass)` für Abnehmer; Verteiler `RaumzonenApi` in `hass.data["raumzonen_api"]`: `seq` je Abo, `raeume()`, `momentaufnahme()`, `abonnieren()`; überlebt das Neuladen (`attach`/`detach`), Spuren höchstens 2/s und nur bei Änderung |
+| `plaene.py` | Grundriss-Bilder als Dateien unter `<config>/raumzonen/plaene/` (JPEG/PNG, geprüft, höchstens 8 MB); Lage im Haus in `PlanConfig` (`model.py`) |
 | `aufnahme.py` | eigene Aufnahme je Raum (`fp400-trace/2`, gzip je Tag, alle 10 s schreiben, alte Tage löschen, Abruf bis 24 h) |
 | `discovery.py` | Entitäten des FP400 über `unique_id` finden, Themen-Vorschlag, Software-Zonen des Konverters lesen |
 | `entity.py`, `binary_sensor.py`, `sensor.py` | je Zone „belegt“ (RestoreEntity) und „Personen“, je Raum „Sensor verbunden“ und „Figuren“; Zustand wird nur bei Änderung geschrieben (keine Positionen in Attributen, schont den Recorder) |

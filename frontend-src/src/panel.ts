@@ -27,6 +27,7 @@ import {
   fuehrtZuText,
   openingFromDrag,
   openingPoints,
+  alongEdge,
   rotateForm,
   shiftOpenings,
   insertVertex,
@@ -62,6 +63,7 @@ import {
   roomToSensor,
   sensorDirection,
   snap,
+  fromHouse,
   toHouse,
   type HausLage,
 } from "./geometry";
@@ -71,7 +73,7 @@ import { fehlerText } from "./fehler";
 import { summeDauer, tuerenVon, vereinigen, wechsel, type Tuer } from "./haus";
 import { einmessen, stelle, stellenProblem, type Einmessung } from "./einmessen";
 import { bbox, erkenneGrundriss, jpegAusPdf, uebernehmen, type Grundriss } from "./grundriss";
-import type { Auswertung, AuswertungFigur, Form, Hass, Heat, Kandidaten, Live, Oeffnung, Point, Raum, Regel, RoomsResult, Zone } from "./types";
+import type { Auswertung, AuswertungFigur, Form, Hass, Heat, Kandidaten, Plan, Live, Oeffnung, Point, Raum, Regel, RoomsResult, Zone } from "./types";
 
 const DOMAIN = "raumzonen";
 const SNAP_CM = 5;
@@ -136,6 +138,8 @@ type Drag =
   | { kind: "rect"; start: Point }
   | { kind: "haus-raum"; id: string; last: Point }
   | { kind: "opening"; kante: number; start: Point }
+  | { kind: "opening-end"; index: number; ende: "von" | "bis" }
+  | { kind: "opening-move"; index: number; start: number; von: number; bis: number }
   | { kind: "rotate-zone"; center: Point; start: number; anchor: Form };
 
 const TOOLS: { tool: Tool; icon: string; label: string }[] = [
@@ -154,6 +158,34 @@ const BUBBLE: Partial<Record<Tool, string>> = {
   umriss: "Ecken des Raums anklicken. Ein Klick auf die erste Ecke schließt die Wände.",
   oeffnung: "An einer Wand entlang ziehen, so breit wie die Tür oder Öffnung.",
 };
+
+/** Einstellung im Browser (nur Bequemlichkeit; ohne Speicher: Standard). */
+function lesen(key: string, standard: boolean): boolean {
+  try {
+    const v = localStorage.getItem(key);
+    return v === null ? standard : v === "1";
+  } catch {
+    return standard;
+  }
+}
+
+function merken(key: string, v: boolean): void {
+  try {
+    localStorage.setItem(key, v ? "1" : "0");
+  } catch {
+    // Speicher im Browser nicht verfügbar.
+  }
+}
+
+function wallLength(umriss: Point[], kante: number): number {
+  const a = umriss[kante];
+  const b = umriss[(kante + 1) % umriss.length];
+  return Math.hypot(b[0] - a[0], b[1] - a[1]);
+}
+
+function meter(cm: number): string {
+  return (cm / 100).toFixed(2).replace(".", ",");
+}
 
 function roleColor(rolle: Rolle): string {
   return `var(--rz-${rolle})`;
@@ -212,8 +244,18 @@ export class RaumzonenPanel extends LitElement {
     massRaum: number;
     massSeite: "breite" | "tiefe";
     massM: number;
+    /** Bild zum Speichern (JPEG, Base64) und seine Größe. */
+    jpeg: string;
+    name: string;
+    /** Maß als Strecke im Bild: zwei angetippte Punkte (Bildpunkte). */
+    strecke: Point[];
+    streckeM: number;
   } | null = null;
   @state() private planLaedt = false;
+  /** Bilder der Grundrisse (Plan-ID → Objekt-URL). */
+  @state() private planBilder: Record<string, string> = {};
+  @state() private zeigePlan = lesen("raumzonen-zeige-plan", true);
+  @state() private masse = lesen("raumzonen-masse", false);
   /** Formular „Raum hinzufügen“ (null = zu). */
   @state() private neuRaum: { name: string; art: "melder" | "radar"; melder: string[]; device_id: string; bereich_id: string } | null = null;
   /** Bewegungsprofil im Hausplan: Raum-ID → Zeitabschnitte mit jemandem darin. */
@@ -275,6 +317,7 @@ export class RaumzonenPanel extends LitElement {
     try {
       const data = await this._hass.callWS<RoomsResult>({ type: `${DOMAIN}/rooms/get` });
       this.data = data;
+      void this.ladePlanBilder();
       this.error = "";
       const keep = data.raeume.some((r) => r.id === this.raumId);
       if (this.page === "haus" && data.raeume.length) {
@@ -727,10 +770,11 @@ export class RaumzonenPanel extends LitElement {
       ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
       const px = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const g = erkenneGrundriss({ width: px.width, height: px.height, data: px.data });
-      if (!g.raeume.length) throw new Error("Keine Räume erkannt. Der Plan braucht die blauen Umrisslinien aus dem Scan.");
       const art: Record<number, "tuer" | "offen" | "fenster"> = {};
       g.luecken.forEach((l, i) => (art[i] = l.partner !== null ? "tuer" : "fenster"));
-      this.plan = { bild: URL.createObjectURL(blob), g, zuordnung: g.raeume.map(() => ""), art, massRaum: 0, massSeite: "breite", massM: 0 };
+      const jpeg = canvas.toDataURL("image/jpeg", 0.85).split(",")[1];
+      const name = file.name.replace(/\.[^.]+$/, "").slice(0, 60) || "Grundriss";
+      this.plan = { bild: URL.createObjectURL(blob), g, zuordnung: g.raeume.map(() => ""), art, massRaum: 0, massSeite: "breite", massM: 0, jpeg, name, strecke: [], streckeM: 0 };
     } catch (err) {
       this.showToast(`Grundriss nicht gelesen: ${fehlerText(err)}`);
     } finally {
@@ -746,6 +790,10 @@ export class RaumzonenPanel extends LitElement {
   /** Zentimeter je Bildpunkt aus dem eingegebenen Maß (0 = noch keins). */
   private planCmProPx(): number {
     const p = this.plan;
+    if (p && p.strecke.length === 2 && p.streckeM > 0) {
+      const d = Math.hypot(p.strecke[1][0] - p.strecke[0][0], p.strecke[1][1] - p.strecke[0][1]);
+      return d > 0 ? (p.streckeM * 100) / d : 0;
+    }
     if (!p || !(p.massM > 0) || !p.g.raeume[p.massRaum]) return 0;
     const b = bbox(p.g.raeume[p.massRaum].punkte);
     const px = p.massSeite === "breite" ? b.x1 - b.x0 : b.y1 - b.y0;
@@ -773,14 +821,15 @@ export class RaumzonenPanel extends LitElement {
         }
         return { i, raum, u: uebernehmen(p.g, i, k, v) };
       });
-    if (!eintraege.length) return;
     // Nicht über Räume legen, die schon im Haus liegen und nicht dabei sind.
     const andere = raeume.filter((r) => r.haus_gesetzt && !eintraege.some((e) => e.raum.id === r.id));
     const huelle = (pts: Point[]) => bbox(pts);
     let dx = 0;
     if (andere.length) {
       const a = huelle(andere.flatMap((r) => this.outlineOf(r).map((q) => toHouse(q, { x: r.haus_x, y: r.haus_y, winkel: r.haus_winkel }))));
-      const n = huelle(eintraege.flatMap((e) => e.u.umriss.map((q) => toHouse(q, e.u.haus))));
+      const n = eintraege.length
+        ? huelle(eintraege.flatMap((e) => e.u.umriss.map((q) => toHouse(q, e.u.haus))))
+        : { x0: 0, y0: 0, x1: p.g.breite * k, y1: p.g.hoehe * k };
       const ueber = n.x0 < a.x1 && n.x1 > a.x0 && n.y0 < a.y1 && n.y1 > a.y0;
       if (ueber) dx = a.x1 + 200 - n.x0;
     }
@@ -798,9 +847,13 @@ export class RaumzonenPanel extends LitElement {
     }));
     this.saving = true;
     try {
-      await this._hass.callWS({ type: `${DOMAIN}/plan/import`, raeume: msg });
+      await this._hass.callWS({
+        type: `${DOMAIN}/plan/import`,
+        raeume: msg,
+        plan: { name: p.name, mime: "image/jpeg", bild: p.jpeg, cm_pro_px: k, breite_px: p.g.breite, hoehe_px: p.g.hoehe, x: dx, y: 0 },
+      });
       this.planZu();
-      this.showToast(`${msg.length} ${msg.length === 1 ? "Raum" : "Räume"} aus dem Grundriss übernommen.`);
+      this.showToast(msg.length ? `${msg.length} ${msg.length === 1 ? "Raum" : "Räume"} und der Grundriss übernommen.` : "Grundriss als Hintergrund übernommen.");
       await this.unsubscribeHaus();
       await new Promise((res) => window.setTimeout(res, 1500));
       await this.load();
@@ -1240,7 +1293,26 @@ export class RaumzonenPanel extends LitElement {
       return;
     }
 
-    // Auswählen: Griffe der gewählten Zone, dann Sensor, Zonen, Wände, Ansicht.
+    // Auswählen: Griffe der gewählten Öffnung, dann der Zone, Sensor, Zonen, Wände, Ansicht.
+    const so = this.oeffnungen[this.selOpening];
+    if (so && this.umriss.length >= 3) {
+      const [a, b] = openingPoints(this.umriss, so);
+      for (const [ende, q] of [["von", a], ["bis", b]] as const) {
+        if (this.near(raw, q, HIT_PX + 4)) {
+          this.remember();
+          this.drag = { kind: "opening-end", index: this.selOpening, ende };
+          return;
+        }
+      }
+    }
+    // Die gewählte Öffnung an der Wand entlang verschieben.
+    const oi = this.openingAt(raw);
+    if (oi >= 0 && oi === this.selOpening) {
+      const o = this.oeffnungen[oi];
+      this.remember();
+      this.drag = { kind: "opening-move", index: oi, start: alongEdge(this.umriss, o.kante, raw), von: o.von, bis: o.bis };
+      return;
+    }
     const zone = this.zones[this.selected];
     if (zone && zone.form.art !== "zellen" && this.near(raw, this.zoneRotateHandle(zone.form))) {
       this.remember();
@@ -1278,14 +1350,14 @@ export class RaumzonenPanel extends LitElement {
         return;
       }
     }
-    if (this.near(raw, this.sensorHandle(), HIT_PX + 2)) {
+    if (!this.istMelder && this.near(raw, this.sensorHandle(), HIT_PX + 2)) {
       this.remember();
       this.sensorAnchor = { sensor: { ...this.sensor }, zones: this.zones };
       this.drag = { kind: "sensor-rotate" };
       this.openSensor();
       return;
     }
-    if (this.near(raw, [this.sensor.x, this.sensor.y], HIT_PX + 4)) {
+    if (!this.istMelder && this.near(raw, [this.sensor.x, this.sensor.y], HIT_PX + 4)) {
       this.remember();
       this.sensorAnchor = { sensor: { ...this.sensor }, zones: this.zones };
       this.drag = { kind: "sensor" };
@@ -1497,6 +1569,30 @@ export class RaumzonenPanel extends LitElement {
         this.openingDraft = openingFromDrag(this.umriss, drag.kante, drag.start, raw);
         break;
       }
+      case "opening-end": {
+        const o = this.oeffnungen[drag.index];
+        if (!o) break;
+        const len = wallLength(this.umriss, o.kante);
+        // In 5-cm-Schritten, mindestens 20 cm breit, nicht über die Wand hinaus.
+        const t = Math.max(0, Math.min(Math.floor(len), Math.round(alongEdge(this.umriss, o.kante, raw) / 5) * 5));
+        const next = drag.ende === "von" ? { ...o, von: Math.min(t, o.bis - 20) } : { ...o, bis: Math.max(t, o.von + 20) };
+        this.oeffnungen = this.oeffnungen.map((x, k) => (k === drag.index ? next : x));
+        this.dirty = true;
+        break;
+      }
+      case "opening-move": {
+        const o = this.oeffnungen[drag.index];
+        if (!o) break;
+        const len = Math.floor(wallLength(this.umriss, o.kante));
+        const breite = drag.bis - drag.von;
+        let von = Math.round((drag.von + alongEdge(this.umriss, o.kante, raw) - drag.start) / 5) * 5;
+        von = Math.max(0, Math.min(len - breite, von));
+        if (von !== o.von) {
+          this.oeffnungen = this.oeffnungen.map((x, k) => (k === drag.index ? { ...o, von, bis: von + breite } : x));
+          this.dirty = true;
+        }
+        break;
+      }
       case "rotate-zone": {
         // In 5°-Schritten (mit Umschalt frei), wie beim Sensor.
         let deg = headingTo(drag.center, raw) - drag.start;
@@ -1614,6 +1710,12 @@ export class RaumzonenPanel extends LitElement {
     return svg`<polygon class="floor ${belegt ? "belegt" : ""}" points=${pts} />
       <polygon class="wall" points=${pts} />
       ${openings.map((o, i) => this.renderOpening(o, i === this.selOpening || o === this.openingDraft, inside))}
+      ${this.kannAendern && this.tool === "auswahl" && this.oeffnungen[this.selOpening]
+        ? openingPoints(this.umriss, this.oeffnungen[this.selOpening]).map((q) => {
+            const [x, y] = this.toScreen(q);
+            return svg`<circle class="handle opening-griff" cx=${x} cy=${y} r="8" />`;
+          })
+        : nothing}
       ${editHandles
         ? svg`${this.umriss.map((p) => {
             const [x, y] = this.toScreen(p);
@@ -1718,6 +1820,70 @@ export class RaumzonenPanel extends LitElement {
       neu = svg`<g class="wiz-neu"><circle cx=${x} cy=${y} r="9" /><line x1=${x} y1=${y} x2=${x + dx * r} y2=${y - dy * r} /></g>`;
     }
     return svg`${marken}${neu}`;
+  }
+
+  private async ladePlanBilder(): Promise<void> {
+    const plaene = this.data?.plaene ?? [];
+    for (const plan of plaene) {
+      if (this.planBilder[plan.id] || !this._hass) continue;
+      try {
+        const r = await this._hass.callWS<{ mime: string; bild: string }>({ type: `${DOMAIN}/plan/bild/get`, plan_id: plan.id });
+        const bytes = Uint8Array.from(atob(r.bild), (c) => c.charCodeAt(0));
+        this.planBilder = { ...this.planBilder, [plan.id]: URL.createObjectURL(new Blob([bytes], { type: r.mime })) };
+      } catch {
+        // Bild fehlt oder alte Version: dann eben ohne Hintergrund.
+      }
+    }
+  }
+
+  /** Grundrisse als Hintergrund (Hausplan: im Haus; Raum: in den Raum umgerechnet). */
+  private renderPlanBilder(): TemplateResult | typeof nothing {
+    if (!this.zeigePlan) return nothing;
+    const plaene = (this.data?.plaene ?? []).filter((p) => this.planBilder[p.id]);
+    if (!plaene.length) return nothing;
+    let zuRaum: ((h: Point) => Point) | null = null;
+    if (this.page === "raum") {
+      const r = this.raum;
+      if (!r?.haus_gesetzt) return nothing;
+      const lage = { x: r.haus_x, y: r.haus_y, winkel: r.haus_winkel };
+      zuRaum = (h) => fromHouse(h, lage);
+    }
+    return svg`${plaene.map((p) => {
+      // Bildpunkt → Haus → (Raum) → Bildschirm; affin, darum reichen drei Punkte.
+      const k = p.cm_pro_px;
+      const haus = (px: number, py: number): Point => [p.x + px * k, p.y + (p.hoehe_px - py) * k];
+      const bild = (px: number, py: number): Point => this.toScreen(zuRaum ? zuRaum(haus(px, py)) : haus(px, py));
+      const [o, ex, ey] = [bild(0, 0), bild(1, 0), bild(0, 1)];
+      const m = [ex[0] - o[0], ex[1] - o[1], ey[0] - o[0], ey[1] - o[1], o[0], o[1]].map((v) => v.toFixed(5)).join(" ");
+      return svg`<image class="plan-hintergrund" href=${this.planBilder[p.id]} x="0" y="0" width=${p.breite_px} height=${p.hoehe_px} transform="matrix(${m})" preserveAspectRatio="none" />`;
+    })}`;
+  }
+
+  /** Maße der Wände (und Öffnungen), wenn eingeschaltet. */
+  private renderMasse(): TemplateResult | typeof nothing {
+    if (!this.masse || this.umriss.length < 3) return nothing;
+    const n = this.umriss.length;
+    const mitte = formCenter({ art: "vieleck", punkte: this.umriss });
+    const texte = this.umriss.map((a, i) => {
+      const b = this.umriss[(i + 1) % n];
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (len < 20) return nothing;
+      const m: Point = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      // Nach außen versetzt (weg von der Raummitte).
+      let nx = -(b[1] - a[1]) / len;
+      let ny = (b[0] - a[0]) / len;
+      if ((mitte[0] - m[0]) * nx + (mitte[1] - m[1]) * ny > 0) [nx, ny] = [-nx, -ny];
+      const [sx, sy] = this.toScreen(m);
+      const off = 26;
+      const [tx, ty] = [sx + nx * off, sy - ny * off];
+      return svg`<text class="mass-text" x=${tx} y=${ty} dy="0.35em">${meter(len)} m</text>`;
+    });
+    const oeff = this.oeffnungen.map((o) => {
+      const [a, b] = openingPoints(this.umriss, o);
+      const [sx, sy] = this.toScreen([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]);
+      return svg`<text class="mass-text klein" x=${sx} y=${sy} dy="-0.8em">${meter(o.bis - o.von)}</text>`;
+    });
+    return svg`<g>${texte}${oeff}</g>`;
   }
 
   /** Melder-Raum: in der Mitte steht, ob jemand da ist. */
@@ -1931,7 +2097,7 @@ export class RaumzonenPanel extends LitElement {
         figures.push(svg`<circle class="figure ${f.gehalten ? "held" : ""}" cx=${x} cy=${y} r=${rr} fill=${color} stroke=${f.gehalten ? color : "var(--card)"} />`);
       }
     }
-    return svg`${rooms}${lines}${figures}${labels}`;
+    return svg`${this.renderPlanBilder()}${rooms}${lines}${figures}${labels}`;
   }
 
   private renderScalebar(): TemplateResult {
@@ -2015,8 +2181,8 @@ export class RaumzonenPanel extends LitElement {
         ${this.page === "haus"
           ? this.renderHausPlan()
           : this.istMelder
-            ? svg`${this.renderRoom()} ${this.renderMelderLabel()} ${this.renderDraft()}`
-            : svg`${this.renderRoom()} ${this.renderHeat()} ${this.renderCoverage()}
+            ? svg`${this.renderPlanBilder()} ${this.renderRoom()} ${this.renderMasse()} ${this.renderMelderLabel()} ${this.renderDraft()}`
+            : svg`${this.renderPlanBilder()} ${this.renderRoom()} ${this.renderMasse()} ${this.renderHeat()} ${this.renderCoverage()}
               ${this.zones.map((z, i) => this.renderZone(z, i))} ${this.renderLive()}
               ${this.zones.map((z) => this.renderZoneLabel(z))} ${this.renderSensor()}
               ${this.renderHandles()} ${this.renderDraft()} ${this.renderWizMarken()}`}
@@ -2035,6 +2201,32 @@ export class RaumzonenPanel extends LitElement {
                 <ha-icon icon="mdi:layers-outline"></ha-icon>
               </button>
               <span class="sep"></span>`
+          : nothing}
+        ${this.data?.plaene?.length
+          ? html`<button
+              class="icon ${this.zeigePlan ? "on" : ""}"
+              title="Grundriss im Hintergrund"
+              aria-label="Grundriss im Hintergrund"
+              @click=${() => {
+                this.zeigePlan = !this.zeigePlan;
+                merken("raumzonen-zeige-plan", this.zeigePlan);
+              }}
+            >
+              <ha-icon icon="mdi:image-outline"></ha-icon>
+            </button>`
+          : nothing}
+        ${this.page === "raum"
+          ? html`<button
+              class="icon ${this.masse ? "on" : ""}"
+              title="Maße der Wände"
+              aria-label="Maße der Wände"
+              @click=${() => {
+                this.masse = !this.masse;
+                merken("raumzonen-masse", this.masse);
+              }}
+            >
+              <ha-icon icon="mdi:ruler"></ha-icon>
+            </button>`
           : nothing}
         <button class="icon" title="Vergrößern" aria-label="Vergrößern" @click=${() => this.zoom(1.25)}><ha-icon icon="mdi:plus"></ha-icon></button>
         <button class="icon" title="Verkleinern" aria-label="Verkleinern" @click=${() => this.zoom(0.8)}><ha-icon icon="mdi:minus"></ha-icon></button>
@@ -2490,7 +2682,7 @@ export class RaumzonenPanel extends LitElement {
                           </div>`
                         : nothing}
                       <p class="hint small">
-                        Wohin sie führt, stellst du im Hausplan ein.${this.istMelder
+                        Breite: die Punkte an den Enden ziehen; verschieben: die Öffnung selbst ziehen. Wohin sie führt, stellst du im Hausplan ein.${this.istMelder
                           ? ""
                           : " Damit Raumzonen „betreten“ und „verlassen“ genau erkennt, zusätzlich eine Zone mit der Rolle „Tür“ davor zeichnen."}
                       </p>
@@ -2619,9 +2811,45 @@ export class RaumzonenPanel extends LitElement {
             </li>`;
           })}
         </ul>
-        ${this.kannAendern ? this.renderProfil() : nothing}
+        ${this.kannAendern ? html`${this.renderPlanListe()} ${this.renderProfil()}` : nothing}
       </div>
     </aside>`;
+  }
+
+  private renderPlanListe(): TemplateResult | typeof nothing {
+    const plaene = this.data?.plaene ?? [];
+    if (!plaene.length) return nothing;
+    return html`<h3>Grundrisse</h3>
+      <ul class="list">
+        ${plaene.map(
+          (p) => html`<li class="item">
+            <div class="row static">
+              <span class="marker-icon"><ha-icon icon="mdi:image-outline"></ha-icon></span>
+              <span class="name">${p.name}<small>${this.planBilder[p.id] ? "im Hintergrund" : "Bild fehlt"}</small></span>
+              <button class="text small danger" ?disabled=${this.saving} @click=${() => this.planLoeschen(p)}><ha-icon icon="mdi:delete-outline"></ha-icon>Löschen</button>
+            </div>
+          </li>`,
+        )}
+      </ul>`;
+  }
+
+  private async planLoeschen(p: Plan): Promise<void> {
+    if (!this._hass || !confirm(`Grundriss „${p.name}“ löschen? Wände und Türen der Räume bleiben, nur das Bild im Hintergrund verschwindet.`)) return;
+    this.saving = true;
+    try {
+      await this._hass.callWS({ type: `${DOMAIN}/plan/delete`, plan_id: p.id });
+      const url = this.planBilder[p.id];
+      if (url) URL.revokeObjectURL(url);
+      const { [p.id]: _weg, ...rest } = this.planBilder;
+      this.planBilder = rest;
+      this.showToast("Grundriss gelöscht.");
+      await new Promise((res) => window.setTimeout(res, 1500));
+      await this.load();
+    } catch (err) {
+      this.showToast(`Nicht gelöscht: ${fehlerText(err)}`);
+    } finally {
+      this.saving = false;
+    }
   }
 
   private renderPlanImport(): TemplateResult {
@@ -2653,7 +2881,16 @@ export class RaumzonenPanel extends LitElement {
     };
     const set = (patch: Partial<NonNullable<typeof this.plan>>) => (this.plan = { ...p, ...patch });
     const mitte = (pts: Point[]): Point => formCenter({ art: "vieleck", punkte: pts });
-    const vorschau = svg`<svg class="plan-vorschau" viewBox="0 0 ${p.g.breite} ${p.g.hoehe}">
+    const tippen = (e: MouseEvent) => {
+      const box = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
+      const pt: Point = [((e.clientX - box.left) / box.width) * p.g.breite, ((e.clientY - box.top) / box.height) * p.g.hoehe];
+      set({ strecke: p.strecke.length >= 2 ? [pt] : [...p.strecke, pt] });
+    };
+    const r0 = p.g.breite / 120;
+    const strecke = svg`${p.strecke.length === 2
+      ? svg`<line class="plan-strecke" x1=${p.strecke[0][0]} y1=${p.strecke[0][1]} x2=${p.strecke[1][0]} y2=${p.strecke[1][1]} stroke-width=${r0 / 1.5} />`
+      : nothing}${p.strecke.map(([x, y]) => svg`<circle class="plan-strecke" cx=${x} cy=${y} r=${r0} />`)}`;
+    const vorschau = svg`<svg class="plan-vorschau" viewBox="0 0 ${p.g.breite} ${p.g.hoehe}" @click=${tippen}>
       <image href=${p.bild} x="0" y="0" width=${p.g.breite} height=${p.g.hoehe} opacity="0.55" />
       ${p.g.raeume.map((r, i) => {
         const [cx, cy] = mitte(r.punkte);
@@ -2671,18 +2908,36 @@ export class RaumzonenPanel extends LitElement {
         const [x2, y2] = at(l.bis_px);
         return svg`<line class="plan-luecke ${p.art[li]}" x1=${x1} y1=${y1} x2=${x2} y2=${y2} stroke-width=${p.g.breite / 150} />`;
       })}
+      ${strecke}
     </svg>`;
     const zugeordnet = p.zuordnung.filter(Boolean);
     const doppelt = zugeordnet.length !== new Set(zugeordnet).size;
     return html`<div class="neu-raum">
       <h3>Grundriss übernehmen</h3>
       <p class="hint small">
-        ${p.g.raeume.length} ${p.g.raeume.length === 1 ? "Raum" : "Räume"} erkannt. Grün sind Türen, grau Fenster. Der Plan bleibt nur in diesem Browser; übernommen
-        werden Wände, Türen und die Lage im Haus.
+        ${p.g.raeume.length
+          ? `${p.g.raeume.length} ${p.g.raeume.length === 1 ? "Raum" : "Räume"} erkannt. Grün sind Türen, grau Fenster. Übernommen werden Wände, Türen, die Lage im Haus und das Bild als Hintergrund (es bleibt in deinem Home Assistant).`
+          : "Keine Räume erkannt (dafür braucht es die blauen Umrisslinien eines Scans). Das Bild lässt sich trotzdem als Hintergrund übernehmen; die Wände zeichnest du dann darüber."}
       </p>
       ${vorschau}
-      <div class="label-text">Ein Maß (der Plan hat keinen Maßstab)</div>
+      <div class="label-text">Maßstab: zweimal ins Bild tippen (Anfang und Ende einer bekannten Strecke), dann ihre Länge</div>
       <div class="mass">
+        <span>${p.strecke.length === 2 ? "Strecke ist" : `${p.strecke.length} von 2 Punkten`}</span>
+        <label class="field"
+          ><input
+            type="number"
+            min="0.2"
+            max="100"
+            step="0.01"
+            ?disabled=${p.strecke.length !== 2}
+            .value=${p.streckeM ? String(p.streckeM) : ""}
+            placeholder="z. B. 4,20"
+            @change=${(e: Event) => set({ streckeM: Number((e.target as HTMLInputElement).value.replace(",", ".")) || 0 })}
+          /><span class="unit">m</span></label
+        >
+      </div>
+      ${p.g.raeume.length ? html`<div class="label-text">oder über einen erkannten Raum</div>` : nothing}
+      <div class="mass" style=${p.g.raeume.length ? "" : "display:none"}>
         <select @change=${(e: Event) => set({ massRaum: Number((e.target as HTMLSelectElement).value) })}>
           ${p.g.raeume.map((_, i) => html`<option value=${i} ?selected=${p.massRaum === i}>Raum ${i + 1}</option>`)}
         </select>
@@ -2749,7 +3004,9 @@ export class RaumzonenPanel extends LitElement {
       <div class="actions">
         <button class="text small" @click=${this.planZu}>Abbrechen</button>
         <span class="spacer"></span>
-        <button class="primary" ?disabled=${!k || !zugeordnet.length || doppelt || this.saving} @click=${this.planUebernehmen}><ha-icon icon="mdi:check"></ha-icon>Übernehmen</button>
+        <button class="primary" ?disabled=${!k || doppelt || this.saving} @click=${this.planUebernehmen}>
+          <ha-icon icon="mdi:check"></ha-icon>${zugeordnet.length ? "Übernehmen" : "Als Hintergrund übernehmen"}
+        </button>
       </div>
     </div>`;
   }

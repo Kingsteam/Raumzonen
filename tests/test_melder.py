@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from pathlib import Path
 from typing import Any
 
 from freezegun.api import FrozenDateTimeFactory
@@ -260,6 +261,7 @@ async def test_nur_admins(
         {"type": f"{DOMAIN}/kandidaten/get"},
         {"type": f"{DOMAIN}/room/create", "name": "X", "art": "melder"},
         {"type": f"{DOMAIN}/room/delete", "raum_id": "schlafzimmer"},
+        {"type": f"{DOMAIN}/plan/delete", "plan_id": "x"},
         {
             "type": f"{DOMAIN}/plan/import",
             "raeume": [
@@ -379,3 +381,60 @@ async def test_grundriss_uebernehmen(
     msg = await client.receive_json()
     assert msg["error"]["code"] == "invalid"
     assert loaded.runtime_data.store.model.raum("kueche").umriss[2] == [400, 300]
+
+
+PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+
+
+async def test_grundriss_als_hintergrund(
+    hass: HomeAssistant, loaded: MockConfigEntry, hass_ws_client
+) -> None:
+    client = await hass_ws_client(hass)
+    plan = {
+        "name": "Erdgeschoss",
+        "mime": "image/png",
+        "bild": PNG,
+        "cm_pro_px": 0.5,
+        "breite_px": 1,
+        "hoehe_px": 1,
+        "x": 100,
+        "y": 0,
+    }
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/plan/import", "raeume": [], "plan": plan}
+    )
+    msg = await client.receive_json()
+    assert msg["success"], msg
+    await hass.async_block_till_done()
+    await client.send_json_auto_id({"type": f"{DOMAIN}/rooms/get"})
+    [p] = (await client.receive_json())["result"]["plaene"]
+    assert (p["id"], p["datei"], p["x"]) == ("erdgeschoss", "erdgeschoss.png", 100)
+    datei = Path(hass.config.path(DOMAIN, "plaene", "erdgeschoss.png"))
+    assert datei.exists()
+
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/plan/bild/get", "plan_id": "erdgeschoss"}
+    )
+    msg = await client.receive_json()
+    assert msg["result"] == {"mime": "image/png", "bild": PNG}
+
+    # Falsche Art oder kaputt: abgelehnt, nichts gespeichert.
+    for bild, mime in ((PNG, "image/jpeg"), ("kein-bild", "image/png")):
+        await client.send_json_auto_id(
+            {
+                "type": f"{DOMAIN}/plan/import",
+                "raeume": [],
+                "plan": {**plan, "bild": bild, "mime": mime},
+            }
+        )
+        assert (await client.receive_json())["error"]["code"] == "invalid"
+    await client.send_json_auto_id({"type": f"{DOMAIN}/plan/import", "raeume": []})
+    assert (await client.receive_json())["error"]["code"] == "invalid"
+
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/plan/delete", "plan_id": "erdgeschoss"}
+    )
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    assert not datei.exists()
+    assert loaded.runtime_data.store.model.plaene == []

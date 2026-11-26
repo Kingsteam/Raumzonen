@@ -32,6 +32,7 @@ from .const import (
     MAX_MELDER,
     MAX_NACHLAUF_S,
     MAX_PERSONEN,
+    MAX_PLAENE,
     MAX_RAND_CM,
     MAX_REICHWEITE_CM,
     MAX_WEG_CM,
@@ -193,10 +194,29 @@ class RaumConfig:
 
 
 @dataclass(slots=True)
+class PlanConfig:
+    """Ein Grundriss als Hintergrundbild im Hausplan (Bild liegt als Datei bei).
+
+    Bildpunkt (px, py) mit py nach unten liegt im Haus bei
+    ``(x + px * cm_pro_px, y + (hoehe_px - py) * cm_pro_px)``.
+    """
+
+    id: str
+    name: str
+    datei: str
+    cm_pro_px: float
+    breite_px: int
+    hoehe_px: int
+    x: float = 0.0
+    y: float = 0.0
+
+
+@dataclass(slots=True)
 class RaumzonenModel:
     """Alles, was gespeichert wird."""
 
     raeume: list[RaumConfig] = field(default_factory=list)
+    plaene: list[PlanConfig] = field(default_factory=list)
 
     def raum(self, raum_id: str) -> RaumConfig:
         """Raum nach ID (``KeyError``, wenn es ihn nicht gibt)."""
@@ -218,6 +238,18 @@ class RaumzonenModel:
 
     def validate(self) -> None:
         """Prüft das ganze Modell; wirft ``ValueError`` mit Klartext."""
+        _unique("Grundriss", [p.id for p in self.plaene])
+        if len(self.plaene) > MAX_PLAENE:
+            raise ValueError(f"höchstens {MAX_PLAENE} Grundrisse")
+        for plan in self.plaene:
+            _ident("Grundriss", plan.id)
+            if not plan.datei or "/" in plan.datei or ".." in plan.datei:
+                raise ValueError(f"Grundriss {plan.id}: Datei ungültig")
+            _range("cm_pro_px", plan.cm_pro_px, 0.01, 100)
+            _range("breite_px", plan.breite_px, 1, 20000)
+            _range("hoehe_px", plan.hoehe_px, 1, 20000)
+            for name in ("x", "y"):
+                _range(name, getattr(plan, name), -100_000, 100_000)
         _unique("Raum", [r.id for r in self.raeume])
         for raum in self.raeume:
             _ident("Raum", raum.id)

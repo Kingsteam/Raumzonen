@@ -4,6 +4,27 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.11.0] - 2026-11-26
+
+### Hinzugefügt
+
+- Grundriss als Hintergrund: Das Bild eines übernommenen Plans wird in
+  Home Assistant gespeichert (`<config>/raumzonen/plaene/`, nicht im
+  Recorder) und im Hausplan und beim Zeichnen im Raum hinterlegt (Knopf
+  „Grundriss im Hintergrund“). Grundrisse lassen sich im Hausplan löschen.
+- Auch Bilder (PNG, JPG) ohne erkannte Räume lassen sich übernehmen; den
+  Maßstab setzt man mit einer Strecke im Bild (zweimal tippen, Länge
+  eingeben).
+- Öffnungen in Wänden: Griffe an beiden Enden zum Ändern der Breite, die
+  gewählte Öffnung lässt sich an der Wand entlang verschieben.
+- Maße der Wände und Öffnungen einblendbar (Knopf „Maße der Wände“).
+- WebSocket `plan/bild/get` (alle), `plan/delete` (Admins); `plan/import`
+  nimmt das Bild mit.
+
+### Behoben
+
+- In Räumen nur mit Meldern ließ sich der (unsichtbare) Sensor greifen.
+
 ## [0.10.1] - 2026-11-26
 
 ### Behoben

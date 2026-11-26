@@ -11,6 +11,7 @@ from typing import Any
 from .const import DEFAULT_AUFNAHME_TAGE
 from .model import (
     OeffnungConfig,
+    PlanConfig,
     RaumConfig,
     RaumzonenModel,
     RegelConfig,
@@ -169,13 +170,47 @@ def raum_to_dict(raum: RaumConfig) -> dict[str, Any]:
     }
 
 
+def plan_from_dict(data: dict[str, Any]) -> PlanConfig:
+    """Grundriss aus JSON."""
+    return PlanConfig(
+        id=str(data["id"]),
+        name=str(data.get("name", data["id"])),
+        datei=str(data["datei"]),
+        cm_pro_px=float(data["cm_pro_px"]),
+        breite_px=int(data["breite_px"]),
+        hoehe_px=int(data["hoehe_px"]),
+        x=float(data.get("x", 0.0)),
+        y=float(data.get("y", 0.0)),
+    )
+
+
+def plan_to_dict(plan: PlanConfig) -> dict[str, Any]:
+    """Grundriss als JSON."""
+    return {
+        "id": plan.id,
+        "name": plan.name,
+        "datei": plan.datei,
+        "cm_pro_px": plan.cm_pro_px,
+        "breite_px": plan.breite_px,
+        "hoehe_px": plan.hoehe_px,
+        "x": plan.x,
+        "y": plan.y,
+    }
+
+
 def model_from_dict(data: dict[str, Any]) -> RaumzonenModel:
     """Ganzes Modell aus JSON; prüft es auch."""
-    model = RaumzonenModel(raeume=[raum_from_dict(r) for r in data.get("raeume", [])])
+    model = RaumzonenModel(
+        raeume=[raum_from_dict(r) for r in data.get("raeume", [])],
+        plaene=[plan_from_dict(p) for p in data.get("plaene", [])],
+    )
     model.validate()
     return model
 
 
 def model_to_dict(model: RaumzonenModel) -> dict[str, Any]:
     """Ganzes Modell als JSON."""
-    return {"raeume": [raum_to_dict(r) for r in model.raeume]}
+    return {
+        "raeume": [raum_to_dict(r) for r in model.raeume],
+        "plaene": [plan_to_dict(p) for p in model.plaene],
+    }

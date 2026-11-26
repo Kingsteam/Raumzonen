@@ -73,7 +73,15 @@ erkannt hat: nummerierte Räume, grün die Türen, grau die Fenster.
 4. **Übernehmen**: Wände, Türen (mit „führt zu“) und die Lage im Haus
    werden gesetzt. Bei Räumen mit Radarsensor danach den Sensor einmessen.
 
-Das Bild bleibt im Browser; gespeichert werden nur Wände und Türen.
+Das Bild wird in deinem Home Assistant gespeichert (nicht im Recorder) und
+liegt dann im Hausplan und beim Zeichnen im Raum im Hintergrund; ein- und
+ausblenden mit dem Bild-Knopf links. Ein Bild ohne erkannte Räume (z. B.
+eine Skizze als PNG) lässt sich als Hintergrund übernehmen: zweimal ins
+Bild tippen, Länge der Strecke eingeben.
+
+**Öffnungen anpassen:** Öffnung antippen, dann die runden Griffe an den
+Enden ziehen (Breite) oder die Öffnung selbst ziehen (verschieben).
+**Maße:** Lineal-Knopf links blendet die Länge jeder Wand ein.
 
 ### Sensor umsetzen oder einmessen
 

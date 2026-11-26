@@ -79,8 +79,21 @@ export interface Raum {
   haus_gesetzt: boolean;
 }
 
+/** Grundriss als Hintergrund: Bildpunkt (px, py), py nach unten, liegt im Haus bei (x + px·k, y + (hoehe_px − py)·k). */
+export interface Plan {
+  id: string;
+  name: string;
+  datei: string;
+  cm_pro_px: number;
+  breite_px: number;
+  hoehe_px: number;
+  x: number;
+  y: number;
+}
+
 export interface RoomsResult {
   raeume: Raum[];
+  plaene?: Plan[];
   vorlagen: Record<string, Regel>;
   arten: ZonenArt[];
   grenzen: Record<string, number>;

@@ -41,6 +41,9 @@ RAUM_ARTEN: Final = (RAUM_RADAR, RAUM_MELDER)
 # Ein Melder-Raum hat genau eine Zone: der ganze Raum.
 MELDER_ZONE_ID: Final = "anwesenheit"
 MAX_MELDER: Final = 10
+# Grundrisse als Hintergrund (Bilder unter <config>/raumzonen/plaene/).
+MAX_PLAENE: Final = 10
+MAX_PLAN_BYTES: Final = 8 * 1024 * 1024
 MAX_NACHLAUF_S: Final = 3600.0
 # Diese Arten von Binärsensoren gelten als Melder.
 MELDER_KLASSEN: Final = ("motion", "occupancy", "presence")

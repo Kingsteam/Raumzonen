@@ -638,6 +638,31 @@ export const styles = css`
     font-weight: 700;
     fill: var(--primary-text-color);
   }
+  .plan-vorschau {
+    cursor: crosshair;
+  }
+  .plan-strecke {
+    fill: var(--accent);
+    stroke: var(--accent);
+  }
+  .mass-text {
+    text-anchor: middle;
+    font-size: 12px;
+    font-weight: 600;
+    fill: var(--primary-text-color);
+    paint-order: stroke;
+    stroke: var(--card);
+    stroke-width: 3px;
+    pointer-events: none;
+  }
+  .mass-text.klein {
+    font-size: 11px;
+    fill: var(--rz-tuer);
+  }
+  image.plan-hintergrund {
+    pointer-events: none;
+    opacity: 0.45;
+  }
   .plan-luecke {
     stroke: var(--muted);
     stroke-dasharray: 20 14;

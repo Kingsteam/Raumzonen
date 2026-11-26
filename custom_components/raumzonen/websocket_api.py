@@ -34,7 +34,10 @@ Vertrag ``raumzonen/1`` (``vertrag.py``, ``api.py``):
 * ``raumzonen/room/create``, ``raumzonen/room/delete``: Raum anlegen oder
   löschen (Kopie, prüfen, speichern, neu laden). Nur Admins.
 * ``raumzonen/plan/import``: Wände, Türen und Lage im Haus für mehrere Räume
-  auf einmal (aus einem Grundriss, den das Panel erkannt hat). Nur Admins.
+  auf einmal (aus einem Grundriss, den das Panel erkannt hat), dazu das Bild
+  als Hintergrund. Nur Admins.
+* ``raumzonen/plan/bild/get``: Bild eines Grundrisses (alle).
+* ``raumzonen/plan/delete``: Grundriss löschen. Nur Admins.
 """
 
 from __future__ import annotations
@@ -54,6 +57,7 @@ from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util, slugify
 import voluptuous as vol
 
+from . import plaene as plan_dateien
 from .api import ARTEN, async_get_api
 from .const import (
     DOMAIN,
@@ -75,10 +79,11 @@ from .const import (
 )
 from .core.room import ZONE_ARTEN
 from .discovery import converter_zones, find_fp400_entities, suggest_topic
-from .model import REGEL_VORLAGEN, RaumConfig, SensorConfig
+from .model import REGEL_VORLAGEN, PlanConfig, RaumConfig, SensorConfig
 from .panel import async_reload_keep_panel
 from .serialize import (
     oeffnung_from_dict,
+    plan_to_dict,
     raum_to_dict,
     regel_from_dict,
     regel_to_dict,
@@ -128,6 +133,8 @@ def async_register(hass: HomeAssistant) -> None:
         ws_room_create,
         ws_room_delete,
         ws_plan_import,
+        ws_plan_bild_get,
+        ws_plan_delete,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -146,6 +153,7 @@ def ws_rooms_get(
         msg["id"],
         {
             "raeume": [raum_to_dict(r) for r in entry.runtime_data.store.model.raeume],
+            "plaene": [plan_to_dict(p) for p in entry.runtime_data.store.model.plaene],
             "vorlagen": {k: regel_to_dict(v) for k, v in REGEL_VORLAGEN.items()},
             "arten": list(ZONE_ARTEN),
             "darf_aendern": connection.user.is_admin,
@@ -797,6 +805,19 @@ OEFFNUNG_SCHEMA = vol.Schema(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): f"{DOMAIN}/plan/import",
+        # Bild des Grundrisses als Hintergrund (optional).
+        vol.Optional("plan"): vol.Schema(
+            {
+                vol.Required("name"): vol.All(str, vol.Length(min=1, max=60)),
+                vol.Required("mime"): vol.In(tuple(plan_dateien.ENDUNG)),
+                vol.Required("bild"): str,
+                vol.Required("cm_pro_px"): vol.Coerce(float),
+                vol.Required("breite_px"): int,
+                vol.Required("hoehe_px"): int,
+                vol.Optional("x", default=0.0): vol.Coerce(float),
+                vol.Optional("y", default=0.0): vol.Coerce(float),
+            }
+        ),
         vol.Required("raeume"): vol.All(
             [
                 vol.Schema(
@@ -816,8 +837,7 @@ OEFFNUNG_SCHEMA = vol.Schema(
                         ),
                     }
                 )
-            ],
-            vol.Length(min=1),
+            ]
         ),
     }
 )
@@ -845,6 +865,24 @@ async def ws_plan_import(
             raum.haus_x, raum.haus_y = data["haus"]["x"], data["haus"]["y"]
             raum.haus_winkel = 180.0 if winkel == -180 else winkel
             raum.haus_gesetzt = True
+        roh: bytes | None = None
+        if plan := msg.get("plan"):
+            roh = plan_dateien.dekodieren(plan["bild"], plan["mime"])
+            plan_id = _new_id(plan["name"], {p.id for p in model.plaene})
+            model.plaene.append(
+                PlanConfig(
+                    id=plan_id,
+                    name=plan["name"],
+                    datei=f"{plan_id}.{plan_dateien.ENDUNG[plan['mime']]}",
+                    cm_pro_px=plan["cm_pro_px"],
+                    breite_px=plan["breite_px"],
+                    hoehe_px=plan["hoehe_px"],
+                    x=plan["x"],
+                    y=plan["y"],
+                )
+            )
+        elif not msg["raeume"]:
+            raise ValueError("Nichts zu übernehmen")
         model.validate()
     except KeyError:
         connection.send_error(msg["id"], "not_found", "Raum nicht gefunden")
@@ -852,7 +890,67 @@ async def ws_plan_import(
     except (ValueError, TypeError) as err:
         connection.send_error(msg["id"], "invalid", str(err))
         return
+    if roh is not None:
+        await hass.async_add_executor_job(
+            plan_dateien.schreiben, hass, model.plaene[-1].datei, roh
+        )
     store.model = model
     await store.async_save()
+    async_reload_keep_panel(hass, entry.entry_id)
+    connection.send_result(msg["id"])
+
+
+def _plan(hass: HomeAssistant, plan_id: str) -> PlanConfig | None:
+    entry = _entry(hass)
+    if entry is None:
+        return None
+    return next(
+        (p for p in entry.runtime_data.store.model.plaene if p.id == plan_id), None
+    )
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/plan/bild/get", vol.Required("plan_id"): str}
+)
+@websocket_api.async_response
+async def ws_plan_bild_get(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Bild eines Grundrisses (Base64)."""
+    plan = _plan(hass, msg["plan_id"])
+    if plan is None:
+        connection.send_error(msg["id"], "not_found", "Grundriss nicht gefunden")
+        return
+    try:
+        bild = await hass.async_add_executor_job(plan_dateien.lesen, hass, plan.datei)
+    except OSError:
+        connection.send_error(msg["id"], "not_found", "Bild des Grundrisses fehlt")
+        return
+    endung = plan.datei.rsplit(".", 1)[-1]
+    connection.send_result(
+        msg["id"], {"mime": plan_dateien.MIME.get(endung, "image/jpeg"), "bild": bild}
+    )
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/plan/delete", vol.Required("plan_id"): str}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_plan_delete(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Grundriss samt Bild löschen (Räume bleiben, wie sie sind)."""
+    entry = _entry(hass)
+    plan = _plan(hass, msg["plan_id"])
+    if entry is None or plan is None:
+        connection.send_error(msg["id"], "not_found", "Grundriss nicht gefunden")
+        return
+    store = entry.runtime_data.store
+    model = copy.deepcopy(store.model)
+    model.plaene = [p for p in model.plaene if p.id != plan.id]
+    store.model = model
+    await store.async_save()
+    await hass.async_add_executor_job(plan_dateien.loeschen, hass, plan.datei)
     async_reload_keep_panel(hass, entry.entry_id)
     connection.send_result(msg["id"])
