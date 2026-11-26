@@ -18,7 +18,7 @@ Zone, Spuren, die nicht plötzlich verschwinden. Konzept: `docs/KONZEPT.md`
 (allgemeine Fassung; die vollständige und die Auswertung der Aufnahmen
 liegen in `haus-privat/raumzonen/docs/`).
 
-Stand 0.18.0: **Phase 0 bis 4a, Hausplan, Türen in Wänden.** Rechenkern in reinem Python, getestet gegen
+Stand 0.19.0: **Phase 0 bis 4a, Hausplan, Türen in Wänden.** Rechenkern in reinem Python, getestet gegen
 anonymisierte Aufnahmen; Sensor-Anbindung (MQTT oder Entitäten, nur lesen),
 Entitäten je Zone und Raum, Ereignis `raumzonen_zone`, Einrichtung über den
 Options-Flow; Panel „Raumzonen“ (sehen alle, ändern nur Admins) mit
@@ -105,6 +105,7 @@ Nächstes: 4b (Herkunft, Einstufung, Sicherheit, `hinweis/1`); siehe
 | `tests/` | pytest; `test_traces.py` = Ziele des Besitzers an echten Aufnahmen; `test_vertrag.py` prüft auch die Beispiele in `docs/homebrain/beispiele/` |
 | `docs/` | `KONZEPT.md`, `DATENFORMAT.md`, `HANDBUCH.md`; `homebrain/` (Vertrag `raumzonen/1`, Beispiele) |
 | `frontend-src/` | Quelltext des Panels: TypeScript + Lit, Vite, vitest. `heat.ts` (weiche Bewegungskarte: Gauß-Filter, Bild, `dauer`, Zonen-Vorschläge `flecken`), `haus.ts` (Türen aller Räume `tuerenVon`, Profil `vereinigen`/`wechsel`), `einmessen.ts` (Lage des Sensors aus drei Stellen: `einmessen`, `stellenProblem`, `stelle`), `grundriss.ts` (Plan erkennen: `jpegAusPdf`, `erkenneGrundriss`, `uebernehmen`; Bild bleibt im Browser, echte Pläne nur in `haus-privat/raumzonen/plaene`), `geometry.ts` (wie `core/geometry.py`/`pose.py`, dazu `moveWithSensor`, Hausplan `toHouse`/`roomOutline`/`defaultLagen`), `editor.ts` (Bearbeitungsschritte, Rückgängig, Rollen `ROLLEN`/`rolleOf`/`applyRolle`, `regelSatz`, `rotateForm`, `edgeMidpoints`, Öffnungen `openingFromDrag`/`shiftOpenings`/`clampOpenings`), `panel.ts` (Oberfläche), `styles.ts` (Gestaltung wie das Panel „Bewässerung“ aus FlowerPower), `types.ts` |
+| `frontend-src/src/karte.ts`, `karte-geo.ts` | Dashboard-Karte `custom:raumzonen-karte` (nur Anzeige; `rooms/get`, `live/subscribe`, `plan/bild/get`), eigener Bau (`vite build --mode karte` → `frontend/raumzonen-karte.js`), geladen über `frontend.add_extra_js_url` in `panel.py` |
 | `custom_components/raumzonen/frontend/` | **gebautes** Panel, nie von Hand ändern; CI prüft, dass es zum Quelltext passt |
 | `devtools/testinstanz/` | simulierte Test-Instanz: `start.py` (Ersteinrichtung, Schlafzimmer und Flur über den Options-Flow, Hausplan), Simulator `raumzonen_sim` (Schlafzimmer: erfundene Szene oder private Aufnahmen über `RAUMZONEN_AUFNAHMEN`, im Flur geht eine erfundene Figur, zwei Bewegungsmelder in den Bereichen Küche und Bad) |
 | `docs/bilder/` | Bilder fürs Handbuch aus der Test-Instanz (256 Farben) |

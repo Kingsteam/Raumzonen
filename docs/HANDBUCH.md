@@ -116,6 +116,21 @@ die Anzeige „<Raum> Anwesenheit“ (belegt, solange jemand im Raum ist, frei
 5 Sekunden nach dem Letzten). Dafür braucht es keine eigene Zone; in der
 Zonen-Liste steht sie oben als „Anwesenheit · ganzer Raum, von selbst“.
 
+**Karte fürs Dashboard:** Dashboard bearbeiten → „Karte hinzufügen“ →
+„Raumzonen“ (oder „Manuell“ mit dem Text unten). Die Karte zeigt live, wo
+die Zonen liegen und ob sie belegt sind, und wer gerade wo ist; sie ändert
+nichts.
+
+```yaml
+type: custom:raumzonen-karte
+raum: haus          # oder ein Raum, z. B. wohnzimmer
+stockwerk: erdgeschoss   # optional, nur beim Hausplan
+titel: Erdgeschoss       # optional
+hintergrund: true        # Grundriss zeigen
+figuren: true            # Personen zeigen
+hoehe: 320               # Höhe in Pixel
+```
+
 **Wege durchs Haus:** Damit Raumzonen sieht, wer von wo nach wo geht,
 braucht jede Tür (1) eine Verbindung zur Tür gegenüber (siehe oben) und (2)
 in Radar-Räumen eine **Tür-Zone**: im Raum unter „Zonen“ auf **„Tür-Zonen

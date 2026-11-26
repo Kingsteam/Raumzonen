@@ -40,6 +40,13 @@ async def test_panel_registered(hass: HomeAssistant, loaded: MockConfigEntry) ->
     assert PANEL_URL in panels
     # Live-Punkte für alle (Entscheidung des Besitzers); ändern nur Admins.
     assert not panels[PANEL_URL].require_admin
+    # Die Dashboard-Karte wird auf allen Seiten geladen (genau einmal).
+    karten = [
+        u
+        for u in hass.data[frontend.DATA_EXTRA_MODULE_URL].urls
+        if "raumzonen-karte.js" in u
+    ]
+    assert len(karten) == 1
     assert await hass.config_entries.async_unload(loaded.entry_id)
     assert PANEL_URL not in hass.data[frontend.DATA_PANELS]
 

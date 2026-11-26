@@ -23,6 +23,9 @@ WEBCOMPONENT = "raumzonen-panel"
 STATIC_URL = f"/{DOMAIN}_static"
 FRONTEND_DIR = Path(__file__).parent / "frontend"
 PANEL_FILE = "raumzonen-panel.js"
+# Dashboard-Karte „Raumzonen“ (custom:raumzonen-karte), auf allen Seiten geladen.
+KARTE_FILE = "raumzonen-karte.js"
+_KARTE = f"{DOMAIN}_karte_url"
 _REGISTERED = f"{DOMAIN}_static_registered"
 _KEEP_PANEL = f"{DOMAIN}_keep_panel"
 
@@ -35,6 +38,10 @@ async def async_register_panel(hass: HomeAssistant) -> None:
         await hass.http.async_register_static_paths(
             [StaticPathConfig(STATIC_URL, str(FRONTEND_DIR), cache_headers=False)]
         )
+    if not hass.data.get(_KARTE):
+        karte = await hass.async_add_executor_job(_file_version, KARTE_FILE)
+        hass.data[_KARTE] = f"{STATIC_URL}/{KARTE_FILE}?v={karte}"
+        frontend.add_extra_js_url(hass, hass.data[_KARTE])
     if PANEL_URL in hass.data.get(frontend.DATA_PANELS, {}):
         return
     version = await hass.async_add_executor_job(_file_version, PANEL_FILE)

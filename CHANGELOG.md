@@ -4,6 +4,18 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.19.0] - 2026-11-26
+
+### Hinzugefügt
+
+- Dashboard-Karte „Raumzonen“ (`custom:raumzonen-karte`): ein Raum oder der
+  Hausplan live, nur zum Ansehen: Wände, Zonen in ihren Farben (belegt
+  kräftig, frei blass), „Anwesenheit“ als Füllung des Raums, Personen als
+  Punkte, Grundriss im Hintergrund; „nicht erreichbar“ gestrichelt.
+  Einstellungen: `raum` (`haus` oder Kennung), `stockwerk`, `titel`,
+  `hintergrund`, `figuren`, `hoehe`. Raumzonen lädt die Karte selbst, eine
+  Ressource muss man nicht anlegen.
+
 ## [0.18.0] - 2026-11-26
 
 ### Hinzugefügt
