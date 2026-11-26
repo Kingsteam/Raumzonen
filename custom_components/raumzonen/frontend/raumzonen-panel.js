@@ -3,18 +3,18 @@
  * Copyright 2019 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const ve = globalThis, je = ve.ShadowRoot && (ve.ShadyCSS === void 0 || ve.ShadyCSS.nativeShadow) && "adoptedStyleSheets" in Document.prototype && "replace" in CSSStyleSheet.prototype, Ue = Symbol(), Qe = /* @__PURE__ */ new WeakMap();
-let At = class {
+const ye = globalThis, Ve = ye.ShadowRoot && (ye.ShadyCSS === void 0 || ye.ShadyCSS.nativeShadow) && "adoptedStyleSheets" in Document.prototype && "replace" in CSSStyleSheet.prototype, Ge = Symbol(), tt = /* @__PURE__ */ new WeakMap();
+let Tt = class {
   constructor(t, n, s) {
-    if (this._$cssResult$ = !0, s !== Ue) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
+    if (this._$cssResult$ = !0, s !== Ge) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
     this.cssText = t, this.t = n;
   }
   get styleSheet() {
     let t = this.o;
     const n = this.t;
-    if (je && t === void 0) {
+    if (Ve && t === void 0) {
       const s = n !== void 0 && n.length === 1;
-      s && (t = Qe.get(n)), t === void 0 && ((this.o = t = new CSSStyleSheet()).replaceSync(this.cssText), s && Qe.set(n, t));
+      s && (t = tt.get(n)), t === void 0 && ((this.o = t = new CSSStyleSheet()).replaceSync(this.cssText), s && tt.set(n, t));
     }
     return t;
   }
@@ -22,33 +22,33 @@ let At = class {
     return this.cssText;
   }
 };
-const Nt = (e) => new At(typeof e == "string" ? e : e + "", void 0, Ue), Ct = (e, ...t) => {
+const jt = (e) => new Tt(typeof e == "string" ? e : e + "", void 0, Ge), Ut = (e, ...t) => {
   const n = e.length === 1 ? e[0] : t.reduce((s, i, r) => s + ((a) => {
     if (a._$cssResult$ === !0) return a.cssText;
     if (typeof a == "number") return a;
     throw Error("Value passed to 'css' function must be a 'css' function result: " + a + ". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.");
   })(i) + e[r + 1], e[0]);
-  return new At(n, e, Ue);
-}, jt = (e, t) => {
-  if (je) e.adoptedStyleSheets = t.map((n) => n instanceof CSSStyleSheet ? n : n.styleSheet);
+  return new Tt(n, e, Ge);
+}, Wt = (e, t) => {
+  if (Ve) e.adoptedStyleSheets = t.map((n) => n instanceof CSSStyleSheet ? n : n.styleSheet);
   else for (const n of t) {
-    const s = document.createElement("style"), i = ve.litNonce;
+    const s = document.createElement("style"), i = ye.litNonce;
     i !== void 0 && s.setAttribute("nonce", i), s.textContent = n.cssText, e.appendChild(s);
   }
-}, et = je ? (e) => e : (e) => e instanceof CSSStyleSheet ? ((t) => {
+}, nt = Ve ? (e) => e : (e) => e instanceof CSSStyleSheet ? ((t) => {
   let n = "";
   for (const s of t.cssRules) n += s.cssText;
-  return Nt(n);
+  return jt(n);
 })(e) : e;
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const { is: Ut, defineProperty: Ft, getOwnPropertyDescriptor: Wt, getOwnPropertyNames: Gt, getOwnPropertySymbols: Vt, getPrototypeOf: Kt } = Object, Ae = globalThis, tt = Ae.trustedTypes, qt = tt ? tt.emptyScript : "", Xt = Ae.reactiveElementPolyfillSupport, ue = (e, t) => e, _e = { toAttribute(e, t) {
+const { is: Vt, defineProperty: Gt, getOwnPropertyDescriptor: Kt, getOwnPropertyNames: qt, getOwnPropertySymbols: Xt, getPrototypeOf: Jt } = Object, Te = globalThis, st = Te.trustedTypes, Yt = st ? st.emptyScript : "", Qt = Te.reactiveElementPolyfillSupport, pe = (e, t) => e, Se = { toAttribute(e, t) {
   switch (t) {
     case Boolean:
-      e = e ? qt : null;
+      e = e ? Yt : null;
       break;
     case Object:
     case Array:
@@ -73,23 +73,23 @@ const { is: Ut, defineProperty: Ft, getOwnPropertyDescriptor: Wt, getOwnProperty
       }
   }
   return n;
-} }, Fe = (e, t) => !Ut(e, t), nt = { attribute: !0, type: String, converter: _e, reflect: !1, useDefault: !1, hasChanged: Fe };
-Symbol.metadata ??= Symbol("metadata"), Ae.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
-let te = class extends HTMLElement {
+} }, Ke = (e, t) => !Vt(e, t), it = { attribute: !0, type: String, converter: Se, reflect: !1, useDefault: !1, hasChanged: Ke };
+Symbol.metadata ??= Symbol("metadata"), Te.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
+let ne = class extends HTMLElement {
   static addInitializer(t) {
     this._$Ei(), (this.l ??= []).push(t);
   }
   static get observedAttributes() {
     return this.finalize(), this._$Eh && [...this._$Eh.keys()];
   }
-  static createProperty(t, n = nt) {
+  static createProperty(t, n = it) {
     if (n.state && (n.attribute = !1), this._$Ei(), this.prototype.hasOwnProperty(t) && ((n = Object.create(n)).wrapped = !0), this.elementProperties.set(t, n), !n.noAccessor) {
       const s = Symbol(), i = this.getPropertyDescriptor(t, s, n);
-      i !== void 0 && Ft(this.prototype, t, i);
+      i !== void 0 && Gt(this.prototype, t, i);
     }
   }
   static getPropertyDescriptor(t, n, s) {
-    const { get: i, set: r } = Wt(this.prototype, t) ?? { get() {
+    const { get: i, set: r } = Kt(this.prototype, t) ?? { get() {
       return this[n];
     }, set(a) {
       this[n] = a;
@@ -100,17 +100,17 @@ let te = class extends HTMLElement {
     }, configurable: !0, enumerable: !0 };
   }
   static getPropertyOptions(t) {
-    return this.elementProperties.get(t) ?? nt;
+    return this.elementProperties.get(t) ?? it;
   }
   static _$Ei() {
-    if (this.hasOwnProperty(ue("elementProperties"))) return;
-    const t = Kt(this);
+    if (this.hasOwnProperty(pe("elementProperties"))) return;
+    const t = Jt(this);
     t.finalize(), t.l !== void 0 && (this.l = [...t.l]), this.elementProperties = new Map(t.elementProperties);
   }
   static finalize() {
-    if (this.hasOwnProperty(ue("finalized"))) return;
-    if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(ue("properties"))) {
-      const n = this.properties, s = [...Gt(n), ...Vt(n)];
+    if (this.hasOwnProperty(pe("finalized"))) return;
+    if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(pe("properties"))) {
+      const n = this.properties, s = [...qt(n), ...Xt(n)];
       for (const i of s) this.createProperty(i, n[i]);
     }
     const t = this[Symbol.metadata];
@@ -129,8 +129,8 @@ let te = class extends HTMLElement {
     const n = [];
     if (Array.isArray(t)) {
       const s = new Set(t.flat(1 / 0).reverse());
-      for (const i of s) n.unshift(et(i));
-    } else t !== void 0 && n.push(et(t));
+      for (const i of s) n.unshift(nt(i));
+    } else t !== void 0 && n.push(nt(t));
     return n;
   }
   static _$Eu(t, n) {
@@ -156,7 +156,7 @@ let te = class extends HTMLElement {
   }
   createRenderRoot() {
     const t = this.shadowRoot ?? this.attachShadow(this.constructor.shadowRootOptions);
-    return jt(t, this.constructor.elementStyles), t;
+    return Wt(t, this.constructor.elementStyles), t;
   }
   connectedCallback() {
     this.renderRoot ??= this.createRenderRoot(), this.enableUpdating(!0), this._$EO?.forEach((t) => t.hostConnected?.());
@@ -172,14 +172,14 @@ let te = class extends HTMLElement {
   _$ET(t, n) {
     const s = this.constructor.elementProperties.get(t), i = this.constructor._$Eu(t, s);
     if (i !== void 0 && s.reflect === !0) {
-      const r = (s.converter?.toAttribute !== void 0 ? s.converter : _e).toAttribute(n, s.type);
+      const r = (s.converter?.toAttribute !== void 0 ? s.converter : Se).toAttribute(n, s.type);
       this._$Em = t, r == null ? this.removeAttribute(i) : this.setAttribute(i, r), this._$Em = null;
     }
   }
   _$AK(t, n) {
     const s = this.constructor, i = s._$Eh.get(t);
     if (i !== void 0 && this._$Em !== i) {
-      const r = s.getPropertyOptions(i), a = typeof r.converter == "function" ? { fromAttribute: r.converter } : r.converter?.fromAttribute !== void 0 ? r.converter : _e;
+      const r = s.getPropertyOptions(i), a = typeof r.converter == "function" ? { fromAttribute: r.converter } : r.converter?.fromAttribute !== void 0 ? r.converter : Se;
       this._$Em = i;
       const o = a.fromAttribute(n, r.type);
       this[i] = o ?? this._$Ej?.get(i) ?? o, this._$Em = null;
@@ -188,7 +188,7 @@ let te = class extends HTMLElement {
   requestUpdate(t, n, s, i = !1, r) {
     if (t !== void 0) {
       const a = this.constructor;
-      if (i === !1 && (r = this[t]), s ??= a.getPropertyOptions(t), !((s.hasChanged ?? Fe)(r, n) || s.useDefault && s.reflect && r === this._$Ej?.get(t) && !this.hasAttribute(a._$Eu(t, s)))) return;
+      if (i === !1 && (r = this[t]), s ??= a.getPropertyOptions(t), !((s.hasChanged ?? Ke)(r, n) || s.useDefault && s.reflect && r === this._$Ej?.get(t) && !this.hasAttribute(a._$Eu(t, s)))) return;
       this.C(t, n, s);
     }
     this.isUpdatePending === !1 && (this._$ES = this._$EP());
@@ -256,75 +256,75 @@ let te = class extends HTMLElement {
   firstUpdated(t) {
   }
 };
-te.elementStyles = [], te.shadowRootOptions = { mode: "open" }, te[ue("elementProperties")] = /* @__PURE__ */ new Map(), te[ue("finalized")] = /* @__PURE__ */ new Map(), Xt?.({ ReactiveElement: te }), (Ae.reactiveElementVersions ??= []).push("2.1.2");
+ne.elementStyles = [], ne.shadowRootOptions = { mode: "open" }, ne[pe("elementProperties")] = /* @__PURE__ */ new Map(), ne[pe("finalized")] = /* @__PURE__ */ new Map(), Qt?.({ ReactiveElement: ne }), (Te.reactiveElementVersions ??= []).push("2.1.2");
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const We = globalThis, st = (e) => e, Me = We.trustedTypes, it = Me ? Me.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, Rt = "$lit$", N = `lit$${Math.random().toFixed(9).slice(2)}$`, Et = "?" + N, Jt = `<${Et}>`, X = document, me = () => X.createComment(""), fe = (e) => e === null || typeof e != "object" && typeof e != "function", Ge = Array.isArray, Yt = (e) => Ge(e) || typeof e?.[Symbol.iterator] == "function", Pe = `[ 	
-\f\r]`, re = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, rt = /-->/g, at = />/g, G = RegExp(`>|${Pe}(?:([^\\s"'>=/]+)(${Pe}*=${Pe}*(?:[^ 	
-\f\r"'\`<>=]|("|')|))|$)`, "g"), ot = /'/g, lt = /"/g, Pt = /^(?:script|style|textarea|title)$/i, Tt = (e) => (t, ...n) => ({ _$litType$: e, strings: t, values: n }), u = Tt(1), x = Tt(2), se = Symbol.for("lit-noChange"), f = Symbol.for("lit-nothing"), ht = /* @__PURE__ */ new WeakMap(), q = X.createTreeWalker(X, 129);
-function Lt(e, t) {
-  if (!Ge(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
-  return it !== void 0 ? it.createHTML(t) : t;
+const qe = globalThis, rt = (e) => e, Ae = qe.trustedTypes, at = Ae ? Ae.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, Et = "$lit$", C = `lit$${Math.random().toFixed(9).slice(2)}$`, Pt = "?" + C, en = `<${Pt}>`, J = document, ge = () => J.createComment(""), be = (e) => e === null || typeof e != "object" && typeof e != "function", Xe = Array.isArray, tn = (e) => Xe(e) || typeof e?.[Symbol.iterator] == "function", Le = `[ 	
+\f\r]`, le = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, ot = /-->/g, lt = />/g, G = RegExp(`>|${Le}(?:([^\\s"'>=/]+)(${Le}*=${Le}*(?:[^ 	
+\f\r"'\`<>=]|("|')|))|$)`, "g"), ht = /'/g, ct = /"/g, Lt = /^(?:script|style|textarea|title)$/i, It = (e) => (t, ...n) => ({ _$litType$: e, strings: t, values: n }), u = It(1), x = It(2), ie = Symbol.for("lit-noChange"), m = Symbol.for("lit-nothing"), ut = /* @__PURE__ */ new WeakMap(), X = J.createTreeWalker(J, 129);
+function Ot(e, t) {
+  if (!Xe(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
+  return at !== void 0 ? at.createHTML(t) : t;
 }
-const Qt = (e, t) => {
+const nn = (e, t) => {
   const n = e.length - 1, s = [];
-  let i, r = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", a = re;
+  let i, r = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", a = le;
   for (let o = 0; o < n; o++) {
     const l = e[o];
     let h, c, d = -1, g = 0;
-    for (; g < l.length && (a.lastIndex = g, c = a.exec(l), c !== null); ) g = a.lastIndex, a === re ? c[1] === "!--" ? a = rt : c[1] !== void 0 ? a = at : c[2] !== void 0 ? (Pt.test(c[2]) && (i = RegExp("</" + c[2], "g")), a = G) : c[3] !== void 0 && (a = G) : a === G ? c[0] === ">" ? (a = i ?? re, d = -1) : c[1] === void 0 ? d = -2 : (d = a.lastIndex - c[2].length, h = c[1], a = c[3] === void 0 ? G : c[3] === '"' ? lt : ot) : a === lt || a === ot ? a = G : a === rt || a === at ? a = re : (a = G, i = void 0);
+    for (; g < l.length && (a.lastIndex = g, c = a.exec(l), c !== null); ) g = a.lastIndex, a === le ? c[1] === "!--" ? a = ot : c[1] !== void 0 ? a = lt : c[2] !== void 0 ? (Lt.test(c[2]) && (i = RegExp("</" + c[2], "g")), a = G) : c[3] !== void 0 && (a = G) : a === G ? c[0] === ">" ? (a = i ?? le, d = -1) : c[1] === void 0 ? d = -2 : (d = a.lastIndex - c[2].length, h = c[1], a = c[3] === void 0 ? G : c[3] === '"' ? ct : ht) : a === ct || a === ht ? a = G : a === ot || a === lt ? a = le : (a = G, i = void 0);
     const p = a === G && e[o + 1].startsWith("/>") ? " " : "";
-    r += a === re ? l + Jt : d >= 0 ? (s.push(h), l.slice(0, d) + Rt + l.slice(d) + N + p) : l + N + (d === -2 ? o : p);
+    r += a === le ? l + en : d >= 0 ? (s.push(h), l.slice(0, d) + Et + l.slice(d) + C + p) : l + C + (d === -2 ? o : p);
   }
-  return [Lt(e, r + (e[n] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), s];
+  return [Ot(e, r + (e[n] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), s];
 };
-class ge {
+class $e {
   constructor({ strings: t, _$litType$: n }, s) {
     let i;
     this.parts = [];
     let r = 0, a = 0;
-    const o = t.length - 1, l = this.parts, [h, c] = Qt(t, n);
-    if (this.el = ge.createElement(h, s), q.currentNode = this.el.content, n === 2 || n === 3) {
+    const o = t.length - 1, l = this.parts, [h, c] = nn(t, n);
+    if (this.el = $e.createElement(h, s), X.currentNode = this.el.content, n === 2 || n === 3) {
       const d = this.el.content.firstChild;
       d.replaceWith(...d.childNodes);
     }
-    for (; (i = q.nextNode()) !== null && l.length < o; ) {
+    for (; (i = X.nextNode()) !== null && l.length < o; ) {
       if (i.nodeType === 1) {
-        if (i.hasAttributes()) for (const d of i.getAttributeNames()) if (d.endsWith(Rt)) {
-          const g = c[a++], p = i.getAttribute(d).split(N), m = /([.?@])?(.*)/.exec(g);
-          l.push({ type: 1, index: r, name: m[2], strings: p, ctor: m[1] === "." ? tn : m[1] === "?" ? nn : m[1] === "@" ? sn : Re }), i.removeAttribute(d);
-        } else d.startsWith(N) && (l.push({ type: 6, index: r }), i.removeAttribute(d));
-        if (Pt.test(i.tagName)) {
-          const d = i.textContent.split(N), g = d.length - 1;
+        if (i.hasAttributes()) for (const d of i.getAttributeNames()) if (d.endsWith(Et)) {
+          const g = c[a++], p = i.getAttribute(d).split(C), f = /([.?@])?(.*)/.exec(g);
+          l.push({ type: 1, index: r, name: f[2], strings: p, ctor: f[1] === "." ? rn : f[1] === "?" ? an : f[1] === "@" ? on : Ee }), i.removeAttribute(d);
+        } else d.startsWith(C) && (l.push({ type: 6, index: r }), i.removeAttribute(d));
+        if (Lt.test(i.tagName)) {
+          const d = i.textContent.split(C), g = d.length - 1;
           if (g > 0) {
-            i.textContent = Me ? Me.emptyScript : "";
-            for (let p = 0; p < g; p++) i.append(d[p], me()), q.nextNode(), l.push({ type: 2, index: ++r });
-            i.append(d[g], me());
+            i.textContent = Ae ? Ae.emptyScript : "";
+            for (let p = 0; p < g; p++) i.append(d[p], ge()), X.nextNode(), l.push({ type: 2, index: ++r });
+            i.append(d[g], ge());
           }
         }
-      } else if (i.nodeType === 8) if (i.data === Et) l.push({ type: 2, index: r });
+      } else if (i.nodeType === 8) if (i.data === Pt) l.push({ type: 2, index: r });
       else {
         let d = -1;
-        for (; (d = i.data.indexOf(N, d + 1)) !== -1; ) l.push({ type: 7, index: r }), d += N.length - 1;
+        for (; (d = i.data.indexOf(C, d + 1)) !== -1; ) l.push({ type: 7, index: r }), d += C.length - 1;
       }
       r++;
     }
   }
   static createElement(t, n) {
-    const s = X.createElement("template");
+    const s = J.createElement("template");
     return s.innerHTML = t, s;
   }
 }
-function ie(e, t, n = e, s) {
-  if (t === se) return t;
+function re(e, t, n = e, s) {
+  if (t === ie) return t;
   let i = s !== void 0 ? n._$Co?.[s] : n._$Cl;
-  const r = fe(t) ? void 0 : t._$litDirective$;
-  return i?.constructor !== r && (i?._$AO?.(!1), r === void 0 ? i = void 0 : (i = new r(e), i._$AT(e, n, s)), s !== void 0 ? (n._$Co ??= [])[s] = i : n._$Cl = i), i !== void 0 && (t = ie(e, i._$AS(e, t.values), i, s)), t;
+  const r = be(t) ? void 0 : t._$litDirective$;
+  return i?.constructor !== r && (i?._$AO?.(!1), r === void 0 ? i = void 0 : (i = new r(e), i._$AT(e, n, s)), s !== void 0 ? (n._$Co ??= [])[s] = i : n._$Cl = i), i !== void 0 && (t = re(e, i._$AS(e, t.values), i, s)), t;
 }
-class en {
+class sn {
   constructor(t, n) {
     this._$AV = [], this._$AN = void 0, this._$AD = t, this._$AM = n;
   }
@@ -335,29 +335,29 @@ class en {
     return this._$AM._$AU;
   }
   u(t) {
-    const { el: { content: n }, parts: s } = this._$AD, i = (t?.creationScope ?? X).importNode(n, !0);
-    q.currentNode = i;
-    let r = q.nextNode(), a = 0, o = 0, l = s[0];
+    const { el: { content: n }, parts: s } = this._$AD, i = (t?.creationScope ?? J).importNode(n, !0);
+    X.currentNode = i;
+    let r = X.nextNode(), a = 0, o = 0, l = s[0];
     for (; l !== void 0; ) {
       if (a === l.index) {
         let h;
-        l.type === 2 ? h = new be(r, r.nextSibling, this, t) : l.type === 1 ? h = new l.ctor(r, l.name, l.strings, this, t) : l.type === 6 && (h = new rn(r, this, t)), this._$AV.push(h), l = s[++o];
+        l.type === 2 ? h = new ke(r, r.nextSibling, this, t) : l.type === 1 ? h = new l.ctor(r, l.name, l.strings, this, t) : l.type === 6 && (h = new ln(r, this, t)), this._$AV.push(h), l = s[++o];
       }
-      a !== l?.index && (r = q.nextNode(), a++);
+      a !== l?.index && (r = X.nextNode(), a++);
     }
-    return q.currentNode = X, i;
+    return X.currentNode = J, i;
   }
   p(t) {
     let n = 0;
     for (const s of this._$AV) s !== void 0 && (s.strings !== void 0 ? (s._$AI(t, s, n), n += s.strings.length - 2) : s._$AI(t[n])), n++;
   }
 }
-class be {
+class ke {
   get _$AU() {
     return this._$AM?._$AU ?? this._$Cv;
   }
   constructor(t, n, s, i) {
-    this.type = 2, this._$AH = f, this._$AN = void 0, this._$AA = t, this._$AB = n, this._$AM = s, this.options = i, this._$Cv = i?.isConnected ?? !0;
+    this.type = 2, this._$AH = m, this._$AN = void 0, this._$AA = t, this._$AB = n, this._$AM = s, this.options = i, this._$Cv = i?.isConnected ?? !0;
   }
   get parentNode() {
     let t = this._$AA.parentNode;
@@ -371,7 +371,7 @@ class be {
     return this._$AB;
   }
   _$AI(t, n = this) {
-    t = ie(this, t, n), fe(t) ? t === f || t == null || t === "" ? (this._$AH !== f && this._$AR(), this._$AH = f) : t !== this._$AH && t !== se && this._(t) : t._$litType$ !== void 0 ? this.$(t) : t.nodeType !== void 0 ? this.T(t) : Yt(t) ? this.k(t) : this._(t);
+    t = re(this, t, n), be(t) ? t === m || t == null || t === "" ? (this._$AH !== m && this._$AR(), this._$AH = m) : t !== this._$AH && t !== ie && this._(t) : t._$litType$ !== void 0 ? this.$(t) : t.nodeType !== void 0 ? this.T(t) : tn(t) ? this.k(t) : this._(t);
   }
   O(t) {
     return this._$AA.parentNode.insertBefore(t, this._$AB);
@@ -380,38 +380,38 @@ class be {
     this._$AH !== t && (this._$AR(), this._$AH = this.O(t));
   }
   _(t) {
-    this._$AH !== f && fe(this._$AH) ? this._$AA.nextSibling.data = t : this.T(X.createTextNode(t)), this._$AH = t;
+    this._$AH !== m && be(this._$AH) ? this._$AA.nextSibling.data = t : this.T(J.createTextNode(t)), this._$AH = t;
   }
   $(t) {
-    const { values: n, _$litType$: s } = t, i = typeof s == "number" ? this._$AC(t) : (s.el === void 0 && (s.el = ge.createElement(Lt(s.h, s.h[0]), this.options)), s);
+    const { values: n, _$litType$: s } = t, i = typeof s == "number" ? this._$AC(t) : (s.el === void 0 && (s.el = $e.createElement(Ot(s.h, s.h[0]), this.options)), s);
     if (this._$AH?._$AD === i) this._$AH.p(n);
     else {
-      const r = new en(i, this), a = r.u(this.options);
+      const r = new sn(i, this), a = r.u(this.options);
       r.p(n), this.T(a), this._$AH = r;
     }
   }
   _$AC(t) {
-    let n = ht.get(t.strings);
-    return n === void 0 && ht.set(t.strings, n = new ge(t)), n;
+    let n = ut.get(t.strings);
+    return n === void 0 && ut.set(t.strings, n = new $e(t)), n;
   }
   k(t) {
-    Ge(this._$AH) || (this._$AH = [], this._$AR());
+    Xe(this._$AH) || (this._$AH = [], this._$AR());
     const n = this._$AH;
     let s, i = 0;
-    for (const r of t) i === n.length ? n.push(s = new be(this.O(me()), this.O(me()), this, this.options)) : s = n[i], s._$AI(r), i++;
+    for (const r of t) i === n.length ? n.push(s = new ke(this.O(ge()), this.O(ge()), this, this.options)) : s = n[i], s._$AI(r), i++;
     i < n.length && (this._$AR(s && s._$AB.nextSibling, i), n.length = i);
   }
   _$AR(t = this._$AA.nextSibling, n) {
     for (this._$AP?.(!1, !0, n); t !== this._$AB; ) {
-      const s = st(t).nextSibling;
-      st(t).remove(), t = s;
+      const s = rt(t).nextSibling;
+      rt(t).remove(), t = s;
     }
   }
   setConnected(t) {
     this._$AM === void 0 && (this._$Cv = t, this._$AP?.(t));
   }
 }
-class Re {
+class Ee {
   get tagName() {
     return this.element.tagName;
   }
@@ -419,53 +419,53 @@ class Re {
     return this._$AM._$AU;
   }
   constructor(t, n, s, i, r) {
-    this.type = 1, this._$AH = f, this._$AN = void 0, this.element = t, this.name = n, this._$AM = i, this.options = r, s.length > 2 || s[0] !== "" || s[1] !== "" ? (this._$AH = Array(s.length - 1).fill(new String()), this.strings = s) : this._$AH = f;
+    this.type = 1, this._$AH = m, this._$AN = void 0, this.element = t, this.name = n, this._$AM = i, this.options = r, s.length > 2 || s[0] !== "" || s[1] !== "" ? (this._$AH = Array(s.length - 1).fill(new String()), this.strings = s) : this._$AH = m;
   }
   _$AI(t, n = this, s, i) {
     const r = this.strings;
     let a = !1;
-    if (r === void 0) t = ie(this, t, n, 0), a = !fe(t) || t !== this._$AH && t !== se, a && (this._$AH = t);
+    if (r === void 0) t = re(this, t, n, 0), a = !be(t) || t !== this._$AH && t !== ie, a && (this._$AH = t);
     else {
       const o = t;
       let l, h;
-      for (t = r[0], l = 0; l < r.length - 1; l++) h = ie(this, o[s + l], n, l), h === se && (h = this._$AH[l]), a ||= !fe(h) || h !== this._$AH[l], h === f ? t = f : t !== f && (t += (h ?? "") + r[l + 1]), this._$AH[l] = h;
+      for (t = r[0], l = 0; l < r.length - 1; l++) h = re(this, o[s + l], n, l), h === ie && (h = this._$AH[l]), a ||= !be(h) || h !== this._$AH[l], h === m ? t = m : t !== m && (t += (h ?? "") + r[l + 1]), this._$AH[l] = h;
     }
     a && !i && this.j(t);
   }
   j(t) {
-    t === f ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, t ?? "");
+    t === m ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, t ?? "");
   }
 }
-class tn extends Re {
+class rn extends Ee {
   constructor() {
     super(...arguments), this.type = 3;
   }
   j(t) {
-    this.element[this.name] = t === f ? void 0 : t;
+    this.element[this.name] = t === m ? void 0 : t;
   }
 }
-class nn extends Re {
+class an extends Ee {
   constructor() {
     super(...arguments), this.type = 4;
   }
   j(t) {
-    this.element.toggleAttribute(this.name, !!t && t !== f);
+    this.element.toggleAttribute(this.name, !!t && t !== m);
   }
 }
-class sn extends Re {
+class on extends Ee {
   constructor(t, n, s, i, r) {
     super(t, n, s, i, r), this.type = 5;
   }
   _$AI(t, n = this) {
-    if ((t = ie(this, t, n, 0) ?? f) === se) return;
-    const s = this._$AH, i = t === f && s !== f || t.capture !== s.capture || t.once !== s.once || t.passive !== s.passive, r = t !== f && (s === f || i);
+    if ((t = re(this, t, n, 0) ?? m) === ie) return;
+    const s = this._$AH, i = t === m && s !== m || t.capture !== s.capture || t.once !== s.once || t.passive !== s.passive, r = t !== m && (s === m || i);
     i && this.element.removeEventListener(this.name, this, s), r && this.element.addEventListener(this.name, this, t), this._$AH = t;
   }
   handleEvent(t) {
     typeof this._$AH == "function" ? this._$AH.call(this.options?.host ?? this.element, t) : this._$AH.handleEvent(t);
   }
 }
-class rn {
+class ln {
   constructor(t, n, s) {
     this.element = t, this.type = 6, this._$AN = void 0, this._$AM = n, this.options = s;
   }
@@ -473,17 +473,17 @@ class rn {
     return this._$AM._$AU;
   }
   _$AI(t) {
-    ie(this, t);
+    re(this, t);
   }
 }
-const an = We.litHtmlPolyfillSupport;
-an?.(ge, be), (We.litHtmlVersions ??= []).push("3.3.3");
-const on = (e, t, n) => {
+const hn = qe.litHtmlPolyfillSupport;
+hn?.($e, ke), (qe.litHtmlVersions ??= []).push("3.3.3");
+const cn = (e, t, n) => {
   const s = n?.renderBefore ?? t;
   let i = s._$litPart$;
   if (i === void 0) {
     const r = n?.renderBefore ?? null;
-    s._$litPart$ = i = new be(t.insertBefore(me(), r), r, void 0, n ?? {});
+    s._$litPart$ = i = new ke(t.insertBefore(ge(), r), r, void 0, n ?? {});
   }
   return i._$AI(e), i;
 };
@@ -492,8 +492,8 @@ const on = (e, t, n) => {
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const Ve = globalThis;
-class de extends te {
+const Je = globalThis;
+class me extends ne {
   constructor() {
     super(...arguments), this.renderOptions = { host: this }, this._$Do = void 0;
   }
@@ -503,7 +503,7 @@ class de extends te {
   }
   update(t) {
     const n = this.render();
-    this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(t), this._$Do = on(n, this.renderRoot, this.renderOptions);
+    this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(t), this._$Do = cn(n, this.renderRoot, this.renderOptions);
   }
   connectedCallback() {
     super.connectedCallback(), this._$Do?.setConnected(!0);
@@ -512,19 +512,19 @@ class de extends te {
     super.disconnectedCallback(), this._$Do?.setConnected(!1);
   }
   render() {
-    return se;
+    return ie;
   }
 }
-de._$litElement$ = !0, de.finalized = !0, Ve.litElementHydrateSupport?.({ LitElement: de });
-const ln = Ve.litElementPolyfillSupport;
-ln?.({ LitElement: de });
-(Ve.litElementVersions ??= []).push("4.2.2");
+me._$litElement$ = !0, me.finalized = !0, Je.litElementHydrateSupport?.({ LitElement: me });
+const un = Je.litElementPolyfillSupport;
+un?.({ LitElement: me });
+(Je.litElementVersions ??= []).push("4.2.2");
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const hn = (e) => (t, n) => {
+const dn = (e) => (t, n) => {
   n !== void 0 ? n.addInitializer(() => {
     customElements.define(e, t);
   }) : customElements.define(e, t);
@@ -534,7 +534,7 @@ const hn = (e) => (t, n) => {
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const cn = { attribute: !0, type: String, converter: _e, reflect: !1, hasChanged: Fe }, un = (e = cn, t, n) => {
+const pn = { attribute: !0, type: String, converter: Se, reflect: !1, hasChanged: Ke }, mn = (e = pn, t, n) => {
   const { kind: s, metadata: i } = n;
   let r = globalThis.litPropertyMetadata.get(i);
   if (r === void 0 && globalThis.litPropertyMetadata.set(i, r = /* @__PURE__ */ new Map()), s === "setter" && ((e = Object.create(e)).wrapped = !0), r.set(n.name, e), s === "accessor") {
@@ -556,7 +556,7 @@ const cn = { attribute: !0, type: String, converter: _e, reflect: !1, hasChanged
   throw Error("Unsupported decorator location: " + s);
 };
 function Ht(e) {
-  return (t, n) => typeof n == "object" ? un(e, t, n) : ((s, i, r) => {
+  return (t, n) => typeof n == "object" ? mn(e, t, n) : ((s, i, r) => {
     const a = i.hasOwnProperty(r);
     return i.constructor.createProperty(r, s), a ? Object.getOwnPropertyDescriptor(i, r) : void 0;
   })(e, t, n);
@@ -569,43 +569,43 @@ function Ht(e) {
 function z(e) {
   return Ht({ ...e, state: !0, attribute: !1 });
 }
-const dn = 25;
-function Ot(e) {
+const fn = 25;
+function Zt(e) {
   return e * Math.PI / 180;
 }
-function E([e, t], n, [s, i] = [0, 0]) {
-  const r = Ot(n), a = Math.cos(r), o = Math.sin(r), l = e - s, h = t - i;
+function T([e, t], n, [s, i] = [0, 0]) {
+  const r = Zt(n), a = Math.cos(r), o = Math.sin(r), l = e - s, h = t - i;
   return [s + l * a - h * o, i + l * o + h * a];
 }
-function Ze(e, t) {
+function Fe(e, t) {
   return Math.hypot(e[0] - t[0], e[1] - t[1]);
 }
-function pn(e, t) {
+function gn(e, t) {
   return [Math.round(e[0] / t) * t, Math.round(e[1] / t) * t];
 }
-function J(e) {
+function Y(e) {
   return [Math.round(e[0] * 10) / 10, Math.round(e[1] * 10) / 10];
 }
-function we(e, t, n, s) {
+function ze(e, t, n, s) {
   const i = t / 2, r = n / 2;
   return [
     [-i, -r],
     [i, -r],
     [i, r],
     [-i, r]
-  ].map((a) => E([e[0] + a[0], e[1] + a[1]], s, e));
+  ].map((a) => T([e[0] + a[0], e[1] + a[1]], s, e));
 }
-function Ke(e) {
+function Ye(e) {
   const t = e.x0 ?? 0, n = e.y0 ?? 0;
   return e.zellen.map(([s, i]) => ({ x: t + s * e.groesse, y: n + i * e.groesse, s: e.groesse }));
 }
-function qe(e, t, n = 0, s = 0) {
+function Qe(e, t, n = 0, s = 0) {
   return [Math.floor((e[0] - n) / t), Math.floor((e[1] - s) / t)];
 }
-function K(e) {
+function q(e) {
   if (e.art === "vieleck") return e.punkte;
-  if (e.art === "rechteck") return we(e.mitte, e.breite, e.tiefe, e.winkel);
-  const t = Ke(e), n = t.flatMap((l) => [l.x, l.x + l.s]), s = t.flatMap((l) => [l.y, l.y + l.s]);
+  if (e.art === "rechteck") return ze(e.mitte, e.breite, e.tiefe, e.winkel);
+  const t = Ye(e), n = t.flatMap((l) => [l.x, l.x + l.s]), s = t.flatMap((l) => [l.y, l.y + l.s]);
   if (!n.length) return [];
   const [i, r, a, o] = [Math.min(...n), Math.max(...n), Math.min(...s), Math.max(...s)];
   return [
@@ -615,7 +615,7 @@ function K(e) {
     [i, o]
   ];
 }
-function mn([e, t], n) {
+function bn([e, t], n) {
   let s = !1;
   for (let i = 0, r = n.length - 1; i < n.length; r = i++) {
     const [a, o] = n[i], [l, h] = n[r];
@@ -623,14 +623,14 @@ function mn([e, t], n) {
   }
   return s;
 }
-function Te(e, t) {
+function Ie(e, t) {
   if (t.art === "zellen") {
-    const [n, s] = qe(e, t.groesse, t.x0 ?? 0, t.y0 ?? 0);
+    const [n, s] = Qe(e, t.groesse, t.x0 ?? 0, t.y0 ?? 0);
     return t.zellen.some(([i, r]) => i === n && r === s);
   }
-  return mn(e, K(t));
+  return bn(e, q(t));
 }
-function fn(e) {
+function $n(e) {
   if (!e.length) return [0, 0];
   let t = 0, n = 0, s = 0;
   for (let i = 0, r = e.length - 1; i < e.length; r = i++) {
@@ -642,90 +642,90 @@ function fn(e) {
 function P(e) {
   if (e.art === "rechteck") return e.mitte;
   if (e.art === "zellen") {
-    const t = Ke(e), n = t.length || 1;
+    const t = Ye(e), n = t.length || 1;
     return [t.reduce((s, i) => s + i.x + i.s / 2, 0) / n, t.reduce((s, i) => s + i.y + i.s / 2, 0) / n];
   }
-  return fn(e.punkte);
+  return $n(e.punkte);
 }
-function gn(e) {
+function kn(e) {
   let t = 0;
   for (let n = 0, s = e.length - 1; n < e.length; s = n++)
     t += e[s][0] * e[n][1] - e[n][0] * e[s][1];
   return Math.abs(t) / 2;
 }
-function ke(e, t, n) {
+function ve(e, t, n) {
   return (t[0] - e[0]) * (n[1] - e[1]) - (t[1] - e[1]) * (n[0] - e[0]);
 }
-function bn(e) {
+function xn(e) {
   const t = e.length;
   for (let n = 0; n < t; n++)
     for (let s = n + 1; s < t; s++) {
       if (Math.abs(n - s) === 1 || Math.abs(n - s) === t - 1) continue;
       const [i, r] = [e[n], e[(n + 1) % t]], [a, o] = [e[s], e[(s + 1) % t]];
-      if (ke(i, r, a) * ke(i, r, o) < 0 && ke(a, o, i) * ke(a, o, r) < 0) return !0;
+      if (ve(i, r, a) * ve(i, r, o) < 0 && ve(a, o, i) * ve(a, o, r) < 0) return !0;
     }
   return !1;
 }
-function De(e) {
-  return e.art === "zellen" ? e.zellen.length ? "" : "Keine Zelle gewählt" : e.art === "rechteck" ? e.breite > 0 && e.tiefe > 0 ? "" : "Rechteck ohne Fläche" : e.punkte.length < 3 ? "Mindestens drei Ecken" : bn(e.punkte) ? "Kanten überschneiden sich" : gn(e.punkte) < 1 ? "Vieleck ohne Fläche" : "";
+function Ce(e) {
+  return e.art === "zellen" ? e.zellen.length ? "" : "Keine Zelle gewählt" : e.art === "rechteck" ? e.breite > 0 && e.tiefe > 0 ? "" : "Rechteck ohne Fläche" : e.punkte.length < 3 ? "Mindestens drei Ecken" : xn(e.punkte) ? "Kanten überschneiden sich" : kn(e.punkte) < 1 ? "Vieleck ohne Fläche" : "";
 }
-function Ne(e, t, n) {
-  if (e.art === "vieleck") return { ...e, punkte: e.punkte.map((r) => J([r[0] + t, r[1] + n])) };
-  if (e.art === "rechteck") return { ...e, mitte: J([e.mitte[0] + t, e.mitte[1] + n]) };
+function je(e, t, n) {
+  if (e.art === "vieleck") return { ...e, punkte: e.punkte.map((r) => Y([r[0] + t, r[1] + n])) };
+  if (e.art === "rechteck") return { ...e, mitte: Y([e.mitte[0] + t, e.mitte[1] + n]) };
   const s = Math.round(t / e.groesse), i = Math.round(n / e.groesse);
   return { ...e, zellen: e.zellen.map(([r, a]) => [r + s, a + i]) };
 }
-function ye(e) {
-  const t = Ot(e);
+function _e(e) {
+  const t = Zt(e);
   return [-Math.sin(t), Math.cos(t)];
 }
-function Le(e, t, n, s, i = 36) {
+function Oe(e, t, n, s, i = 36) {
   const r = [];
   s >= 360 || r.push(e);
   const o = t - s / 2;
   for (let l = 0; l <= i; l++) {
-    const h = o + s * l / i, [c, d] = ye(h);
+    const h = o + s * l / i, [c, d] = _e(h);
     r.push([e[0] + c * n, e[1] + d * n]);
   }
   return r;
 }
-function $n(e, t) {
-  const n = E(e, t.winkel);
+function vn(e, t) {
+  const n = T(e, t.winkel);
   return [t.x + n[0], t.y + n[1]];
 }
-function xe(e, t) {
+function we(e, t) {
   const n = Math.atan2(-(t[0] - e[0]), t[1] - e[1]) * 180 / Math.PI;
   return Math.round(n * 10) / 10;
 }
 function He(e, t, n) {
   const s = n[0] - t[0], i = n[1] - t[1], r = s * s + i * i;
-  if (r === 0) return Ze(e, t);
+  if (r === 0) return Fe(e, t);
   const a = Math.max(0, Math.min(1, ((e[0] - t[0]) * s + (e[1] - t[1]) * i) / r));
-  return Ze(e, [t[0] + a * s, t[1] + a * i]);
+  return Fe(e, [t[0] + a * s, t[1] + a * i]);
 }
-function It(e, t) {
-  return E([e[0] - t.x, e[1] - t.y], -t.winkel);
+function Nt(e, t) {
+  return T([e[0] - t.x, e[1] - t.y], -t.winkel);
 }
-function kn(e, t, n) {
-  const s = (i) => J($n(It(i, t), n));
+function wn(e, t, n) {
+  const s = (i) => Y(vn(Nt(i, t), n));
   if (e.art === "vieleck") return { ...e, punkte: e.punkte.map(s) };
   if (e.art === "rechteck") {
     let i = e.winkel + n.winkel - t.winkel;
     return i > 180 && (i -= 360), i <= -180 && (i += 360), { ...e, mitte: s(e.mitte), winkel: Math.round(i * 10) / 10 };
   }
-  return t.winkel !== n.winkel ? e : Ne(e, n.x - t.x, n.y - t.y);
+  return t.winkel !== n.winkel ? e : je(e, n.x - t.x, n.y - t.y);
 }
-function O(e, t) {
-  const [n, s] = E(e, t.winkel);
+function L(e, t) {
+  const [n, s] = T(e, t.winkel);
   return [n + t.x, s + t.y];
 }
-function xn(e, t) {
-  return E([e[0] - t.x, e[1] - t.y], -t.winkel);
+function yn(e, t) {
+  return T([e[0] - t.x, e[1] - t.y], -t.winkel);
 }
-function vn(e, t, n) {
+function zn(e, t, n) {
   if (e.length >= 3) return e;
   const s = [n];
-  for (const d of t) s.push(...K(d));
+  for (const d of t) s.push(...q(d));
   const i = s.map((d) => d[0]), r = s.map((d) => d[1]), a = 40, [o, l] = [Math.min(...i) - a, Math.max(...i) + a], [h, c] = [Math.min(...r) - a, Math.max(...r) + a];
   return [
     [o, h],
@@ -734,13 +734,13 @@ function vn(e, t, n) {
     [o, c]
   ];
 }
-function wn(e, t = 100) {
+function _n(e, t = 100) {
   const n = {};
   let s = -1 / 0;
   for (const i of e)
     if (i.lage) {
       n[i.id] = i.lage;
-      for (const r of i.outline) s = Math.max(s, O(r, i.lage)[0]);
+      for (const r of i.outline) s = Math.max(s, L(r, i.lage)[0]);
     }
   s === -1 / 0 && (s = -t);
   for (const i of e) {
@@ -758,7 +758,7 @@ const Bt = {
   stelle: "stelle",
   durchgang: "durchgang"
 };
-class yn {
+class Mn {
   constructor(t = 100) {
     this.limit = t, this.stack = [];
   }
@@ -777,65 +777,65 @@ class yn {
     this.stack = [];
   }
 }
-function Zt(e, t) {
+function Dt(e, t) {
   const n = new Set(t.map((i) => i.name));
   if (!n.has(e)) return e;
   let s = 2;
   for (; n.has(`${e} ${s}`); ) s++;
   return `${e} ${s}`;
 }
-function zn(e, t, n, s = "normal") {
+function Sn(e, t, n, s = "normal") {
   return {
-    name: Zt("Zone", t),
+    name: Dt("Zone", t),
     art: s,
     form: e,
     regel: { ...n[Bt[s]] }
   };
 }
-function _n(e, t, n) {
+function An(e, t, n) {
   if (e.art !== "vieleck") return e;
   const s = e.punkte.slice();
-  return s[t] = J(n), { ...e, punkte: s };
+  return s[t] = Y(n), { ...e, punkte: s };
 }
-function ct(e, t, n) {
+function dt(e, t, n) {
   if (e.art !== "vieleck") return e;
   const s = e.punkte.slice();
-  return s.splice(t + 1, 0, J(n)), { ...e, punkte: s };
+  return s.splice(t + 1, 0, Y(n)), { ...e, punkte: s };
 }
-function Mn(e, t) {
+function Rn(e, t) {
   return e.art !== "vieleck" || e.punkte.length <= 3 ? e : { ...e, punkte: e.punkte.filter((n, s) => s !== t) };
 }
-function ut(e, t, n) {
-  const [s, i] = qe(t, e.groesse, e.x0 ?? 0, e.y0 ?? 0), r = e.zellen.some(([a, o]) => a === s && o === i);
+function pt(e, t, n) {
+  const [s, i] = Qe(t, e.groesse, e.x0 ?? 0, e.y0 ?? 0), r = e.zellen.some(([a, o]) => a === s && o === i);
   return n && !r ? { ...e, zellen: [...e.zellen, [s, i]] } : !n && r ? { ...e, zellen: e.zellen.filter(([a, o]) => a !== s || o !== i) } : e;
 }
-function dt(e, t) {
+function mt(e, t) {
   return {
     art: "rechteck",
-    mitte: J([(e[0] + t[0]) / 2, (e[1] + t[1]) / 2]),
+    mitte: Y([(e[0] + t[0]) / 2, (e[1] + t[1]) / 2]),
     breite: Math.round(Math.abs(t[0] - e[0]) * 10) / 10,
     tiefe: Math.round(Math.abs(t[1] - e[1]) * 10) / 10,
     winkel: 0
   };
 }
-function pt(e) {
+function ft(e) {
   for (const t of e) {
     if (!t.name.trim()) return "Eine Zone hat keinen Namen";
-    const n = De(t.form);
+    const n = Ce(t.form);
     if (n) return `${t.name}: ${n}`;
   }
   return "";
 }
-function Sn(e, t, n) {
+function Tn(e, t, n) {
   const s = e.name.toLowerCase(), i = s.includes("bett"), a = s.includes("tür") || s.includes("tuer") || s.includes("door") ? "ausgang" : "normal";
   return {
-    name: Zt(e.name, t),
+    name: Dt(e.name, t),
     art: a,
     form: e.form,
     regel: { ...n[i ? "bett" : Bt[a]] }
   };
 }
-const Ce = [
+const Ue = [
   {
     rolle: "bett",
     name: "Bett",
@@ -893,28 +893,28 @@ const Ce = [
     text: "Vorhang, Ventilator oder Pflanze: Punkte hier zählen nirgends."
   }
 ];
-function ze(e) {
-  return Ce.find((t) => t.rolle === e) ?? Ce[1];
+function Me(e) {
+  return Ue.find((t) => t.rolle === e) ?? Ue[1];
 }
-function ae(e) {
+function he(e) {
   return e.art === "ausgang" ? "tuer" : e.art === "hundeplatz" ? "hund" : e.art === "stelle" ? "stelle" : e.art === "durchgang" ? "durchgang" : e.art === "stoerquelle" ? "ignorieren" : e.regel.schlaefer_halten ? "bett" : "bereich";
 }
-function An(e, t, n) {
-  const s = ze(t), i = { ...e, art: s.art, regel: { ...n[s.vorlage] } };
+function En(e, t, n) {
+  const s = Me(t), i = { ...e, art: s.art, regel: { ...n[s.vorlage] } };
   return s.art !== "ausgang" && delete i.fuehrt_zu, i;
 }
-function mt(e) {
+function gt(e) {
   return e === 0 ? "sofort" : `nach ${String(e).replace(".", ",")} s`;
 }
-function ft(e) {
+function bt(e) {
   const t = e.regel;
   if (e.art === "stoerquelle") return "Punkte in dieser Fläche werden überall ignoriert.";
-  const n = [`belegt ${mt(t.belegt_nach_s)}`, `frei ${mt(t.frei_nach_s)}`];
+  const n = [`belegt ${gt(t.belegt_nach_s)}`, `frei ${gt(t.frei_nach_s)}`];
   t.schlaefer_halten && n.push("hält Schläfer"), t.max_personen === 1 && n.push("eine Person"), t.hund_ignorieren && n.push("ohne Hund");
   const s = n.join(", ");
   return s.charAt(0).toUpperCase() + s.slice(1) + ".";
 }
-function Rn(e, t, n, s = 10) {
+function Pn(e, t, n, s = 10) {
   const i = e.breite / 2, r = e.tiefe / 2, a = [
     t === 0 || t === 3 ? e.mitte[0] + i : e.mitte[0] - i,
     t === 0 || t === 1 ? e.mitte[1] + r : e.mitte[1] - r
@@ -924,46 +924,46 @@ function Rn(e, t, n, s = 10) {
     winkel: 0,
     breite: Math.round(o * 10) / 10,
     tiefe: Math.round(l * 10) / 10,
-    mitte: J([a[0] + h * o / 2, a[1] + c * l / 2])
+    mitte: Y([a[0] + h * o / 2, a[1] + c * l / 2])
   };
 }
-function En(e, t) {
+function Ln(e, t) {
   const n = e.fuehrt_zu ?? "";
   return n ? n === "aussen" ? "nach draußen oder in einen Raum ohne Sensor" : t.find((s) => s.id === n)?.name ?? "unbekannter Raum" : "noch nicht eingetragen";
 }
-function Pn(e) {
+function In(e) {
   let t = (e % 360 + 540) % 360 - 180;
   return t === -180 && (t = 180), t;
 }
-const Oe = (e) => Math.round(e * 10) / 10 + 0;
-function gt(e, t, n) {
-  return e.art === "vieleck" ? { ...e, punkte: e.punkte.map((s) => E(s, n, t).map((i) => Oe(i))) } : e.art === "rechteck" ? { ...e, mitte: E(e.mitte, n, t).map((s) => Oe(s)), winkel: Oe(Pn(e.winkel + n)) } : e;
+const Ze = (e) => Math.round(e * 10) / 10 + 0;
+function $t(e, t, n) {
+  return e.art === "vieleck" ? { ...e, punkte: e.punkte.map((s) => T(s, n, t).map((i) => Ze(i))) } : e.art === "rechteck" ? { ...e, mitte: T(e.mitte, n, t).map((s) => Ze(s)), winkel: Ze(In(e.winkel + n)) } : e;
 }
-function ee(e) {
+function te(e) {
   return e.map((t, n) => {
     const s = e[(n + 1) % e.length];
     return [(t[0] + s[0]) / 2, (t[1] + s[1]) / 2];
   });
 }
-function Ee(e, t) {
+function Pe(e, t) {
   return [e[t], e[(t + 1) % e.length]];
 }
-function pe(e, t, n) {
-  const [s, i] = Ee(e, t), r = i[0] - s[0], a = i[1] - s[1], o = Math.hypot(r, a);
+function fe(e, t, n) {
+  const [s, i] = Pe(e, t), r = i[0] - s[0], a = i[1] - s[1], o = Math.hypot(r, a);
   if (!o) return 0;
   const l = ((n[0] - s[0]) * r + (n[1] - s[1]) * a) / o;
   return Math.max(0, Math.min(o, l));
 }
-function Tn(e, t, n, s, i = 20) {
-  const [r, a] = Ee(e, t), o = Math.hypot(a[0] - r[0], a[1] - r[1]);
-  let l = Math.round(pe(e, t, n) / 5) * 5, h = Math.round(pe(e, t, s) / 5) * 5;
+function On(e, t, n, s, i = 20) {
+  const [r, a] = Pe(e, t), o = Math.hypot(a[0] - r[0], a[1] - r[1]);
+  let l = Math.round(fe(e, t, n) / 5) * 5, h = Math.round(fe(e, t, s) / 5) * 5;
   return h < l && ([l, h] = [h, l]), h - l < i ? null : { kante: t, von: l, bis: Math.min(h, Math.floor(o)), art: "tuer" };
 }
-function oe(e, t) {
-  const [n, s] = Ee(e, t.kante), i = Math.hypot(s[0] - n[0], s[1] - n[1]) || 1, r = (a) => [n[0] + (s[0] - n[0]) * a / i, n[1] + (s[1] - n[1]) * a / i];
+function ce(e, t) {
+  const [n, s] = Pe(e, t.kante), i = Math.hypot(s[0] - n[0], s[1] - n[1]) || 1, r = (a) => [n[0] + (s[0] - n[0]) * a / i, n[1] + (s[1] - n[1]) * a / i];
   return [r(t.von), r(t.bis)];
 }
-function bt(e, t, n) {
+function kt(e, t, n) {
   const s = [];
   for (const i of e)
     if (t.inserted !== void 0) {
@@ -976,16 +976,16 @@ function bt(e, t, n) {
     }
   return s;
 }
-function Ln(e, t, n = 20) {
+function Hn(e, t, n = 20) {
   const s = [];
   for (const i of t) {
     if (i.kante >= e.length) continue;
-    const [r, a] = Ee(e, i.kante), o = Math.floor(Math.hypot(a[0] - r[0], a[1] - r[1])), l = Math.min(i.bis, o);
+    const [r, a] = Pe(e, i.kante), o = Math.floor(Math.hypot(a[0] - r[0], a[1] - r[1])), l = Math.min(i.bis, o);
     l - i.von >= n && s.push({ ...i, bis: l });
   }
   return s;
 }
-const Hn = Ct`
+const Zn = Ut`
   :host {
     display: flex;
     flex-direction: column;
@@ -1639,6 +1639,16 @@ const Hn = Ct`
     font-size: 11px;
     fill: var(--rz-tuer);
   }
+  .door-name {
+    font-weight: 500;
+  }
+  .door-felder {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+  }
   .melder-erfassung {
     display: flex;
     flex-direction: column;
@@ -2128,8 +2138,8 @@ const Hn = Ct`
       min-height: 56px;
     }
   }
-`, $t = 600;
-function On(e) {
+`, xt = 600;
+function Nn(e) {
   const t = Math.max(1, Math.ceil(e * 3)), n = new Float32Array(2 * t + 1);
   let s = 0;
   for (let i = -t; i <= t; i++) {
@@ -2139,14 +2149,14 @@ function On(e) {
   for (let i = 0; i < n.length; i++) n[i] /= s;
   return n;
 }
-function kt(e, t, n = 8) {
+function vt(e, t, n = 8) {
   if (!e.length || !(t > 0)) return null;
   let s = 1 / 0, i = -1 / 0, r = 1 / 0, a = -1 / 0;
   for (const [$, k] of e)
     s = Math.min(s, $), i = Math.max(i, $), r = Math.min(r, k), a = Math.max(a, k);
-  const o = Math.max(0.6, n / t), l = On(o), h = (l.length - 1) / 2;
+  const o = Math.max(0.6, n / t), l = Nn(o), h = (l.length - 1) / 2;
   s -= h, r -= h;
-  const c = Math.min($t, i - s + 1 + h), d = Math.min($t, a - r + 1 + h), g = new Float32Array(c * d);
+  const c = Math.min(xt, i - s + 1 + h), d = Math.min(xt, a - r + 1 + h), g = new Float32Array(c * d);
   for (const [$, k, _] of e) {
     const w = $ - s, M = k - r;
     w >= 0 && w < c && M >= 0 && M < d && _ > 0 && (g[M * c + w] += _);
@@ -2161,7 +2171,7 @@ function kt(e, t, n = 8) {
           M >= 0 && M < c && (p[$ * c + M] += _ * l[w + h]);
         }
     }
-  const m = new Float32Array(c * d);
+  const f = new Float32Array(c * d);
   let b = 0;
   for (let $ = 0; $ < d; $++)
     for (let k = 0; k < c; k++) {
@@ -2169,21 +2179,21 @@ function kt(e, t, n = 8) {
       if (_)
         for (let w = -h; w <= h; w++) {
           const M = $ + w;
-          M >= 0 && M < d && (m[M * c + k] += _ * l[w + h]);
+          M >= 0 && M < d && (f[M * c + k] += _ * l[w + h]);
         }
     }
-  for (let $ = 0; $ < m.length; $++) b = Math.max(b, m[$]);
-  return { x0: s * t, y0: r * t, zelle: t, nx: c, ny: d, werte: m, max: b };
+  for (let $ = 0; $ < f.length; $++) b = Math.max(b, f[$]);
+  return { x0: s * t, y0: r * t, zelle: t, nx: c, ny: d, werte: f, max: b };
 }
-function In(e, t, n = 0.2) {
+function Bn(e, t, n = 0.2) {
   return !(e > n) || !(t > 0) ? 0 : Math.min(1, Math.log1p(e) / Math.log1p(t));
 }
-function Bn(e, t, n = 0.85) {
+function Dn(e, t, n = 0.85) {
   const s = new Uint8ClampedArray(e.nx * e.ny * 4);
   for (let i = 0; i < e.ny; i++) {
     const r = e.ny - 1 - i;
     for (let a = 0; a < e.nx; a++) {
-      const o = In(e.werte[i * e.nx + a], e.max);
+      const o = Bn(e.werte[i * e.nx + a], e.max);
       if (!o) continue;
       const l = (r * e.nx + a) * 4;
       s[l] = t[0], s[l + 1] = t[1], s[l + 2] = t[2], s[l + 3] = Math.round(255 * n * (0.15 + 0.85 * o));
@@ -2191,7 +2201,7 @@ function Bn(e, t, n = 0.85) {
   }
   return s;
 }
-function xt(e) {
+function wt(e) {
   const t = /* @__PURE__ */ new Map();
   for (const n of e)
     for (const [s, i, r] of n) {
@@ -2200,30 +2210,30 @@ function xt(e) {
     }
   return [...t.values()];
 }
-function le(e) {
+function ue(e) {
   if (e < 60) return `${Math.round(e)} s`;
   const t = Math.round(e / 60);
   if (t < 60) return `${t} min`;
   const n = Math.floor(t / 60), s = t % 60;
   return s ? `${n} h ${s} min` : `${n} h`;
 }
-function Zn(e, t = 300, n = 0.2, s = 15) {
+function Fn(e, t = 300, n = 0.2, s = 15) {
   const { nx: i, ny: r, werte: a } = e, o = e.max * n, l = new Uint8Array(i * r), h = [];
   for (let c = 0; c < i * r; c++) {
     if (l[c] || a[c] < o) continue;
     const d = [c];
     l[c] = 1;
-    let [g, p, m, b, $] = [1 / 0, -1 / 0, 1 / 0, -1 / 0, 0];
+    let [g, p, f, b, $] = [1 / 0, -1 / 0, 1 / 0, -1 / 0, 0];
     for (; d.length; ) {
       const w = d.pop(), M = w % i, A = w / i | 0;
-      g = Math.min(g, M), p = Math.max(p, M), m = Math.min(m, A), b = Math.max(b, A), $ += a[w];
+      g = Math.min(g, M), p = Math.max(p, M), f = Math.min(f, A), b = Math.max(b, A), $ += a[w];
       for (const S of [M > 0 ? w - 1 : -1, M < i - 1 ? w + 1 : -1, w - i, w + i])
         S < 0 || S >= i * r || l[S] || a[S] < o || (l[S] = 1, d.push(S));
     }
     if ($ < t) continue;
-    const k = (p - g + 1) * e.zelle + 2 * s, _ = (b - m + 1) * e.zelle + 2 * s;
+    const k = (p - g + 1) * e.zelle + 2 * s, _ = (b - f + 1) * e.zelle + 2 * s;
     h.push({
-      mitte: [Math.round(e.x0 + (g + p + 1) / 2 * e.zelle), Math.round(e.y0 + (m + b + 1) / 2 * e.zelle)],
+      mitte: [Math.round(e.x0 + (g + p + 1) / 2 * e.zelle), Math.round(e.y0 + (f + b + 1) / 2 * e.zelle)],
       breite: Math.round(k),
       tiefe: Math.round(_),
       sekunden: Math.round($)
@@ -2231,12 +2241,31 @@ function Zn(e, t = 300, n = 0.2, s = 15) {
   }
   return h.sort((c, d) => d.sekunden - c.sekunden);
 }
-function T(e) {
+function I(e) {
   const t = e;
-  return t?.code === "unknown_command" ? Dn : t?.message ?? String(e);
+  return t?.code === "unknown_command" ? Cn : t?.message ?? String(e);
 }
-const Dn = "Raumzonen wurde aktualisiert und wartet auf einen Neustart von Home Assistant (Einstellungen → System → Neu starten).";
-function Nn(e, t) {
+const Cn = "Raumzonen wurde aktualisiert und wartet auf einen Neustart von Home Assistant (Einstellungen → System → Neu starten).";
+function jn(e, t, n) {
+  return `${e}/#${t.id || n}`;
+}
+function We(e, t) {
+  return e.name?.trim() || (e.art === "offen" ? `Durchgang ${t + 1}` : `Tür ${t + 1}`);
+}
+function Ne(e, t, n, s = 150) {
+  const i = e.find((o) => o.id === t);
+  if (!i?.haus_gesetzt) return null;
+  const r = L(n, { x: i.haus_x, y: i.haus_y, winkel: i.haus_winkel });
+  let a = null;
+  for (const o of e)
+    if (!(o.id === t || !o.haus_gesetzt))
+      for (const l of N(o)) {
+        const [h, c] = L(l.punkt, { x: o.haus_x, y: o.haus_y, winkel: o.haus_winkel }), d = Math.hypot(h - r[0], c - r[1]);
+        d <= s && (!a || d < a.abstand) && (a = { tuer: l, abstand: d });
+      }
+  return a;
+}
+function Ft(e, t) {
   const n = e.length;
   if (n < 3 || t.kante < 0 || t.kante >= n) return null;
   const [s, i] = e[t.kante], [r, a] = e[(t.kante + 1) % n], o = Math.hypot(r - s, a - i);
@@ -2244,18 +2273,16 @@ function Nn(e, t) {
   const l = (t.von + t.bis) / 2 / o;
   return [s + (r - s) * l, i + (a - i) * l];
 }
-function he(e) {
+function N(e) {
   const t = [];
   for (const n of e.zonen)
-    n.art !== "ausgang" || !n.id || t.push({ key: `${e.id}/${n.id}`, raumId: e.id, name: n.name, punkt: P(n.form), ziel: n.fuehrt_zu ?? "", zoneId: n.id });
+    n.art !== "ausgang" || !n.id || t.push({ key: `${e.id}/${n.id}`, raumId: e.id, name: n.name, punkt: P(n.form), ziel: n.fuehrt_zu ?? "", gegenstueck: n.gegenstueck ?? "", zoneId: n.id });
   return (e.oeffnungen ?? []).forEach((n, s) => {
-    const i = Nn(e.umriss, n);
-    if (!i) return;
-    const r = n.art === "offen" ? `Durchgang ${s + 1}` : `Tür ${s + 1} in der Wand`;
-    t.push({ key: `${e.id}/#${s}`, raumId: e.id, name: r, punkt: i, ziel: n.fuehrt_zu ?? "", oeffnung: s });
+    const i = Ft(e.umriss, n);
+    i && t.push({ key: jn(e.id, n, s), raumId: e.id, name: We(n, s), punkt: i, ziel: n.fuehrt_zu ?? "", gegenstueck: n.gegenstueck ?? "", oeffnung: s });
   }), t;
 }
-function Cn(e, t = 60) {
+function Un(e, t = 60) {
   const n = e.flat().filter(([i, r]) => r > i).sort((i, r) => i[0] - r[0]), s = [];
   for (const [i, r] of n) {
     const a = s[s.length - 1];
@@ -2263,10 +2290,10 @@ function Cn(e, t = 60) {
   }
   return s;
 }
-function jn(e) {
+function Wn(e) {
   return e.reduce((t, [n, s]) => t + (s - n), 0);
 }
-function Un(e, t = 30) {
+function Vn(e, t = 30) {
   const n = [], s = [];
   for (const [r, a] of Object.entries(e))
     for (const [o, l] of a)
@@ -2281,7 +2308,7 @@ function Un(e, t = 30) {
   }
   return i;
 }
-function vt(e) {
+function yt(e) {
   if (e.length < 3) return "Es braucht drei Stellen.";
   let t = 1 / 0;
   for (let a = 0; a < e.length; a++)
@@ -2289,7 +2316,7 @@ function vt(e) {
   const [n, s, i] = e, r = Math.abs((s[0] - n[0]) * (i[1] - n[1]) - (i[0] - n[0]) * (s[1] - n[1])) / 2;
   return t < 100 ? "Zwei Stellen liegen zu nah beieinander (weniger als 1 m). Weiter auseinander gehen." : r < 5e3 ? "Die drei Stellen liegen fast auf einer Linie. Eine Stelle seitlich wählen." : "";
 }
-function Fn(e, t) {
+function Gn(e, t) {
   const n = Math.min(e.length, t.length);
   if (n < 2) return null;
   const s = (b) => [b.reduce(($, k) => $ + k[0], 0) / n, b.reduce(($, k) => $ + k[1], 0) / n], i = s(e.slice(0, n)), r = s(t.slice(0, n));
@@ -2305,10 +2332,10 @@ function Fn(e, t) {
     const $ = d + e[b][0] * h - e[b][1] * c, k = g + e[b][0] * c + e[b][1] * h;
     p += Math.hypot($ - t[b][0], k - t[b][1]);
   }
-  let m = l * 180 / Math.PI;
-  return m = Math.round(m * 10) / 10, m <= -180 && (m += 360), { x: Math.round(d), y: Math.round(g), winkel: m, rest_cm: Math.round(p / n * 10) / 10 };
+  let f = l * 180 / Math.PI;
+  return f = Math.round(f * 10) / 10, f <= -180 && (f += 360), { x: Math.round(d), y: Math.round(g), winkel: f, rest_cm: Math.round(p / n * 10) / 10 };
 }
-function Wn(e) {
+function Kn(e) {
   if (!e.length) return null;
   const t = (i) => {
     const r = [...i].sort((o, l) => o - l), a = r.length >> 1;
@@ -2316,7 +2343,7 @@ function Wn(e) {
   }, n = [t(e.map((i) => i[0])), t(e.map((i) => i[1]))], s = e.map((i) => Math.hypot(i[0] - n[0], i[1] - n[1]));
   return { punkt: [Math.round(n[0] * 10) / 10, Math.round(n[1] * 10) / 10], streuung_cm: Math.round(t(s) * 10) / 10 };
 }
-function Gn(e) {
+function qn(e) {
   const t = new TextEncoder().encode("endstream"), n = [];
   for (let s = 0; s < e.length - 3; s++) {
     if (e[s] !== 255 || e[s + 1] !== 216 || e[s + 2] !== 255) continue;
@@ -2331,14 +2358,14 @@ function Gn(e) {
   }
   return n;
 }
-function Vn(e, t) {
+function Xn(e, t) {
   const n = Math.floor(e.width / t), s = Math.floor(e.height / t), i = new Uint8Array(n * s), r = new Uint8Array(n * s), a = e.data;
   for (let l = 0; l < s; l++)
     for (let h = 0; h < n; h++) {
       let c = 0, d = 0;
       for (let g = 0; g < t; g++)
         for (let p = 0; p < t; p++) {
-          const m = ((l * t + g) * e.width + (h * t + p)) * 4, [b, $, k] = [a[m], a[m + 1], a[m + 2]];
+          const f = ((l * t + g) * e.width + (h * t + p)) * 4, [b, $, k] = [a[f], a[f + 1], a[f + 2]];
           k > b + 40 && k > $ + 10 && k > 120 && (c = 1), b + $ + k < 270 && (d = 1);
         }
       i[l * n + h] = c, r[l * n + h] = d;
@@ -2349,7 +2376,7 @@ function Vn(e, t) {
       if (i[l * n + h]) for (let c = -1; c <= 1; c++) for (let d = -1; d <= 1; d++) o[(l + c) * n + h + d] = 1;
   return { w: n, h: s, blau: o, dunkel: r };
 }
-function Kn(e) {
+function Jn(e) {
   const { w: t, h: n, blau: s } = e, i = new Int32Array(t * n).fill(-1), r = new Int32Array(t * n);
   let a = 0;
   for (let o = 0; o < t * n; o++) {
@@ -2364,7 +2391,7 @@ function Kn(e) {
   }
   return { label: i, anzahl: a };
 }
-function qn(e, t, n, s) {
+function Yn(e, t, n, s) {
   const i = (g, p) => g >= 0 && p >= 0 && g < t && p < n && e[p * t + g] === s;
   let r = -1, a = -1;
   for (let g = 0; g < t * n; g++)
@@ -2386,8 +2413,8 @@ function qn(e, t, n, s) {
   let [h, c] = [r, a], d = 7;
   for (let g = 0; g < t * n * 2; g++) {
     let p = !1;
-    for (let m = 0; m < 8; m++) {
-      const b = (d + 6 + m) % 8, [$, k] = [h + o[b][0], c + o[b][1]];
+    for (let f = 0; f < 8; f++) {
+      const b = (d + 6 + f) % 8, [$, k] = [h + o[b][0], c + o[b][1]];
       if (i($, k)) {
         h = $, c = k, d = b, p = !0;
         break;
@@ -2398,35 +2425,35 @@ function qn(e, t, n, s) {
   }
   return l;
 }
-function Dt(e, t, n) {
+function Ct(e, t, n) {
   const [s, i] = [n[0] - t[0], n[1] - t[1]], r = s * s + i * i, a = r ? Math.max(0, Math.min(1, ((e[0] - t[0]) * s + (e[1] - t[1]) * i) / r)) : 0;
   return Math.hypot(e[0] - t[0] - a * s, e[1] - t[1] - a * i);
 }
-function Se(e, t) {
+function Re(e, t) {
   if (e.length < 3) return e;
   let n = 0, s = 0;
   for (let a = 1; a < e.length - 1; a++) {
-    const o = Dt(e[a], e[0], e[e.length - 1]);
+    const o = Ct(e[a], e[0], e[e.length - 1]);
     o > n && (n = o, s = a);
   }
   if (n <= t) return [e[0], e[e.length - 1]];
-  const i = Se(e.slice(0, s + 1), t), r = Se(e.slice(s), t);
+  const i = Re(e.slice(0, s + 1), t), r = Re(e.slice(s), t);
   return [...i.slice(0, -1), ...r];
 }
-function Xn(e, t) {
+function Qn(e, t) {
   if (e.length < 4) return e;
   let n = 0, s = 0;
   for (let o = 1; o < e.length; o++) {
     const l = Math.hypot(e[o][0] - e[0][0], e[o][1] - e[0][1]);
     l > s && (s = l, n = o);
   }
-  const i = Se(e.slice(0, n + 1), t), r = Se([...e.slice(n), e[0]], t);
+  const i = Re(e.slice(0, n + 1), t), r = Re([...e.slice(n), e[0]], t);
   let a = [...i.slice(0, -1), ...r.slice(0, -1)];
   for (let o = !0; o && a.length > 3; ) {
     o = !1;
     for (let l = 0; l < a.length; l++) {
       const h = a[(l - 1 + a.length) % a.length], c = a[(l + 1) % a.length];
-      if (Math.hypot(h[0] - c[0], h[1] - c[1]) < t * 3 && Math.hypot(a[l][0] - h[0], a[l][1] - h[1]) > t * 3 || Dt(a[l], h, c) < t) {
+      if (Math.hypot(h[0] - c[0], h[1] - c[1]) < t * 3 && Math.hypot(a[l][0] - h[0], a[l][1] - h[1]) > t * 3 || Ct(a[l], h, c) < t) {
         a = a.filter((g, p) => p !== l), o = !0;
         break;
       }
@@ -2434,7 +2461,7 @@ function Xn(e, t) {
   }
   return a;
 }
-function Jn(e) {
+function es(e) {
   let t = 0;
   for (let n = 0; n < e.length; n++) {
     const [s, i] = e[n], [r, a] = e[(n + 1) % e.length];
@@ -2442,8 +2469,8 @@ function Jn(e) {
   }
   return Math.abs(t) / 2;
 }
-function Yn(e, t = 2) {
-  const n = Vn(e, t), { w: s, h: i } = n, { label: r, anzahl: a } = Kn(n), o = new Int32Array(a), l = new Uint8Array(a), h = new Int32Array(a);
+function ts(e, t = 2) {
+  const n = Xn(e, t), { w: s, h: i } = n, { label: r, anzahl: a } = Jn(n), o = new Int32Array(a), l = new Uint8Array(a), h = new Int32Array(a);
   for (let w = 0; w < s * i; w++) {
     const M = r[w];
     if (M < 0) continue;
@@ -2454,88 +2481,88 @@ function Yn(e, t = 2) {
   const c = s * i * 0.015, d = [];
   for (let w = 0; w < a; w++)
     l[w] || o[w] < c || h[w] > o[w] * 0.3 || d.push(w);
-  const g = Math.max(2, Math.hypot(s, i) * 6e-3), p = [], m = /* @__PURE__ */ new Map();
+  const g = Math.max(2, Math.hypot(s, i) * 6e-3), p = [], f = /* @__PURE__ */ new Map();
   for (const w of d) {
-    const M = Xn(qn(r, s, i, w), g);
-    M.length < 3 || (m.set(w, p.length), p.push({ punkte: M.map(([A, S]) => [(A + 0.5) * t, (S + 0.5) * t]), flaeche_px: Jn(M) * t * t }));
+    const M = Qn(Yn(r, s, i, w), g);
+    M.length < 3 || (f.set(w, p.length), p.push({ punkte: M.map(([A, S]) => [(A + 0.5) * t, (S + 0.5) * t]), flaeche_px: es(M) * t * t }));
   }
   const b = Math.max(4, Math.round(16 / t)), $ = Math.max(6, Math.round(40 / t)), k = Math.max(2, Math.round(6 / t)), _ = [];
   return p.forEach((w, M) => {
-    const A = w.punkte.map(([S, I]) => [S / t, I / t]);
-    A.forEach((S, I) => {
-      const B = A[(I + 1) % A.length], Z = Math.hypot(B[0] - S[0], B[1] - S[1]);
-      if (Z < $) return;
-      const [Y, C] = [(B[0] - S[0]) / Z, (B[1] - S[1]) / Z], [Xe, Je] = [-C, Y];
-      let D = -1;
-      const Ye = (H) => {
-        if (D >= 0 && H - D >= $ && D > 2 && H < Z - 2) {
-          const j = (D + H) / 2;
-          let Q = null;
+    const A = w.punkte.map(([S, E]) => [S / t, E / t]);
+    A.forEach((S, E) => {
+      const H = A[(E + 1) % A.length], B = Math.hypot(H[0] - S[0], H[1] - S[1]);
+      if (B < $) return;
+      const [ae, Q] = [(H[0] - S[0]) / B, (H[1] - S[1]) / B], [oe, D] = [-Q, ae];
+      let F = -1;
+      const et = (Z) => {
+        if (F >= 0 && Z - F >= $ && F > 2 && Z < B - 2) {
+          const j = (F + Z) / 2;
+          let ee = null;
           for (const U of [1, -1]) {
-            const F = Math.round(S[0] + Y * j + Xe * U * b * 2.5), W = Math.round(S[1] + C * j + Je * U * b * 2.5);
-            if (F < 0 || W < 0 || F >= s || W >= i) continue;
-            const $e = m.get(r[W * s + F]);
-            $e !== void 0 && $e !== M && (Q = $e);
+            const W = Math.round(S[0] + ae * j + oe * U * b * 2.5), V = Math.round(S[1] + Q * j + D * U * b * 2.5);
+            if (W < 0 || V < 0 || W >= s || V >= i) continue;
+            const xe = f.get(r[V * s + W]);
+            xe !== void 0 && xe !== M && (ee = xe);
           }
-          _.push({ raum: M, kante: I, von_px: D * t, bis_px: H * t, partner: Q });
+          _.push({ raum: M, kante: E, von_px: F * t, bis_px: Z * t, partner: ee });
         }
-        D = -1;
+        F = -1;
       };
-      for (let H = 0; H <= Z; H++) {
-        let j = !1, Q = 0;
+      for (let Z = 0; Z <= B; Z++) {
+        let j = !1, ee = 0;
         for (let U = -b; U <= b && !j; U++) {
-          const F = Math.round(S[0] + Y * H + Xe * U), W = Math.round(S[1] + C * H + Je * U);
-          Q = F >= 0 && W >= 0 && F < s && W < i && n.dunkel[W * s + F] ? Q + 1 : 0, Q >= k && (j = !0);
+          const W = Math.round(S[0] + ae * Z + oe * U), V = Math.round(S[1] + Q * Z + D * U);
+          ee = W >= 0 && V >= 0 && W < s && V < i && n.dunkel[V * s + W] ? ee + 1 : 0, ee >= k && (j = !0);
         }
-        !j && D < 0 && (D = H), j && D >= 0 && Ye(H);
+        !j && F < 0 && (F = Z), j && F >= 0 && et(Z);
       }
-      Ye(Z);
+      et(B);
     });
   }), { breite: e.width, hoehe: e.height, raeume: p, luecken: _ };
 }
-function ne(e) {
+function se(e) {
   const t = e.map((s) => s[0]), n = e.map((s) => s[1]);
   return { x0: Math.min(...t), y0: Math.min(...n), x1: Math.max(...t), y1: Math.max(...n) };
 }
-function wt(e, t, n, s = [0, 0]) {
-  const i = e.raeume[t], r = ne(i.punkte), a = ([m, b]) => [Math.round((m - r.x0) * n + s[0]), Math.round((r.y1 - b) * n + s[1])];
+function zt(e, t, n, s = [0, 0]) {
+  const i = e.raeume[t], r = se(i.punkte), a = ([f, b]) => [Math.round((f - r.x0) * n + s[0]), Math.round((r.y1 - b) * n + s[1])];
   let o = i.punkte.map(a);
-  const l = i.punkte.map((m, b) => b);
+  const l = i.punkte.map((f, b) => b);
   let h = 0;
-  o.forEach((m, b) => {
-    m[0] + m[1] < o[h][0] + o[h][1] && (h = b);
+  o.forEach((f, b) => {
+    f[0] + f[1] < o[h][0] + o[h][1] && (h = b);
   }), o = [...o.slice(h), ...o.slice(0, h)];
   const c = [...l.slice(h), ...l.slice(0, h)], d = o.length, g = [];
-  e.luecken.forEach((m, b) => {
-    if (m.raum !== t) return;
-    const $ = c.indexOf(m.kante);
+  e.luecken.forEach((f, b) => {
+    if (f.raum !== t) return;
+    const $ = c.indexOf(f.kante);
     if ($ < 0) return;
-    const k = o[$], _ = o[($ + 1) % d], w = Math.hypot(_[0] - k[0], _[1] - k[1]), M = Math.max(0, Math.round(m.von_px * n)), A = Math.min(Math.floor(w), Math.round(m.bis_px * n));
+    const k = o[$], _ = o[($ + 1) % d], w = Math.hypot(_[0] - k[0], _[1] - k[1]), M = Math.max(0, Math.round(f.von_px * n)), A = Math.min(Math.floor(w), Math.round(f.bis_px * n));
     A - M >= 30 && g.push({ kante: $, von: M, bis: A, luecke: b });
   });
   const p = { x: Math.round(r.x0 * n - s[0]), y: Math.round((e.hoehe - r.y1) * n - s[1]), winkel: 0 };
   return { umriss: o, haus: p, luecken: g };
 }
-var Qn = Object.defineProperty, es = Object.getOwnPropertyDescriptor, y = (e, t, n, s) => {
-  for (var i = s > 1 ? void 0 : s ? es(t, n) : t, r = e.length - 1, a; r >= 0; r--)
+var ns = Object.defineProperty, ss = Object.getOwnPropertyDescriptor, y = (e, t, n, s) => {
+  for (var i = s > 1 ? void 0 : s ? ss(t, n) : t, r = e.length - 1, a; r >= 0; r--)
     (a = e[r]) && (i = (s ? a(t, n, i) : a(i)) || i);
-  return s && i && Qn(t, n, i), i;
+  return s && i && ns(t, n, i), i;
 };
-const R = "raumzonen", ts = 5, L = 12, ns = 8, ss = 30, yt = [1, 3, 8, 12, 24], is = ["auswahl", "rechteck", "vieleck", "zellen", "umriss", "oeffnung"], V = "anwesenheit", zt = [
+const R = "raumzonen", is = 5, O = 12, rs = 8, as = 30, _t = [1, 3, 8, 12, 24], os = ["auswahl", "rechteck", "vieleck", "zellen", "umriss", "oeffnung"], K = "anwesenheit", Mt = [
   { tool: "auswahl", icon: "mdi:cursor-default-outline", label: "Auswählen und verschieben" },
   { tool: "rechteck", icon: "mdi:rectangle-outline", label: "Rechteck zeichnen" },
   { tool: "vieleck", icon: "mdi:vector-polygon", label: "Vieleck zeichnen" },
   { tool: "zellen", icon: "mdi:grid", label: "Zellen malen" },
   { tool: "umriss", icon: "mdi:wall", label: "Wände zeichnen" },
   { tool: "oeffnung", icon: "mdi:door", label: "Tür oder Öffnung in eine Wand" }
-], rs = {
+], ls = {
   rechteck: "Von Ecke zu Ecke ziehen.",
   vieleck: "Ecken nacheinander anklicken. Ein Klick auf die erste Ecke schließt die Zone.",
   zellen: "Zellen malen. Wer auf einer bemalten Zelle beginnt, radiert.",
   umriss: "Ecken des Raums anklicken. Ein Klick auf die erste Ecke schließt die Wände.",
   oeffnung: "An einer Wand entlang ziehen, so breit wie die Tür oder Öffnung."
 };
-function Ie(e, t) {
+function Be(e, t) {
   try {
     const n = localStorage.getItem(e);
     return n === null ? t : n === "1";
@@ -2543,43 +2570,43 @@ function Ie(e, t) {
     return t;
   }
 }
-function Be(e, t) {
+function De(e, t) {
   try {
     localStorage.setItem(e, t ? "1" : "0");
   } catch {
   }
 }
-function _t(e, t) {
+function St(e, t) {
   const n = e[t], s = e[(t + 1) % e.length];
   return Math.hypot(s[0] - n[0], s[1] - n[1]);
 }
-function Mt(e) {
+function At(e) {
   return (e / 100).toFixed(2).replace(".", ",");
 }
-function ce(e) {
+function de(e) {
   return `var(--rz-${e})`;
 }
-function St(e) {
+function Rt(e) {
   return e.map((t) => `${t[0].toFixed(1)},${t[1].toFixed(1)}`).join(" ");
 }
-function as(e) {
+function hs(e) {
   for (const t of [10, 20, 50, 100, 200, 500, 1e3, 2e3]) if (t >= e) return t;
   return 5e3;
 }
-let v = class extends de {
+let v = class extends me {
   constructor() {
-    super(...arguments), this.narrow = !1, this.raumId = "", this.zones = [], this.sensor = { x: 0, y: 0, winkel: 0, reichweite_cm: 600, oeffnung_grad: 120 }, this.umriss = [], this.oeffnungen = [], this.selVertex = -1, this.selOpening = -1, this.openingDraft = null, this.selected = -1, this.sensorOpen = !1, this.tab = "zonen", this.tool = "auswahl", this.draft = [], this.rectDraft = null, this.hover = null, this.view = { cx: 0, cy: 250, scale: 0.8 }, this.size = { w: 800, h: 600 }, this.heatMin = 0, this.auswStunden = 8, this.auswLaedt = !1, this.auswFehler = "", this.wiz = null, this.plan = null, this.planLaedt = !1, this.planAuswahl = null, this.planBilder = {}, this.planEdit = "", this.planAenderung = {}, this.planMessen = null, this.zeigePlan = Ie("raumzonen-zeige-plan", !0), this.masse = Ie("raumzonen-masse", !1), this.stockwerk = "", this.wieImHaus = Ie("raumzonen-wie-im-haus", !0), this.hausExtra = {}, this.neuRaum = null, this.profilStunden = 0, this.profilLaedt = !1, this.auswFigur = "", this.layersOpen = !1, this.layers = { figuren: !0, spuren: !0, ziele: !1, abdeckung: !0 }, this.dirty = !1, this.zonesFollow = !0, this.saving = !1, this.error = "", this.toast = "", this.page = "raum", this.lagen = {}, this.tueren = {}, this.hausLive = {}, this.hausSel = "", this.aufnahme = !0, this.melder = [], this.nurBereich = !0, this.nachlauf = 0, this.melderLagen = {}, this.zoneFuerMelder = "", this.aufnahmeTage = 30, this.history = new yn(), this.drag = null, this.liveRoom = "", this.viewTouched = !1, this.sensorAnchor = null, this.hausUnsubs = [], this.fit = () => {
+    super(...arguments), this.narrow = !1, this.raumId = "", this.zones = [], this.sensor = { x: 0, y: 0, winkel: 0, reichweite_cm: 600, oeffnung_grad: 120 }, this.umriss = [], this.oeffnungen = [], this.selVertex = -1, this.selOpening = -1, this.openingDraft = null, this.selected = -1, this.sensorOpen = !1, this.tab = "zonen", this.tool = "auswahl", this.draft = [], this.rectDraft = null, this.hover = null, this.view = { cx: 0, cy: 250, scale: 0.8 }, this.size = { w: 800, h: 600 }, this.heatMin = 0, this.auswStunden = 8, this.auswLaedt = !1, this.auswFehler = "", this.wiz = null, this.plan = null, this.planLaedt = !1, this.planAuswahl = null, this.planBilder = {}, this.planEdit = "", this.planAenderung = {}, this.planMessen = null, this.zeigePlan = Be("raumzonen-zeige-plan", !0), this.masse = Be("raumzonen-masse", !1), this.stockwerk = "", this.wieImHaus = Be("raumzonen-wie-im-haus", !0), this.hausExtra = {}, this.neuRaum = null, this.profilStunden = 0, this.profilLaedt = !1, this.auswFigur = "", this.layersOpen = !1, this.layers = { figuren: !0, spuren: !0, ziele: !1, abdeckung: !0 }, this.dirty = !1, this.zonesFollow = !0, this.saving = !1, this.error = "", this.toast = "", this.page = "raum", this.lagen = {}, this.tueren = {}, this.tuerNamen = {}, this.hausLive = {}, this.hausSel = "", this.aufnahme = !0, this.melder = [], this.nurBereich = !0, this.nachlauf = 0, this.melderLagen = {}, this.zoneFuerMelder = "", this.aufnahmeTage = 30, this.history = new Mn(), this.drag = null, this.liveRoom = "", this.viewTouched = !1, this.sensorAnchor = null, this.hausUnsubs = [], this.fit = () => {
       const e = this.sensor, t = [[e.x, e.y]];
       if (this.page === "haus" && this.data) {
         t.length = 0;
-        for (const m of this.hausRaeume()) {
-          const b = this.lagen[m.id];
-          b && t.push(...this.outlineOf(m).map(($) => O($, b)));
+        for (const f of this.hausRaeume()) {
+          const b = this.lagen[f.id];
+          b && t.push(...this.outlineOf(f).map(($) => L($, b)));
         }
       }
-      for (const m of this.zones) t.push(...K(m.form));
-      t.push(...this.umriss), t.length < 4 && this.page === "raum" && t.push(...Le([e.x, e.y], e.winkel, Math.min(e.reichweite_cm, 500), e.oeffnung_grad, 8));
-      const n = this.ansichtWinkel, s = t.map((m) => E(m, n)), i = s.map((m) => m[0]), r = s.map((m) => m[1]), [a, o, l, h] = [Math.min(...i), Math.max(...i), Math.min(...r), Math.max(...r)], c = Math.max(200, o - a), d = Math.max(200, h - l), g = Math.min(this.size.w / (c * 1.2), this.size.h / (d * 1.2)), p = E([(a + o) / 2, (l + h) / 2], -n);
+      for (const f of this.zones) t.push(...q(f.form));
+      t.push(...this.umriss), t.length < 4 && this.page === "raum" && t.push(...Oe([e.x, e.y], e.winkel, Math.min(e.reichweite_cm, 500), e.oeffnung_grad, 8));
+      const n = this.ansichtWinkel, s = t.map((f) => T(f, n)), i = s.map((f) => f[0]), r = s.map((f) => f[1]), [a, o, l, h] = [Math.min(...i), Math.max(...i), Math.min(...r), Math.max(...r)], c = Math.max(200, o - a), d = Math.max(200, h - l), g = Math.min(this.size.w / (c * 1.2), this.size.h / (d * 1.2)), p = T([(a + o) / 2, (l + h) / 2], -n);
       this.view = { cx: p[0], cy: p[1], scale: Math.max(0.05, Math.min(5, g)) };
     }, this.undo = () => {
       const e = this.history.undo();
@@ -2589,7 +2616,7 @@ let v = class extends de {
         if (this.tool === "umriss")
           this.remember(), this.umriss = this.draft, this.oeffnungen = [], this.selOpening = -1, this.dirty = !0;
         else {
-          const e = { art: "vieleck", punkte: this.draft }, t = De(e);
+          const e = { art: "vieleck", punkte: this.draft }, t = Ce(e);
           t ? this.showToast(t) : this.addZone(e);
         }
       this.draft = [], this.tool = "auswahl";
@@ -2626,7 +2653,7 @@ let v = class extends de {
         const t = e.raeume.some((n) => n.id === this.raumId);
         this.page === "haus" && e.raeume.length ? (this.raumId = t ? this.raumId : e.raeume[0].id, this.openHaus(!0)) : this.selectRoom(t ? this.raumId : e.raeume[0]?.id ?? "", !0);
       } catch (e) {
-        this.error = `Laden fehlgeschlagen: ${T(e)}`;
+        this.error = `Laden fehlgeschlagen: ${I(e)}`;
       }
   }
   /** Nur Admins dürfen ändern; alle anderen sehen nur zu. */
@@ -2684,7 +2711,7 @@ let v = class extends de {
     } catch (n) {
       if (e !== this.raumId) return;
       const s = n;
-      this.ausw = void 0, this.auswFehler = s.code === "off" ? "off" : `Auswertung fehlgeschlagen: ${T(n)}`;
+      this.ausw = void 0, this.auswFehler = s.code === "off" ? "off" : `Auswertung fehlgeschlagen: ${I(n)}`;
     } finally {
       this.auswLaedt = !1;
     }
@@ -2702,7 +2729,7 @@ let v = class extends de {
   }
   async save() {
     if (!this._hass || !this.raum || !this.kannAendern) return;
-    const e = this.istMelder, t = e ? this.zones.find((s) => !(s.melder ?? []).some((i) => this.melder.includes(i))) : void 0, n = e ? this.melder.length ? t ? `Zone „${t.name}“: bitte den Melder wählen, der sie meldet.` : pt(this.zones) : "Mindestens einen Melder wählen." : pt(this.zones);
+    const e = this.istMelder, t = e ? this.zones.find((s) => !(s.melder ?? []).some((i) => this.melder.includes(i))) : void 0, n = e ? this.melder.length ? t ? `Zone „${t.name}“: bitte den Melder wählen, der sie meldet.` : ft(this.zones) : "Mindestens einen Melder wählen." : ft(this.zones);
     if (n) {
       this.showToast(n);
       return;
@@ -2719,12 +2746,12 @@ let v = class extends de {
           melder_lagen: Object.fromEntries(Object.entries(this.melderLagen).filter(([s]) => this.melder.includes(s)))
         } : { sensor: this.sensor },
         umriss: this.umriss,
-        oeffnungen: Ln(this.umriss, this.oeffnungen),
+        oeffnungen: Hn(this.umriss, this.oeffnungen),
         aufnahme: this.aufnahme,
         aufnahme_tage: this.aufnahmeTage
       }), this.dirty = !1, this.showToast("Gespeichert."), await this.unsubscribeLive(), await new Promise((s) => window.setTimeout(s, 1500)), await this.load();
     } catch (s) {
-      this.showToast(`Nicht gespeichert: ${T(s)}`);
+      this.showToast(`Nicht gespeichert: ${I(s)}`);
     } finally {
       this.saving = !1;
     }
@@ -2749,10 +2776,10 @@ let v = class extends de {
         }
         this.remember();
         const t = this.zones.slice();
-        for (const n of e.zonen) t.push(Sn(n, t, this.data.vorlagen));
+        for (const n of e.zonen) t.push(Tn(n, t, this.data.vorlagen));
         this.zones = t, this.dirty = !0, this.showToast(`${e.zonen.length} Zonen übernommen. Rollen prüfen und speichern.`);
       } catch (e) {
-        this.showToast(`Konverter-Zonen nicht lesbar: ${T(e)}`);
+        this.showToast(`Konverter-Zonen nicht lesbar: ${I(e)}`);
       }
   }
   // -- Hausplan -------------------------------------------------------------
@@ -2762,7 +2789,7 @@ let v = class extends de {
       [300, 0],
       [300, 300],
       [0, 300]
-    ] : vn(
+    ] : zn(
       e.umriss,
       e.zonen.map((t) => t.form),
       [e.sensor.x, e.sensor.y]
@@ -2771,7 +2798,7 @@ let v = class extends de {
   openHaus(e = !1) {
     if (!this.data || !e && this.page === "haus" || !e && this.dirty && !confirm("Ungespeicherte Änderungen verwerfen?")) return;
     const t = this.data.raeume;
-    this.lagen = wn(
+    this.lagen = _n(
       t.map((i) => ({
         id: i.id,
         outline: this.outlineOf(i),
@@ -2779,8 +2806,8 @@ let v = class extends de {
       }))
     );
     const n = {};
-    for (const i of t) for (const r of he(i)) n[r.key] = r.ziel;
-    this.tueren = n;
+    for (const i of t) for (const r of N(i)) n[r.key] = r.gegenstueck ? `tuer:${r.gegenstueck}` : r.ziel;
+    this.tueren = n, this.tuerNamen = {};
     const s = this.page === "haus";
     this.page = "haus", this.hausSel = "", this.hausExtra = {}, this.planAenderung = {}, this.planEdit = "", this.tool = "auswahl", this.dirty = !1, this.unsubscribeLive(), this.subscribeHaus(), s || (this.viewTouched = !1, this.fit());
   }
@@ -2844,7 +2871,7 @@ let v = class extends de {
   }
   wizMessen() {
     const e = this.wiz;
-    e && (window.clearInterval(this.wizTimer), this.wiz = { ...e, fehler: void 0, messung: { bis: Date.now() + ns * 1e3, punkte: [], hinweis: "" } }, this.wizTimer = window.setInterval(() => {
+    e && (window.clearInterval(this.wizTimer), this.wiz = { ...e, fehler: void 0, messung: { bis: Date.now() + rs * 1e3, punkte: [], hinweis: "" } }, this.wizTimer = window.setInterval(() => {
       const t = this.wiz;
       if (!t?.messung) return;
       const { punkt: n, hinweis: s } = this.wizPerson(), i = n ? [...t.messung.punkte, n] : t.messung.punkte;
@@ -2853,12 +2880,12 @@ let v = class extends de {
         return;
       }
       window.clearInterval(this.wizTimer);
-      const r = Wn(i);
+      const r = Kn(i);
       if (!r || i.length < 8) {
         this.wiz = { ...t, messung: void 0, fehler: s || "Zu wenig gesehen. Noch einmal versuchen." };
         return;
       }
-      if (r.streuung_cm > ss) {
+      if (r.streuung_cm > as) {
         this.wiz = { ...t, messung: void 0, fehler: `Zu unruhig (Punkte streuen ${Math.round(r.streuung_cm)} cm). Bitte ruhig stehen und noch einmal.` };
         return;
       }
@@ -2871,10 +2898,10 @@ let v = class extends de {
     if (!t || !n) return;
     const s = t.aktiv;
     if (t.schritt === "vorher") {
-      const i = t.raum.map((o, l) => l === s ? e : o), r = i.every(Boolean), a = r ? vt(i) : "";
+      const i = t.raum.map((o, l) => l === s ? e : o), r = i.every(Boolean), a = r ? yt(i) : "";
       this.wiz = { ...t, raum: i, messung: void 0, aktiv: r ? 0 : s + 1, schritt: r && !a ? "umhaengen" : "vorher", fehler: a || void 0 }, a && (this.wiz = { ...this.wiz, raum: [null, null, null], aktiv: 0 });
     } else {
-      const i = t.sensor.map((r, a) => a === s ? It(e, n) : r);
+      const i = t.sensor.map((r, a) => a === s ? Nt(e, n) : r);
       this.wiz = { ...t, sensor: i, messung: void 0, tippen: t.modus === "einmessen" }, t.modus === "umsetzen" && this.wizWeiter();
     }
     this.wizSpeichern();
@@ -2894,7 +2921,7 @@ let v = class extends de {
       this.wiz = { ...e, aktiv: t + 1 };
       return;
     }
-    const n = e.raum, s = vt(n), i = Fn(e.sensor, n);
+    const n = e.raum, s = yt(n), i = Gn(e.sensor, n);
     if (!i || s) {
       this.wiz = { ...e, schritt: "nachher", aktiv: 0, sensor: [null, null, null], raum: e.modus === "einmessen" ? [null, null, null] : e.raum, fehler: s || "Konnte nicht rechnen. Noch einmal." };
       return;
@@ -2913,7 +2940,7 @@ let v = class extends de {
     try {
       if (e.type === "application/pdf" || e.name.toLowerCase().endsWith(".pdf")) {
         const n = [];
-        for (const s of Gn(new Uint8Array(await e.arrayBuffer()))) {
+        for (const s of qn(new Uint8Array(await e.arrayBuffer()))) {
           const i = new Blob([s.slice()], { type: "image/jpeg" });
           await this.istGrundriss(i) && n.push(i);
         }
@@ -2927,7 +2954,7 @@ let v = class extends de {
       }
       await this.planBildLaden(e, t);
     } catch (n) {
-      this.showToast(`Grundriss nicht gelesen: ${T(n)}`);
+      this.showToast(`Grundriss nicht gelesen: ${I(n)}`);
     } finally {
       this.planLaedt = !1;
     }
@@ -2961,7 +2988,7 @@ let v = class extends de {
     try {
       await this.planBildLaden(n, s);
     } catch (i) {
-      this.showToast(`Grundriss nicht gelesen: ${T(i)}`);
+      this.showToast(`Grundriss nicht gelesen: ${I(i)}`);
     } finally {
       this.planLaedt = !1;
     }
@@ -2972,7 +2999,7 @@ let v = class extends de {
       i.width = Math.round(n.width * s), i.height = Math.round(n.height * s);
       const r = i.getContext("2d");
       r.drawImage(n, 0, 0, i.width, i.height);
-      const a = r.getImageData(0, 0, i.width, i.height), o = Yn({ width: a.width, height: a.height, data: a.data }), l = {};
+      const a = r.getImageData(0, 0, i.width, i.height), o = ts({ width: a.width, height: a.height, data: a.data }), l = {};
       o.luecken.forEach((c, d) => l[d] = c.partner !== null ? "tuer" : "fenster");
       const h = i.toDataURL("image/jpeg", 0.85).split(",")[1];
       this.plan = { bild: URL.createObjectURL(e), g: o, zuordnung: o.raeume.map(() => ""), art: l, massRaum: 0, massSeite: "breite", massM: 0, jpeg: h, name: t, strecke: [], streckeM: 0 };
@@ -2989,24 +3016,24 @@ let v = class extends de {
       return s > 0 ? e.streckeM * 100 / s : 0;
     }
     if (!e || !(e.massM > 0) || !e.g.raeume[e.massRaum]) return 0;
-    const t = ne(e.g.raeume[e.massRaum].punkte), n = e.massSeite === "breite" ? t.x1 - t.x0 : t.y1 - t.y0;
+    const t = se(e.g.raeume[e.massRaum].punkte), n = e.massSeite === "breite" ? t.x1 - t.x0 : t.y1 - t.y0;
     return n > 0 ? e.massM * 100 / n : 0;
   }
   async planUebernehmen() {
     const e = this.plan, t = this.planCmProPx();
     if (!e || !t || !this._hass || !this.data) return;
     const n = this.data.raeume, s = e.g.raeume.map((l, h) => h).filter((l) => e.zuordnung[l]).map((l) => {
-      const h = n.find((p) => p.id === e.zuordnung[l]), c = h.umriss.length >= 3 ? h.umriss : h.zonen.length ? [...h.zonen.flatMap((p) => K(p.form)), [h.sensor.x, h.sensor.y]] : [], d = wt(e.g, l, t);
+      const h = n.find((p) => p.id === e.zuordnung[l]), c = h.umriss.length >= 3 ? h.umriss : h.zonen.length ? [...h.zonen.flatMap((p) => q(p.form)), [h.sensor.x, h.sensor.y]] : [], d = zt(e.g, l, t);
       let g = [0, 0];
       if (c.length) {
-        const p = ne(c), m = ne(d.umriss);
-        g = [Math.round((p.x0 + p.x1 - m.x0 - m.x1) / 2), Math.round((p.y0 + p.y1 - m.y0 - m.y1) / 2)];
+        const p = se(c), f = se(d.umriss);
+        g = [Math.round((p.x0 + p.x1 - f.x0 - f.x1) / 2), Math.round((p.y0 + p.y1 - f.y0 - f.y1) / 2)];
       }
-      return { i: l, raum: h, u: wt(e.g, l, t, g) };
-    }), i = n.filter((l) => l.haus_gesetzt && this.aufStockwerk(l) && !s.some((h) => h.raum.id === l.id)), r = (l) => ne(l);
+      return { i: l, raum: h, u: zt(e.g, l, t, g) };
+    }), i = n.filter((l) => l.haus_gesetzt && this.aufStockwerk(l) && !s.some((h) => h.raum.id === l.id)), r = (l) => se(l);
     let a = 0;
     if (i.length) {
-      const l = r(i.flatMap((d) => this.outlineOf(d).map((g) => O(g, { x: d.haus_x, y: d.haus_y, winkel: d.haus_winkel })))), h = s.length ? r(s.flatMap((d) => d.u.umriss.map((g) => O(g, d.u.haus)))) : { x0: 0, y0: 0, x1: e.g.breite * t, y1: e.g.hoehe * t };
+      const l = r(i.flatMap((d) => this.outlineOf(d).map((g) => L(g, { x: d.haus_x, y: d.haus_y, winkel: d.haus_winkel })))), h = s.length ? r(s.flatMap((d) => d.u.umriss.map((g) => L(g, d.u.haus)))) : { x0: 0, y0: 0, x1: e.g.breite * t, y1: e.g.hoehe * t };
       h.x0 < l.x1 && h.x1 > l.x0 && h.y0 < l.y1 && h.y1 > l.y0 && (a = l.x1 + 200 - h.x0);
     }
     const o = s.map(({ i: l, raum: h, u: c }) => ({
@@ -3027,7 +3054,7 @@ let v = class extends de {
         plan: { name: e.name, mime: "image/jpeg", bild: e.jpeg, cm_pro_px: t, breite_px: e.g.breite, hoehe_px: e.g.hoehe, x: a, y: 0, stockwerk: this.stockwerk }
       }), this.planZu(), this.showToast(o.length ? `${o.length} ${o.length === 1 ? "Raum" : "Räume"} und der Grundriss übernommen.` : "Grundriss als Hintergrund übernommen."), await this.unsubscribeHaus(), await new Promise((l) => window.setTimeout(l, 1500)), await this.load(), this.viewTouched = !1, this.fit();
     } catch (l) {
-      this.showToast(`Nicht übernommen: ${T(l)}`);
+      this.showToast(`Nicht übernommen: ${I(l)}`);
     } finally {
       this.saving = !1;
     }
@@ -3037,7 +3064,7 @@ let v = class extends de {
       try {
         this.kandidaten = await this._hass.callWS({ type: `${R}/kandidaten/get` });
       } catch (e) {
-        this.showToast(`Geräte nicht geladen: ${T(e)}`);
+        this.showToast(`Geräte nicht geladen: ${I(e)}`);
       }
   }
   /** Melder für die Auswahl: nur aus dem Bereich (wenn gewünscht); gewählte immer. */
@@ -3054,7 +3081,7 @@ let v = class extends de {
       ><input type="checkbox" .checked=${this.nurBereich} @change=${(t) => this.nurBereich = t.target.checked} /><span
         >Nur Melder aus „${this.bereichName(e)}“</span
       ></label
-    >` : f;
+    >` : m;
   }
   bereichName(e) {
     return e && this.kandidaten?.bereiche.find((t) => t.bereich_id === e)?.name || "ohne Bereich";
@@ -3070,7 +3097,7 @@ let v = class extends de {
         const t = { type: `${R}/room/create`, name: e.name.trim(), art: e.art };
         e.bereich_id && (t.bereich_id = e.bereich_id), e.art === "melder" ? t.melder = e.melder ?? [] : t.device_id = e.device_id, await this._hass.callWS(t), this.neuRaum = null, this.showToast(`Raum „${e.name.trim()}“ angelegt. Jetzt im Plan an seinen Platz ziehen.`), await this.unsubscribeHaus(), await new Promise((n) => window.setTimeout(n, 1500)), await this.load(), this.viewTouched = !1, this.fit(), await this.loadKandidaten();
       } catch (t) {
-        this.showToast(`Nicht angelegt: ${T(t)}`);
+        this.showToast(`Nicht angelegt: ${I(t)}`);
       } finally {
         this.saving = !1;
       }
@@ -3083,7 +3110,7 @@ let v = class extends de {
       try {
         await this._hass.callWS({ type: `${R}/room/delete`, raum_id: e.id }), this.dirty = !1, this.showToast(`Raum „${e.name}“ gelöscht.`), await this.unsubscribeLive(), await new Promise((t) => window.setTimeout(t, 1500)), this.page = "haus", await this.load();
       } catch (t) {
-        this.showToast(`Nicht gelöscht: ${T(t)}`);
+        this.showToast(`Nicht gelöscht: ${I(t)}`);
       } finally {
         this.saving = !1;
       }
@@ -3102,7 +3129,7 @@ let v = class extends de {
       this.data.raeume.map(async (i) => {
         try {
           const r = await this._hass.callWS({ type: `${R}/auswertung/get`, raum_id: i.id, stunden: e });
-          t[i.id] = Cn(r.figuren.filter((a) => !a.hund).map((a) => a.abschnitte)), n = r.von, s = r.bis;
+          t[i.id] = Un(r.figuren.filter((a) => !a.hund).map((a) => a.abschnitte)), n = r.von, s = r.bis;
         } catch {
         }
       })
@@ -3112,18 +3139,18 @@ let v = class extends de {
     if (!(!this._hass || !this.data || !this.kannAendern)) {
       this.saving = !0;
       try {
-        const e = new Map(this.data.raeume.flatMap((n) => he(n)).map((n) => [n.key, n])), t = Object.entries(this.tueren).filter(([n, s]) => e.has(n) && e.get(n).ziel !== s).map(([n, s]) => {
-          const i = e.get(n);
-          return i.oeffnung !== void 0 ? { raum_id: i.raumId, oeffnung: i.oeffnung, fuehrt_zu: s || null } : { raum_id: i.raumId, zone_id: i.zoneId, fuehrt_zu: s || null };
+        const e = new Map(this.data.raeume.flatMap((i) => N(i)).map((i) => [i.key, i])), t = (i) => i.gegenstueck ? `tuer:${i.gegenstueck}` : i.ziel, s = [.../* @__PURE__ */ new Set([...Object.keys(this.tueren), ...Object.keys(this.tuerNamen)])].filter((i) => e.has(i)).filter((i) => (this.tueren[i] ?? t(e.get(i))) !== t(e.get(i)) || i in this.tuerNamen).map((i) => {
+          const r = e.get(i), a = this.tueren[i] ?? t(r), o = a.startsWith("tuer:") ? a.slice(5) : "", h = { fuehrt_zu: (o ? o.split("/")[0] : a) || null, gegenstueck: o || null };
+          return r.oeffnung !== void 0 ? { raum_id: r.raumId, oeffnung: r.oeffnung, ...h, ...i in this.tuerNamen ? { name: this.tuerNamen[i] } : {} } : { raum_id: r.raumId, zone_id: r.zoneId, ...h };
         });
         await this._hass.callWS({
           type: `${R}/haus/save`,
-          raeume: Object.entries(this.lagen).map(([n, s]) => ({ raum_id: n, x: Math.round(s.x), y: Math.round(s.y), winkel: s.winkel, ...this.hausExtra[n] ?? {} })),
-          plaene: Object.entries(this.planAenderung).map(([n, s]) => ({ plan_id: n, x: Math.round(s.x), y: Math.round(s.y), winkel: s.winkel, zuschnitt: s.zuschnitt, cm_pro_px: s.cm_pro_px, stockwerk: s.stockwerk || null })),
-          tueren: t
-        }), this.dirty = !1, this.hausExtra = {}, this.planAenderung = {}, this.planEdit = "", this.showToast("Hausplan gespeichert."), await this.unsubscribeHaus(), await new Promise((n) => window.setTimeout(n, 1500)), await this.load();
+          raeume: Object.entries(this.lagen).map(([i, r]) => ({ raum_id: i, x: Math.round(r.x), y: Math.round(r.y), winkel: r.winkel, ...this.hausExtra[i] ?? {} })),
+          plaene: Object.entries(this.planAenderung).map(([i, r]) => ({ plan_id: i, x: Math.round(r.x), y: Math.round(r.y), winkel: r.winkel, zuschnitt: r.zuschnitt, cm_pro_px: r.cm_pro_px, stockwerk: r.stockwerk || null })),
+          tueren: s
+        }), this.dirty = !1, this.hausExtra = {}, this.planAenderung = {}, this.tuerNamen = {}, this.planEdit = "", this.showToast("Hausplan gespeichert."), await this.unsubscribeHaus(), await new Promise((i) => window.setTimeout(i, 1500)), await this.load();
       } catch (e) {
-        this.showToast(`Nicht gespeichert: ${T(e)}`);
+        this.showToast(`Nicht gespeichert: ${I(e)}`);
       } finally {
         this.saving = !1;
       }
@@ -3156,18 +3183,18 @@ let v = class extends de {
     return this.page !== "raum" || !this.raum?.haus_gesetzt || !this.wieImHaus ? 0 : this.raum.haus_winkel ?? 0;
   }
   toScreen([e, t]) {
-    const { cx: n, cy: s, scale: i } = this.view, [r, a] = E([e - n, t - s], this.ansichtWinkel);
+    const { cx: n, cy: s, scale: i } = this.view, [r, a] = T([e - n, t - s], this.ansichtWinkel);
     return [this.size.w / 2 + r * i, this.size.h / 2 - a * i];
   }
   screenPoints(e) {
-    return St(e.map((t) => this.toScreen(t)));
+    return Rt(e.map((t) => this.toScreen(t)));
   }
   toWorld(e) {
-    const n = this.renderRoot.querySelector("svg.plan")?.getBoundingClientRect() ?? { left: 0, top: 0 }, { cx: s, cy: i, scale: r } = this.view, [a, o] = E([(e.clientX - n.left - this.size.w / 2) / r, -(e.clientY - n.top - this.size.h / 2) / r], -this.ansichtWinkel);
+    const n = this.renderRoot.querySelector("svg.plan")?.getBoundingClientRect() ?? { left: 0, top: 0 }, { cx: s, cy: i, scale: r } = this.view, [a, o] = T([(e.clientX - n.left - this.size.w / 2) / r, -(e.clientY - n.top - this.size.h / 2) / r], -this.ansichtWinkel);
     return [s + a, i + o];
   }
   snapped(e) {
-    return pn(e, ts);
+    return gn(e, is);
   }
   px(e) {
     return e * this.view.scale;
@@ -3197,12 +3224,12 @@ let v = class extends de {
     if (!this.data) return;
     this.remember();
     const n = this.zones.slice();
-    n[e] = An(n[e], t, this.data.vorlagen), this.zones = n, this.dirty = !0;
+    n[e] = En(n[e], t, this.data.vorlagen), this.zones = n, this.dirty = !0;
   }
   addZone(e) {
     if (!this.data) return;
     this.remember();
-    const t = zn(e, this.zones, this.data.vorlagen);
+    const t = Sn(e, this.zones, this.data.vorlagen);
     if (this.istMelder) {
       const n = this.zoneFuerMelder || (this.melder.length === 1 ? this.melder[0] : "");
       t.melder = n ? [n] : [], t.regel = { ...t.regel, frei_nach_s: 0 }, n && (t.name = this.melderName(n)), this.zoneFuerMelder = "";
@@ -3222,14 +3249,14 @@ let v = class extends de {
   }
   // -- Zeiger ------------------------------------------------------------------
   sensorHandle() {
-    const [e, t] = ye(this.sensor.winkel), n = 46 / this.view.scale;
+    const [e, t] = _e(this.sensor.winkel), n = 46 / this.view.scale;
     return [this.sensor.x + e * n, this.sensor.y + t * n];
   }
-  near(e, t, n = L) {
-    return Ze(this.toScreen(e), this.toScreen(t)) <= n;
+  near(e, t, n = O) {
+    return Fe(this.toScreen(e), this.toScreen(t)) <= n;
   }
   zoneAt(e) {
-    for (let t = this.zones.length - 1; t >= 0; t--) if (Te(e, this.zones[t].form)) return t;
+    for (let t = this.zones.length - 1; t >= 0; t--) if (Ie(e, this.zones[t].form)) return t;
     return -1;
   }
   onPointerDown(e) {
@@ -3252,7 +3279,7 @@ let v = class extends de {
           [g, d],
           [g, p],
           [c, p]
-        ].findIndex(([_, w]) => this.near(n, this.planZuHaus(h, _, w), L + 4));
+        ].findIndex(([_, w]) => this.near(n, this.planZuHaus(h, _, w), O + 4));
         if (b >= 0) {
           this.drag = { kind: "plan-crop", id: h.id, ecke: b };
           return;
@@ -3279,7 +3306,7 @@ let v = class extends de {
       return;
     }
     if (this.tool === "oeffnung") {
-      const h = this.wallAt(n, L * 2);
+      const h = this.wallAt(n, O * 2);
       if (h < 0) {
         this.showToast(this.umriss.length >= 3 ? "Bitte direkt auf einer Wand beginnen." : "Zuerst die Wände zeichnen.");
         return;
@@ -3293,19 +3320,19 @@ let v = class extends de {
     }
     if (this.tool === "zellen") {
       let h = this.selected;
-      h < 0 || this.zones[h].form.art !== "zellen" ? (this.addZone({ art: "zellen", groesse: dn, zellen: [] }), h = this.zones.length - 1) : this.remember();
-      const c = this.zones[h].form, [d, g] = qe(n, c.groesse, c.x0 ?? 0, c.y0 ?? 0), p = !c.zellen.some(([m, b]) => m === d && b === g);
-      this.drag = { kind: "paint", add: p }, this.updateZone(h, { form: ut(c, n, p) });
+      h < 0 || this.zones[h].form.art !== "zellen" ? (this.addZone({ art: "zellen", groesse: fn, zellen: [] }), h = this.zones.length - 1) : this.remember();
+      const c = this.zones[h].form, [d, g] = Qe(n, c.groesse, c.x0 ?? 0, c.y0 ?? 0), p = !c.zellen.some(([f, b]) => f === d && b === g);
+      this.drag = { kind: "paint", add: p }, this.updateZone(h, { form: pt(c, n, p) });
       return;
     }
     if (this.istMelder) {
       for (const [h, c] of Object.entries(this.melderLagen))
         if (this.melder.includes(h)) {
-          if (this.near(n, this.melderGriff(c), L + 2)) {
+          if (this.near(n, this.melderGriff(c), O + 2)) {
             this.remember(), this.drag = { kind: "melder-rotate", key: h };
             return;
           }
-          if (this.near(n, [c.x, c.y], L + 4)) {
+          if (this.near(n, [c.x, c.y], O + 4)) {
             this.remember(), this.drag = { kind: "melder", key: h };
             return;
           }
@@ -3313,9 +3340,9 @@ let v = class extends de {
     }
     const i = this.oeffnungen[this.selOpening];
     if (i && this.umriss.length >= 3) {
-      const [h, c] = oe(this.umriss, i);
+      const [h, c] = ce(this.umriss, i);
       for (const [d, g] of [["von", h], ["bis", c]])
-        if (this.near(n, g, L + 4)) {
+        if (this.near(n, g, O + 4)) {
           this.remember(), this.drag = { kind: "opening-end", index: this.selOpening, ende: d };
           return;
         }
@@ -3323,14 +3350,14 @@ let v = class extends de {
     const r = this.openingAt(n);
     if (r >= 0 && r === this.selOpening) {
       const h = this.oeffnungen[r];
-      this.remember(), this.drag = { kind: "opening-move", index: r, start: pe(this.umriss, h.kante, n), von: h.von, bis: h.bis };
+      this.remember(), this.drag = { kind: "opening-move", index: r, start: fe(this.umriss, h.kante, n), von: h.von, bis: h.bis };
       return;
     }
     const a = this.zones[this.selected];
     if (a && a.form.art !== "zellen" && this.near(n, this.zoneRotateHandle(a.form))) {
       this.remember();
       const h = P(a.form);
-      this.drag = { kind: "rotate-zone", center: h, start: xe(h, n), anchor: a.form };
+      this.drag = { kind: "rotate-zone", center: h, start: we(h, n), anchor: a.form };
       return;
     }
     if (a?.form.art === "vieleck") {
@@ -3343,23 +3370,23 @@ let v = class extends de {
         this.selVertex = h, this.drag = { kind: "vertex", index: h };
         return;
       }
-      const c = ee(a.form.punkte).findIndex((d) => this.near(n, d));
+      const c = te(a.form.punkte).findIndex((d) => this.near(n, d));
       if (c >= 0) {
-        this.remember(), this.updateZone(this.selected, { form: ct(a.form, c, this.snapped(ee(a.form.punkte)[c])) }), this.selVertex = c + 1, this.drag = { kind: "vertex", index: c + 1 };
+        this.remember(), this.updateZone(this.selected, { form: dt(a.form, c, this.snapped(te(a.form.punkte)[c])) }), this.selVertex = c + 1, this.drag = { kind: "vertex", index: c + 1 };
         return;
       }
     } else if (a?.form.art === "rechteck") {
-      const h = a.form, c = we(h.mitte, h.breite, h.tiefe, h.winkel).findIndex((d) => this.near(n, d));
+      const h = a.form, c = ze(h.mitte, h.breite, h.tiefe, h.winkel).findIndex((d) => this.near(n, d));
       if (c >= 0) {
         this.remember(), this.drag = { kind: "corner", index: c };
         return;
       }
     }
-    if (!this.istMelder && this.near(n, this.sensorHandle(), L + 2)) {
+    if (!this.istMelder && this.near(n, this.sensorHandle(), O + 2)) {
       this.remember(), this.sensorAnchor = { sensor: { ...this.sensor }, zones: this.zones }, this.drag = { kind: "sensor-rotate" }, this.openSensor();
       return;
     }
-    if (!this.istMelder && this.near(n, [this.sensor.x, this.sensor.y], L + 4)) {
+    if (!this.istMelder && this.near(n, [this.sensor.x, this.sensor.y], O + 4)) {
       this.remember(), this.sensorAnchor = { sensor: { ...this.sensor }, zones: this.zones }, this.drag = { kind: "sensor" }, this.openSensor();
       return;
     }
@@ -3374,11 +3401,11 @@ let v = class extends de {
       return;
     }
     if (this.umriss.length >= 3) {
-      const h = ee(this.umriss).findIndex((d) => this.near(n, d));
+      const h = te(this.umriss).findIndex((d) => this.near(n, d));
       if (h >= 0) {
         this.remember();
         const d = this.umriss.slice();
-        d.splice(h + 1, 0, this.snapped(ee(this.umriss)[h])), this.oeffnungen = bt(this.oeffnungen, { inserted: h }, this.umriss.length), this.umriss = d, this.dirty = !0, this.drag = { kind: "umriss-vertex", index: h + 1 };
+        d.splice(h + 1, 0, this.snapped(te(this.umriss)[h])), this.oeffnungen = kt(this.oeffnungen, { inserted: h }, this.umriss.length), this.umriss = d, this.dirty = !0, this.drag = { kind: "umriss-vertex", index: h + 1 };
         return;
       }
       const c = this.openingAt(n);
@@ -3396,7 +3423,7 @@ let v = class extends de {
         this.showToast("Eine Fläche braucht mindestens drei Punkte.");
         return;
       }
-      this.remember(), this.updateZone(e, { form: Mn(n.form, t) }), this.selVertex = -1;
+      this.remember(), this.updateZone(e, { form: Rn(n.form, t) }), this.selVertex = -1;
     }
   }
   deleteWallCorner(e) {
@@ -3404,7 +3431,7 @@ let v = class extends de {
       this.showToast("Wände brauchen mindestens drei Ecken.");
       return;
     }
-    this.remember(), this.oeffnungen = bt(this.oeffnungen, { removed: e }, this.umriss.length), this.umriss = this.umriss.filter((t, n) => n !== e), this.selOpening = -1, this.dirty = !0;
+    this.remember(), this.oeffnungen = kt(this.oeffnungen, { removed: e }, this.umriss.length), this.umriss = this.umriss.filter((t, n) => n !== e), this.selOpening = -1, this.dirty = !0;
   }
   changeOpening(e, t) {
     this.remember(), this.oeffnungen = this.oeffnungen.map((n, s) => s === e ? { ...n, ...t } : n), this.dirty = !0;
@@ -3414,10 +3441,10 @@ let v = class extends de {
   }
   turnZone(e, t) {
     const n = this.zones[e];
-    !n || n.form.art === "zellen" || (this.remember(), this.updateZone(e, { form: gt(n.form, P(n.form), t) }));
+    !n || n.form.art === "zellen" || (this.remember(), this.updateZone(e, { form: $t(n.form, P(n.form), t) }));
   }
   /** Wand unter dem Punkt (Abstand in Pixeln), sonst -1. */
-  wallAt(e, t = L) {
+  wallAt(e, t = O) {
     const n = this.umriss.length;
     if (n < 3) return -1;
     let s = -1, i = t;
@@ -3429,13 +3456,13 @@ let v = class extends de {
   }
   openingAt(e) {
     return this.oeffnungen.findIndex((t) => {
-      const [n, s] = oe(this.umriss, t);
-      return He(this.toScreen(e), this.toScreen(n), this.toScreen(s)) <= L;
+      const [n, s] = ce(this.umriss, t);
+      return He(this.toScreen(e), this.toScreen(n), this.toScreen(s)) <= O;
     });
   }
   /** Dreh-Griff einer Zone: über ihrer Mitte, oberhalb der Form. */
   zoneRotateHandle(e) {
-    const t = P(e), n = Math.max(...K(e).map((s) => s[1]));
+    const t = P(e), n = Math.max(...q(e).map((s) => s[1]));
     return [t[0], n + 36 / this.view.scale];
   }
   openSensor() {
@@ -3450,15 +3477,15 @@ let v = class extends de {
     switch (s.kind) {
       case "pan": {
         this.viewTouched = !0;
-        const [r, a] = E([(e.clientX - s.start[0]) / this.view.scale, -(e.clientY - s.start[1]) / this.view.scale], -this.ansichtWinkel);
+        const [r, a] = T([(e.clientX - s.start[0]) / this.view.scale, -(e.clientY - s.start[1]) / this.view.scale], -this.ansichtWinkel);
         this.view = { ...this.view, cx: s.view.cx - r, cy: s.view.cy - a };
         break;
       }
       case "vertex":
-        i && this.updateZone(this.selected, { form: _n(i.form, s.index, n) });
+        i && this.updateZone(this.selected, { form: An(i.form, s.index, n) });
         break;
       case "corner":
-        i?.form.art === "rechteck" && this.updateZone(this.selected, { form: Rn(i.form, s.index, n) });
+        i?.form.art === "rechteck" && this.updateZone(this.selected, { form: Pn(i.form, s.index, n) });
         break;
       case "umriss-vertex": {
         const r = this.umriss.slice();
@@ -3471,26 +3498,26 @@ let v = class extends de {
         if (i.form.art === "zellen") {
           const o = i.form.groesse, l = Math.round(r / o), h = Math.round(a / o);
           if (!l && !h) break;
-          this.updateZone(this.selected, { form: Ne(i.form, l * o, h * o) }), this.drag = { kind: "zone", last: [s.last[0] + l * o, s.last[1] + h * o] };
-        } else (r || a) && (this.updateZone(this.selected, { form: Ne(i.form, r, a) }), this.drag = { kind: "zone", last: n });
+          this.updateZone(this.selected, { form: je(i.form, l * o, h * o) }), this.drag = { kind: "zone", last: [s.last[0] + l * o, s.last[1] + h * o] };
+        } else (r || a) && (this.updateZone(this.selected, { form: je(i.form, r, a) }), this.drag = { kind: "zone", last: n });
         break;
       }
       case "sensor":
         this.moveSensor({ ...this.sensor, x: n[0], y: n[1] });
         break;
       case "sensor-rotate": {
-        let r = xe([this.sensor.x, this.sensor.y], t);
+        let r = we([this.sensor.x, this.sensor.y], t);
         e.shiftKey || (r = Math.round(r / 5) * 5), r <= -180 && (r += 360), this.moveSensor({ ...this.sensor, winkel: r });
         break;
       }
       case "paint":
-        i?.form.art === "zellen" && this.updateZone(this.selected, { form: ut(i.form, t, s.add) });
+        i?.form.art === "zellen" && this.updateZone(this.selected, { form: pt(i.form, t, s.add) });
         break;
       case "rect":
         this.rectDraft = [s.start, n];
         break;
       case "opening": {
-        this.openingDraft = Tn(this.umriss, s.kante, s.start, t);
+        this.openingDraft = On(this.umriss, s.kante, s.start, t);
         break;
       }
       case "plan-move": {
@@ -3507,8 +3534,8 @@ let v = class extends de {
         if (!r) break;
         const [a, o] = this.hausZuPlan(r, t);
         let [l, h, c, d] = this.planZuschnitt(r);
-        const g = Math.max(0, Math.min(r.breite_px, a)), p = Math.max(0, Math.min(r.hoehe_px, o)), m = 20;
-        s.ecke === 0 || s.ecke === 3 ? l = Math.min(g, c - m) : c = Math.max(g, l + m), s.ecke === 0 || s.ecke === 1 ? h = Math.min(p, d - m) : d = Math.max(p, h + m), this.planAendern(r, { zuschnitt: [l, h, c, d].map((b) => Math.round(b)) });
+        const g = Math.max(0, Math.min(r.breite_px, a)), p = Math.max(0, Math.min(r.hoehe_px, o)), f = 20;
+        s.ecke === 0 || s.ecke === 3 ? l = Math.min(g, c - f) : c = Math.max(g, l + f), s.ecke === 0 || s.ecke === 1 ? h = Math.min(p, d - f) : d = Math.max(p, h + f), this.planAendern(r, { zuschnitt: [l, h, c, d].map((b) => Math.round(b)) });
         break;
       }
       case "melder": {
@@ -3519,28 +3546,28 @@ let v = class extends de {
       case "melder-rotate": {
         const r = this.melderLagen[s.key];
         if (!r) break;
-        let a = xe([r.x, r.y], t);
+        let a = we([r.x, r.y], t);
         e.shiftKey || (a = Math.round(a / 5) * 5), a <= -180 && (a += 360), this.melderLagen = { ...this.melderLagen, [s.key]: { ...r, winkel: a } }, this.dirty = !0;
         break;
       }
       case "opening-end": {
         const r = this.oeffnungen[s.index];
         if (!r) break;
-        const a = _t(this.umriss, r.kante), o = Math.max(0, Math.min(Math.floor(a), Math.round(pe(this.umriss, r.kante, t) / 5) * 5)), l = s.ende === "von" ? { ...r, von: Math.min(o, r.bis - 20) } : { ...r, bis: Math.max(o, r.von + 20) };
+        const a = St(this.umriss, r.kante), o = Math.max(0, Math.min(Math.floor(a), Math.round(fe(this.umriss, r.kante, t) / 5) * 5)), l = s.ende === "von" ? { ...r, von: Math.min(o, r.bis - 20) } : { ...r, bis: Math.max(o, r.von + 20) };
         this.oeffnungen = this.oeffnungen.map((h, c) => c === s.index ? l : h), this.dirty = !0;
         break;
       }
       case "opening-move": {
         const r = this.oeffnungen[s.index];
         if (!r) break;
-        const a = Math.floor(_t(this.umriss, r.kante)), o = s.bis - s.von;
-        let l = Math.round((s.von + pe(this.umriss, r.kante, t) - s.start) / 5) * 5;
+        const a = Math.floor(St(this.umriss, r.kante)), o = s.bis - s.von;
+        let l = Math.round((s.von + fe(this.umriss, r.kante, t) - s.start) / 5) * 5;
         l = Math.max(0, Math.min(a - o, l)), l !== r.von && (this.oeffnungen = this.oeffnungen.map((h, c) => c === s.index ? { ...r, von: l, bis: l + o } : h), this.dirty = !0);
         break;
       }
       case "rotate-zone": {
-        let r = xe(s.center, t) - s.start;
-        e.shiftKey || (r = Math.round(r / 5) * 5), this.updateZone(this.selected, { form: gt(s.anchor, s.center, r) });
+        let r = we(s.center, t) - s.start;
+        e.shiftKey || (r = Math.round(r / 5) * 5), this.updateZone(this.selected, { form: $t(s.anchor, s.center, r) });
         break;
       }
       case "haus-raum": {
@@ -3555,18 +3582,27 @@ let v = class extends de {
   moveSensor(e) {
     this.sensor = e;
     const t = this.sensorAnchor;
-    this.zonesFollow && t && (this.zones = t.zones.map((n) => ({ ...n, form: kn(n.form, t.sensor, e) }))), this.dirty = !0;
+    this.zonesFollow && t && (this.zones = t.zones.map((n) => ({ ...n, form: wn(n.form, t.sensor, e) }))), this.dirty = !0;
   }
   onPointerUp() {
     const e = this.drag;
     if (this.drag = null, this.sensorAnchor = null, e?.kind === "opening") {
       const t = this.openingDraft;
-      this.openingDraft = null, t ? (this.remember(), this.oeffnungen = [...this.oeffnungen, t], this.selOpening = this.oeffnungen.length - 1, this.selected = -1, this.openTab("raum"), this.dirty = !0, this.tool = "auswahl") : this.showToast("Etwas weiter an der Wand entlang ziehen (mindestens 20 cm).");
+      if (this.openingDraft = null, t) {
+        this.remember();
+        const n = new Set(this.oeffnungen.map((a) => a.id));
+        let s = this.oeffnungen.length + 1;
+        for (; n.has(`o${s}`); ) s++;
+        t.id = `o${s}`;
+        const i = Ft(this.umriss, t), r = i && this.data ? Ne(this.data.raeume, this.raumId, i) : null;
+        r && (t.gegenstueck = r.tuer.key, t.fuehrt_zu = r.tuer.raumId, this.showToast(`Verbunden mit ${this.tuerText(r.tuer)}. Ändern unter „Führt zu“.`)), this.oeffnungen = [...this.oeffnungen, t], this.selOpening = this.oeffnungen.length - 1, this.selected = -1, this.openTab("raum"), this.dirty = !0, this.tool = "auswahl";
+      } else
+        this.showToast("Etwas weiter an der Wand entlang ziehen (mindestens 20 cm).");
       return;
     }
     if (e?.kind === "rect" && this.rectDraft) {
       const [t, n] = this.rectDraft;
-      this.rectDraft = null, Math.abs(t[0] - n[0]) >= 10 && Math.abs(t[1] - n[1]) >= 10 && (this.addZone(dt(t, n)), this.tool = "auswahl");
+      this.rectDraft = null, Math.abs(t[0] - n[0]) >= 10 && Math.abs(t[1] - n[1]) >= 10 && (this.addZone(mt(t, n)), this.tool = "auswahl");
     }
   }
   onDoubleClick(e) {
@@ -3578,8 +3614,8 @@ let v = class extends de {
     if (this.tool !== "auswahl" || t?.form.art !== "vieleck") return;
     const n = this.toWorld(e), s = t.form.punkte;
     for (let i = 0; i < s.length; i++)
-      if (He(this.toScreen(n), this.toScreen(s[i]), this.toScreen(s[(i + 1) % s.length])) <= L) {
-        this.remember(), this.updateZone(this.selected, { form: ct(t.form, i, this.snapped(n)) });
+      if (He(this.toScreen(n), this.toScreen(s[i]), this.toScreen(s[(i + 1) % s.length])) <= O) {
+        this.remember(), this.updateZone(this.selected, { form: dt(t.form, i, this.snapped(n)) });
         return;
       }
   }
@@ -3590,8 +3626,8 @@ let v = class extends de {
   renderGrid() {
     const { w: e, h: t } = this.size, n = this.view.scale, s = n > 0.6 ? 50 : n > 0.2 ? 100 : 500, i = [];
     if (this.ansichtWinkel) {
-      const h = Math.hypot(e, t) / 2 / n, { cx: c, cy: d } = this.view, g = (p, m, b) => {
-        const [$, k] = this.toScreen(p), [_, w] = this.toScreen(m);
+      const h = Math.hypot(e, t) / 2 / n, { cx: c, cy: d } = this.view, g = (p, f, b) => {
+        const [$, k] = this.toScreen(p), [_, w] = this.toScreen(f);
         return x`<line class="grid ${b ? "major" : ""}" x1=${$} y1=${k} x2=${_} y2=${w} />`;
       };
       for (let p = Math.floor((c - h) / s) * s; p <= c + h; p += s) i.push(g([p, d - h], [p, d + h], p % 100 === 0));
@@ -3610,34 +3646,34 @@ let v = class extends de {
     return x`<g>${i}</g>`;
   }
   renderRoom() {
-    if (this.umriss.length < 3) return f;
-    const e = this.screenPoints(this.umriss), t = this.kannAendern && this.tool === "auswahl" && this.selected < 0 && !this.sensorOpen, n = this.openingDraft ? [...this.oeffnungen, this.openingDraft] : this.oeffnungen, s = P({ art: "vieleck", punkte: this.umriss }), i = this.istMelder && !!this.live?.zonen[V]?.belegt;
+    if (this.umriss.length < 3) return m;
+    const e = this.screenPoints(this.umriss), t = this.kannAendern && this.tool === "auswahl" && this.selected < 0 && !this.sensorOpen, n = this.openingDraft ? [...this.oeffnungen, this.openingDraft] : this.oeffnungen, s = P({ art: "vieleck", punkte: this.umriss }), i = this.istMelder && !!this.live?.zonen[K]?.belegt;
     return x`<polygon class="floor ${i ? "belegt" : ""}" points=${e} />
       <polygon class="wall" points=${e} />
       ${n.map((r, a) => this.renderOpening(r, a === this.selOpening || r === this.openingDraft, s))}
-      ${this.kannAendern && this.tool === "auswahl" && this.oeffnungen[this.selOpening] ? oe(this.umriss, this.oeffnungen[this.selOpening]).map((r) => {
+      ${this.kannAendern && this.tool === "auswahl" && this.oeffnungen[this.selOpening] ? ce(this.umriss, this.oeffnungen[this.selOpening]).map((r) => {
       const [a, o] = this.toScreen(r);
       return x`<circle class="handle opening-griff" cx=${a} cy=${o} r="8" />`;
-    }) : f}
+    }) : m}
       ${t ? x`${this.umriss.map((r) => {
       const [a, o] = this.toScreen(r);
       return x`<circle class="handle" cx=${a} cy=${o} r="5" />`;
     })}
-          ${ee(this.umriss).map((r) => this.renderPlus(r))}` : f}`;
+          ${te(this.umriss).map((r) => this.renderPlus(r))}` : m}`;
   }
   /** Lücke in der Wand; bei einer Tür dazu Türblatt und Bogen. */
   renderOpening(e, t, n) {
-    const [s, i] = oe(this.umriss, e), [r, a] = this.toScreen(s), [o, l] = this.toScreen(i), h = x`<line class="wall-gap" x1=${r} y1=${a} x2=${o} y2=${l} />`;
+    const [s, i] = ce(this.umriss, e), [r, a] = this.toScreen(s), [o, l] = this.toScreen(i), h = x`<line class="wall-gap" x1=${r} y1=${a} x2=${o} y2=${l} />`;
     if (e.art === "offen")
       return x`<g class="opening ${t ? "selected" : ""}">${h}<line class="opening-line" x1=${r} y1=${a} x2=${o} y2=${l} /></g>`;
-    const [c, d, g, p] = e.anschlag === "ende" ? [o, l, r, a] : [r, a, o, l], m = Math.hypot(g - c, p - d) || 1;
-    let b = -(p - d) / m, $ = (g - c) / m;
+    const [c, d, g, p] = e.anschlag === "ende" ? [o, l, r, a] : [r, a, o, l], f = Math.hypot(g - c, p - d) || 1;
+    let b = -(p - d) / f, $ = (g - c) / f;
     const [k, _] = this.toScreen(n);
     (k - c) * b + (_ - d) * $ >= 0 !== (e.aufgehen !== "aussen") && (b = -b, $ = -$);
-    const M = c + b * m, A = d + $ * m, S = (g - c) * $ - (p - d) * b > 0 ? 0 : 1;
+    const M = c + b * f, A = d + $ * f, S = (g - c) * $ - (p - d) * b > 0 ? 0 : 1;
     return x`<g class="opening ${t ? "selected" : ""}">${h}
       <line class="door-leaf" x1=${c} y1=${d} x2=${M} y2=${A} />
-      <path class="door-arc" d="M ${M} ${A} A ${m} ${m} 0 0 ${S} ${g} ${p}" /></g>`;
+      <path class="door-arc" d="M ${M} ${A} A ${f} ${f} 0 0 ${S} ${g} ${p}" /></g>`;
   }
   /** Kleines „+“: hier einen Punkt einfügen. */
   renderPlus(e) {
@@ -3649,7 +3685,7 @@ let v = class extends de {
     if (this.istMelder) return null;
     if (this.tab === "auswertung" && this.ausw) {
       const e = this.ausw, t = this.auswFigur ? e.figuren.filter((n) => n.figur === this.auswFigur) : e.figuren;
-      return { key: `a|${e.bis}|${e.stunden}|${this.auswFigur}`, zellen: xt(t.map((n) => n.zellen)), zelle: e.zelle_cm, sigma: 8 };
+      return { key: `a|${e.bis}|${e.stunden}|${this.auswFigur}`, zellen: wt(t.map((n) => n.zellen)), zelle: e.zelle_cm, sigma: 8 };
     }
     if (this.heat?.zellen.length) {
       const e = this.heat;
@@ -3663,16 +3699,16 @@ let v = class extends de {
   }
   renderHeat() {
     const e = this.heatQuelle();
-    if (!e || !e.zellen.length) return f;
+    if (!e || !e.zellen.length) return m;
     let t = this.heatBildCache;
     if (t?.key !== e.key) {
-      const i = kt(e.zellen, e.zelle, e.sigma);
-      if (!i) return f;
+      const i = vt(e.zellen, e.zelle, e.sigma);
+      if (!i) return m;
       const r = document.createElement("canvas");
       r.width = i.nx, r.height = i.ny;
       const a = r.getContext("2d");
-      if (!a) return f;
-      a.putImageData(new ImageData(Bn(i, this.heatRgb()), i.nx, i.ny), 0, 0), t = { key: e.key, href: r.toDataURL(), x0: i.x0, y0: i.y0, w: i.nx * i.zelle, h: i.ny * i.zelle }, this.heatBildCache = t;
+      if (!a) return m;
+      a.putImageData(new ImageData(Dn(i, this.heatRgb()), i.nx, i.ny), 0, 0), t = { key: e.key, href: r.toDataURL(), x0: i.x0, y0: i.y0, w: i.nx * i.zelle, h: i.ny * i.zelle }, this.heatBildCache = t;
     }
     const [n, s] = this.toScreen([t.x0, t.y0 + t.h]);
     return x`<image class="heat" href=${t.href} x=${n} y=${s} width=${this.px(t.w)} height=${this.px(t.h)} preserveAspectRatio="none" />`;
@@ -3680,15 +3716,15 @@ let v = class extends de {
   /** Stellen des Assistenten als 1, 2, 3 im Plan; dazu die neue Lage des Sensors. */
   renderWizMarken() {
     const e = this.wiz;
-    if (!e) return f;
+    if (!e) return m;
     const t = e.raum.map((i, r) => {
-      if (!i) return f;
+      if (!i) return m;
       const [a, o] = this.toScreen(i), l = r === e.aktiv && e.schritt === "nachher";
       return x`<g class="wiz-marke ${l ? "aktiv" : ""}"><circle cx=${a} cy=${o} r="14" /><text x=${a} y=${o + 5}>${r + 1}</text></g>`;
     }), n = e.ergebnis;
-    let s = f;
+    let s = m;
     if (n) {
-      const [i, r] = this.toScreen([n.x, n.y]), a = Math.max(30, this.px(80)), [o, l] = ye(n.winkel);
+      const [i, r] = this.toScreen([n.x, n.y]), a = Math.max(30, this.px(80)), [o, l] = _e(n.winkel);
       s = x`<g class="wiz-neu"><circle cx=${i} cy=${r} r="9" /><line x1=${i} y1=${r} x2=${i + o * a} y2=${r - l * a} /></g>`;
     }
     return x`${t}${s}`;
@@ -3699,12 +3735,12 @@ let v = class extends de {
   }
   /** Bildpunkt → Haus. */
   planZuHaus(e, t, n) {
-    const s = this.planLage(e), [i, r] = E([t * s.cm_pro_px, (e.hoehe_px - n) * s.cm_pro_px], s.winkel);
+    const s = this.planLage(e), [i, r] = T([t * s.cm_pro_px, (e.hoehe_px - n) * s.cm_pro_px], s.winkel);
     return [s.x + i, s.y + r];
   }
   /** Haus → Bildpunkt. */
   hausZuPlan(e, t) {
-    const n = this.planLage(e), [s, i] = E([t[0] - n.x, t[1] - n.y], -n.winkel);
+    const n = this.planLage(e), [s, i] = T([t[0] - n.x, t[1] - n.y], -n.winkel);
     return [s / n.cm_pro_px, e.hoehe_px - i / n.cm_pro_px];
   }
   planZuschnitt(e) {
@@ -3740,26 +3776,26 @@ let v = class extends de {
   }
   /** Grundrisse als Hintergrund (Hausplan: im Haus; Raum: in den Raum umgerechnet). */
   renderPlanBilder() {
-    if (!this.zeigePlan) return f;
+    if (!this.zeigePlan) return m;
     let e = (this.data?.plaene ?? []).filter((s) => this.planBilder[s.id]);
     const t = (s) => this.planLage(s).stockwerk;
     if (this.page === "haus" && (e = e.filter((s) => s.id === this.planEdit || !t(s) || t(s) === this.stockwerk)), this.page === "raum" && this.raum) {
       const s = this.stockwerkeVon(this.raum);
       s.length && (e = e.filter((i) => !t(i) || s.includes(t(i))));
     }
-    if (!e.length) return f;
+    if (!e.length) return m;
     let n = null;
     if (this.page === "raum") {
       const s = this.raum;
-      if (!s?.haus_gesetzt) return f;
+      if (!s?.haus_gesetzt) return m;
       const i = { x: s.haus_x, y: s.haus_y, winkel: s.haus_winkel };
-      n = (r) => xn(r, i);
+      n = (r) => yn(r, i);
     }
     return x`${e.map((s) => {
       const i = ($, k) => {
         const _ = this.planZuHaus(s, $, k);
         return this.toScreen(n ? n(_) : _);
-      }, [r, a, o] = [i(0, 0), i(1, 0), i(0, 1)], l = [a[0] - r[0], a[1] - r[1], o[0] - r[0], o[1] - r[1], r[0], r[1]].map(($) => $.toFixed(5)).join(" "), [h, c, d, g] = this.planZuschnitt(s), p = this.page === "haus" && this.planEdit === s.id, m = p ? [
+      }, [r, a, o] = [i(0, 0), i(1, 0), i(0, 1)], l = [a[0] - r[0], a[1] - r[1], o[0] - r[0], o[1] - r[1], r[0], r[1]].map(($) => $.toFixed(5)).join(" "), [h, c, d, g] = this.planZuschnitt(s), p = this.page === "haus" && this.planEdit === s.id, f = p ? [
         [h, c],
         [d, c],
         [d, g],
@@ -3767,28 +3803,28 @@ let v = class extends de {
       ].map(([$, k]) => {
         const [_, w] = i($, k);
         return x`<circle class="handle plan-griff" cx=${_} cy=${w} r="9" />`;
-      }) : f, b = p ? x`<polygon class="plan-rahmen" points=${St([i(h, c), i(d, c), i(d, g), i(h, g)])} />` : f;
+      }) : m, b = p ? x`<polygon class="plan-rahmen" points=${Rt([i(h, c), i(d, c), i(d, g), i(h, g)])} />` : m;
       return x`<g transform="matrix(${l})">
           <clipPath id=${`zuschnitt-${s.id}`}><rect x=${h} y=${c} width=${d - h} height=${g - c} /></clipPath>
           <image class="plan-hintergrund ${p ? "edit" : ""}" href=${this.planBilder[s.id]} x="0" y="0" width=${s.breite_px} height=${s.hoehe_px} preserveAspectRatio="none" clip-path=${`url(#zuschnitt-${s.id})`} />
         </g>
-        ${b}${m}`;
+        ${b}${f}`;
     })}`;
   }
   /** Maße der Wände (und Öffnungen), wenn eingeschaltet. */
   renderMasse() {
-    if (!this.masse || this.umriss.length < 3) return f;
+    if (!this.masse || this.umriss.length < 3) return m;
     const e = this.umriss.length, t = P({ art: "vieleck", punkte: this.umriss }), n = this.umriss.map((i, r) => {
       const a = this.umriss[(r + 1) % e], o = Math.hypot(a[0] - i[0], a[1] - i[1]);
-      if (o < 20) return f;
+      if (o < 20) return m;
       const l = [(i[0] + a[0]) / 2, (i[1] + a[1]) / 2];
       let h = -(a[1] - i[1]) / o, c = (a[0] - i[0]) / o;
       (t[0] - l[0]) * h + (t[1] - l[1]) * c > 0 && ([h, c] = [-h, -c]);
-      const [d, g] = this.toScreen(l), p = 26, [m, b] = [d + h * p, g - c * p];
-      return x`<text class="mass-text" x=${m} y=${b} dy="0.35em">${Mt(o)} m</text>`;
+      const [d, g] = this.toScreen(l), p = 26, [f, b] = [d + h * p, g - c * p];
+      return x`<text class="mass-text" x=${f} y=${b} dy="0.35em">${At(o)} m</text>`;
     }), s = this.oeffnungen.map((i) => {
-      const [r, a] = oe(this.umriss, i), [o, l] = this.toScreen([(r[0] + a[0]) / 2, (r[1] + a[1]) / 2]);
-      return x`<text class="mass-text klein" x=${o} y=${l} dy="-0.8em">${Mt(i.bis - i.von)}</text>`;
+      const [r, a] = ce(this.umriss, i), [o, l] = this.toScreen([(r[0] + a[0]) / 2, (r[1] + a[1]) / 2]);
+      return x`<text class="mass-text klein" x=${o} y=${l} dy="-0.8em">${At(i.bis - i.von)}</text>`;
     });
     return x`<g>${n}${s}</g>`;
   }
@@ -3808,7 +3844,7 @@ let v = class extends de {
   /** Erfassung eines platzierten Melders: rundum (Decke) oder gerichtet (Wand), Reichweite. */
   renderMelderErfassung(e) {
     const t = this.melderLagen[e];
-    if (!t) return f;
+    if (!t) return m;
     const n = t.oeffnung_grad >= 360;
     return u`<div class="melder-erfassung">
       <div class="levels" role="group" aria-label="Erfassung">
@@ -3819,7 +3855,7 @@ let v = class extends de {
           <ha-icon icon="mdi:angle-acute"></ha-icon>Gerichtet (Wand)
         </button>
       </div>
-      ${n ? f : u`<div class="levels" role="group" aria-label="Öffnung">
+      ${n ? m : u`<div class="levels" role="group" aria-label="Öffnung">
             ${[60, 90, 120, 150].map(
       (s) => u`<button class=${Math.round(t.oeffnung_grad) === s ? "active" : ""} @click=${() => this.melderLageAendern(e, { oeffnung_grad: s })}>${s}°</button>`
     )}
@@ -3841,7 +3877,7 @@ let v = class extends de {
     </div>`;
   }
   melderGriff(e) {
-    const [t, n] = ye(e.winkel), s = 40 / this.view.scale;
+    const [t, n] = _e(e.winkel), s = 40 / this.view.scale;
     return [e.x + t * s, e.y + n * s];
   }
   /** Melder im Plan: Punkt mit Sichtbereich, ziehen und am Griff drehen. */
@@ -3850,29 +3886,29 @@ let v = class extends de {
     return e.length ? x`${e.map(([t, n]) => {
       const [s, i] = this.toScreen([n.x, n.y]), [r, a] = this.toScreen(this.melderGriff(n));
       return x`<g class="melder-lage">
-        <polygon class="coverage" points=${this.screenPoints(Le([n.x, n.y], n.winkel, n.reichweite_cm, n.oeffnung_grad))} />
-        ${this.kannAendern && n.oeffnung_grad < 360 ? x`<line class="sensor-line" x1=${s} y1=${i} x2=${r} y2=${a} /><circle class="handle angle" cx=${r} cy=${a} r="7" />` : f}
+        <polygon class="coverage" points=${this.screenPoints(Oe([n.x, n.y], n.winkel, n.reichweite_cm, n.oeffnung_grad))} />
+        ${this.kannAendern && n.oeffnung_grad < 360 ? x`<line class="sensor-line" x1=${s} y1=${i} x2=${r} y2=${a} /><circle class="handle angle" cx=${r} cy=${a} r="7" />` : m}
         <circle class="melder-punkt" cx=${s} cy=${i} r="9" />
         <text class="label sub" x=${s} y=${i + 24}>${this.melderName(t)}</text>
       </g>`;
-    })}` : f;
+    })}` : m;
   }
   /** Melder-Raum: in der Mitte steht, ob jemand da ist. */
   renderMelderLabel() {
-    const e = this.live, t = !!e && e.verfuegbar && !e.problem, n = !!e?.zonen[V]?.belegt, s = this.umriss.length >= 3 ? P({ art: "vieleck", punkte: this.umriss }) : [0, 0], [i, r] = this.toScreen(s);
+    const e = this.live, t = !!e && e.verfuegbar && !e.problem, n = !!e?.zonen[K]?.belegt, s = this.umriss.length >= 3 ? P({ art: "vieleck", punkte: this.umriss }) : [0, 0], [i, r] = this.toScreen(s);
     return x`<text class="label room" x=${i} y=${r}>${t ? n ? "jemand da" : "niemand" : "Melder nicht erreichbar"}</text>
-      ${this.umriss.length < 3 ? x`<text class="label sub" x=${i} y=${r + 18}>Wände zeichnen: Werkzeug links</text>` : f}`;
+      ${this.umriss.length < 3 ? x`<text class="label sub" x=${i} y=${r + 18}>Wände zeichnen: Werkzeug links</text>` : m}`;
   }
   renderCoverage() {
-    if (!this.layers.abdeckung) return f;
+    if (!this.layers.abdeckung) return m;
     const e = this.sensor;
-    return x`<polygon class="coverage" points=${this.screenPoints(Le([e.x, e.y], e.winkel, e.reichweite_cm, e.oeffnung_grad))} />`;
+    return x`<polygon class="coverage" points=${this.screenPoints(Oe([e.x, e.y], e.winkel, e.reichweite_cm, e.oeffnung_grad))} />`;
   }
   renderZone(e, t) {
-    const n = (e.id ? this.live?.zonen[e.id]?.belegt : !1) ?? !1, s = ae(e), i = ce(s), r = t === this.selected, a = n ? 0.5 : 0.2;
+    const n = (e.id ? this.live?.zonen[e.id]?.belegt : !1) ?? !1, s = he(e), i = de(s), r = t === this.selected, a = n ? 0.5 : 0.2;
     let o;
     if (e.form.art === "zellen")
-      o = x`${Ke(e.form).map((l) => {
+      o = x`${Ye(e.form).map((l) => {
         const h = [
           [l.x, l.y],
           [l.x + l.s, l.y],
@@ -3882,13 +3918,13 @@ let v = class extends de {
         return x`<polygon class="zone-shape ${r ? "selected" : ""}" points=${this.screenPoints(h)} fill=${i} fill-opacity=${a} stroke=${i} style="stroke-width:1" />`;
       })}`;
     else {
-      const l = this.screenPoints(K(e.form)), h = r && e.regel.rand_cm > 0 ? this.px(e.regel.rand_cm * 2) : 0;
+      const l = this.screenPoints(q(e.form)), h = r && e.regel.rand_cm > 0 ? this.px(e.regel.rand_cm * 2) : 0;
       o = x`
         ${h ? x`<mask id="rz-band-${t}">
                 <rect x="0" y="0" width=${this.size.w} height=${this.size.h} fill="white" />
                 <polygon points=${l} fill="black" />
               </mask>
-              <polygon points=${l} fill="none" stroke=${i} stroke-opacity="0.25" stroke-width=${h} stroke-linejoin="round" mask="url(#rz-band-${t})" />` : f}
+              <polygon points=${l} fill="none" stroke=${i} stroke-opacity="0.25" stroke-width=${h} stroke-linejoin="round" mask="url(#rz-band-${t})" />` : m}
         <polygon class="zone-shape ${r ? "selected" : ""}" points=${l} fill=${i} fill-opacity=${a} stroke=${i} />`;
     }
     return x`<g>${o}</g>`;
@@ -3901,16 +3937,16 @@ let v = class extends de {
   }
   renderHandles() {
     const e = this.zones[this.selected];
-    if (!e || this.tool !== "auswahl" || !this.kannAendern) return f;
+    if (!e || this.tool !== "auswahl" || !this.kannAendern) return m;
     let t = [];
-    e.form.art === "vieleck" ? t = e.form.punkte : e.form.art === "rechteck" && (t = we(e.form.mitte, e.form.breite, e.form.tiefe, e.form.winkel));
-    let n = f;
+    e.form.art === "vieleck" ? t = e.form.punkte : e.form.art === "rechteck" && (t = ze(e.form.mitte, e.form.breite, e.form.tiefe, e.form.winkel));
+    let n = m;
     if (e.form.art !== "zellen") {
       const [s, i] = this.toScreen(P(e.form)), [r, a] = this.toScreen(this.zoneRotateHandle(e.form));
       n = x`<line class="sensor-line" x1=${s} y1=${i} x2=${r} y2=${a} /><circle class="handle angle" cx=${r} cy=${a} r="8"><title>Drehen</title></circle>`;
     }
     return x`${n}
-      ${e.form.art === "vieleck" ? ee(e.form.punkte).map((s) => this.renderPlus(s)) : f}
+      ${e.form.art === "vieleck" ? te(e.form.punkte).map((s) => this.renderPlus(s)) : m}
       ${t.map((s, i) => {
       const [r, a] = this.toScreen(s), o = e.form.art === "vieleck" && i === this.selVertex;
       return x`<rect class="handle ${o ? "on" : ""}" x=${r - 5} y=${a - 5} width="10" height="10" rx="2" />`;
@@ -3923,14 +3959,14 @@ let v = class extends de {
     });
     return x`<g>
       ${this.kannAendern ? x`<line class="sensor-line" x1=${t} y1=${n} x2=${s} y2=${i} />
-            <circle class="handle angle" cx=${s} cy=${i} r="8" />` : f}
+            <circle class="handle angle" cx=${s} cy=${i} r="8" />` : m}
       <circle class="sensor-body" cx=${t} cy=${n} r="12" />
       ${a}
     </g>`;
   }
   renderLive() {
     const e = this.live;
-    if (!e) return f;
+    if (!e) return m;
     const t = [];
     if (this.layers.ziele)
       for (const [, n, s] of e.ziele) {
@@ -3948,20 +3984,20 @@ let v = class extends de {
   }
   renderDraft() {
     if (this.rectDraft) {
-      const s = dt(...this.rectDraft);
-      if (s.art !== "rechteck") return f;
+      const s = mt(...this.rectDraft);
+      if (s.art !== "rechteck") return m;
       const [i, r] = this.toScreen(s.mitte);
-      return x`<polygon class="draft" points=${this.screenPoints(we(s.mitte, s.breite, s.tiefe, 0))} />
+      return x`<polygon class="draft" points=${this.screenPoints(ze(s.mitte, s.breite, s.tiefe, 0))} />
         <text class="label" x=${i} y=${r + 5}>${(s.breite / 100).toFixed(2)} × ${(s.tiefe / 100).toFixed(2)} m</text>`;
     }
-    if (!this.draft.length) return f;
+    if (!this.draft.length) return m;
     const e = this.hover ? [...this.draft, this.hover] : this.draft, [t, n] = this.toScreen(this.draft[0]);
     return x`<polyline class="draft" points=${this.screenPoints(e)} style="fill:none" />
       ${this.draft.map((s) => {
       const [i, r] = this.toScreen(s);
       return x`<circle class="draft-dot" cx=${i} cy=${r} r="4" />`;
     })}
-      ${this.draft.length >= 3 ? x`<circle class="close-ring" cx=${t} cy=${n} r=${L} />` : f}`;
+      ${this.draft.length >= 3 ? x`<circle class="close-ring" cx=${t} cy=${n} r=${O} />` : m}`;
   }
   /** Stockwerke eines Raums: eigene Angabe, sonst das Stockwerk seines Bereichs. */
   stockwerkeVon(e) {
@@ -3981,7 +4017,7 @@ let v = class extends de {
     const t = this.hausRaeume();
     for (let n = t.length - 1; n >= 0; n--) {
       const s = t[n], i = this.lagen[s.id];
-      if (i && Te(e, { art: "vieleck", punkte: this.outlineOf(s).map((r) => O(r, i)) })) return s.id;
+      if (i && Ie(e, { art: "vieleck", punkte: this.outlineOf(s).map((r) => L(r, i)) })) return s.id;
     }
     return "";
   }
@@ -3991,71 +4027,71 @@ let v = class extends de {
     for (const o of e) {
       const l = this.lagen[o.id];
       if (!l) continue;
-      const h = this.outlineOf(o).map((k) => O(k, l)), c = o.id === this.hausSel, d = this.hausLive[o.id], g = o.art === "melder" && !!d?.zonen[V]?.belegt;
+      const h = this.outlineOf(o).map((k) => L(k, l)), c = o.id === this.hausSel, d = this.hausLive[o.id], g = o.art === "melder" && !!d?.zonen[K]?.belegt;
       t.push(x`<polygon class="floor ${g ? "belegt" : ""}" points=${this.screenPoints(h)} />
         <polygon class="wall ${o.umriss.length >= 3 ? "" : "guess"} ${c ? "selected" : ""}" points=${this.screenPoints(h)} />`);
       for (const k of o.zonen) {
-        const _ = ae(k);
+        const _ = he(k);
         if (_ === "ignorieren") continue;
-        const w = (k.id ? d?.zonen[k.id]?.belegt : !1) ?? !1, M = K(k.form).map((A) => O(A, l));
-        t.push(x`<polygon class="zone-shape" points=${this.screenPoints(M)} fill=${ce(_)} fill-opacity=${w ? 0.5 : 0.18} stroke=${ce(_)} />`);
+        const w = (k.id ? d?.zonen[k.id]?.belegt : !1) ?? !1, M = q(k.form).map((A) => L(A, l));
+        t.push(x`<polygon class="zone-shape" points=${this.screenPoints(M)} fill=${de(_)} fill-opacity=${w ? 0.5 : 0.18} stroke=${de(_)} />`);
       }
-      for (const k of he(o)) {
-        const _ = this.tueren[k.key] ?? "", [w, M] = this.toScreen(O(k.punkt, l));
-        if (_ === "aussen")
-          s.push(x`<text class="label sub" x=${w} y=${M - 10}>nach draußen</text>`);
-        else if (_) {
-          const A = e.find((C) => C.id === _);
-          if (!A) continue;
-          const S = he(A).find((C) => this.tueren[C.key] === o.id);
-          if (S && o.id > A.id) continue;
-          const I = this.lagen[A.id];
-          if (!I) continue;
-          const B = O(S ? S.punkt : P({ art: "vieleck", punkte: this.outlineOf(A) }), I), [Z, Y] = this.toScreen(B);
-          n.push(x`<line class="link" x1=${w} y1=${M} x2=${Z} y2=${Y} />
-            <circle class="link-dot" cx=${w} cy=${M} r="5" /><circle class="link-dot" cx=${Z} cy=${Y} r="5" />`);
+      for (const k of N(o)) {
+        const _ = this.tueren[k.key] ?? "", w = _.startsWith("tuer:") ? _.slice(5) : "", M = w ? w.split("/")[0] : _, [A, S] = this.toScreen(L(k.punkt, l));
+        if (M === "aussen")
+          s.push(x`<text class="label sub" x=${A} y=${S - 10}>nach draußen</text>`);
+        else if (M) {
+          const E = e.find((D) => D.id === M);
+          if (!E) continue;
+          const H = w ? N(E).find((D) => D.key === w) : N(E).find((D) => this.tueren[D.key] === o.id || this.tueren[D.key] === `tuer:${k.key}`);
+          if (H && o.id > E.id) continue;
+          const B = this.lagen[E.id];
+          if (!B) continue;
+          const ae = L(H ? H.punkt : P({ art: "vieleck", punkte: this.outlineOf(E) }), B), [Q, oe] = this.toScreen(ae);
+          n.push(x`<line class="link" x1=${A} y1=${S} x2=${Q} y2=${oe} />
+            <circle class="link-dot" cx=${A} cy=${S} r="5" /><circle class="link-dot" cx=${Q} cy=${oe} r="5" />`);
         }
       }
-      const [p, m] = this.toScreen(P({ art: "vieleck", punkte: h })), b = d ? d.figuren.filter((k) => !k.tags.includes("wiederhergestellt") && !k.tags.includes("stoerung")).length : 0, $ = !d || d.problem || !d.verfuegbar ? "nicht erreichbar" : o.art === "melder" ? g ? "jemand da" : "niemand" : b ? `${b} ${b === 1 ? "Person" : "Personen"}` : "niemand";
-      if (s.push(x`<text class="label room" x=${p} y=${m}>${o.name}</text>
-        <text class="label sub" x=${p} y=${m + 16}>${$}</text>`), o.art !== "melder")
+      const [p, f] = this.toScreen(P({ art: "vieleck", punkte: h })), b = d ? d.figuren.filter((k) => !k.tags.includes("wiederhergestellt") && !k.tags.includes("stoerung")).length : 0, $ = !d || d.problem || !d.verfuegbar ? "nicht erreichbar" : o.art === "melder" ? g ? "jemand da" : "niemand" : b ? `${b} ${b === 1 ? "Person" : "Personen"}` : "niemand";
+      if (s.push(x`<text class="label room" x=${p} y=${f}>${o.name}</text>
+        <text class="label sub" x=${p} y=${f + 16}>${$}</text>`), o.art !== "melder")
         for (const k of d?.figuren ?? []) {
           if (k.tags.includes("wiederhergestellt") || k.tags.includes("stoerung")) continue;
-          const w = k.tags.includes("hund") || k.art === "pet" ? "var(--rz-tier)" : "var(--rz-person)", [M, A] = this.toScreen(O([k.x, k.y], l)), S = Math.max(6, this.px(14));
+          const w = k.tags.includes("hund") || k.art === "pet" ? "var(--rz-tier)" : "var(--rz-person)", [M, A] = this.toScreen(L([k.x, k.y], l)), S = Math.max(6, this.px(14));
           i.push(x`<circle class="figure ${k.gehalten ? "held" : ""}" cx=${M} cy=${A} r=${S} fill=${w} stroke=${k.gehalten ? w : "var(--card)"} />`);
         }
     }
-    const r = this.planMessen?.punkte ?? [], a = x`${r.length === 2 ? x`<line class="plan-strecke-linie" x1=${this.toScreen(r[0])[0]} y1=${this.toScreen(r[0])[1]} x2=${this.toScreen(r[1])[0]} y2=${this.toScreen(r[1])[1]} />` : f}${r.map((o) => {
+    const r = this.planMessen?.punkte ?? [], a = x`${r.length === 2 ? x`<line class="plan-strecke-linie" x1=${this.toScreen(r[0])[0]} y1=${this.toScreen(r[0])[1]} x2=${this.toScreen(r[1])[0]} y2=${this.toScreen(r[1])[1]} />` : m}${r.map((o) => {
       const [l, h] = this.toScreen(o);
       return x`<circle class="plan-strecke" cx=${l} cy=${h} r="6" />`;
     })}`;
     return x`${this.renderPlanBilder()}${t}${n}${i}${s}${a}`;
   }
   renderScalebar() {
-    const e = as(90 / this.view.scale), t = e >= 100 ? `${e / 100} m` : `${e} cm`;
+    const e = hs(90 / this.view.scale), t = e >= 100 ? `${e / 100} m` : `${e} cm`;
     return u`<div class="scalebar"><div style="width:${this.px(e)}px"></div>${t}</div>`;
   }
   renderBubble() {
-    const e = rs[this.tool];
+    const e = ls[this.tool];
     if (e) {
       const t = (this.tool === "vieleck" || this.tool === "umriss") && this.draft.length >= 3;
       return u`<div class="bubble">
-        <ha-icon icon=${zt.find((n) => n.tool === this.tool).icon}></ha-icon>
+        <ha-icon icon=${Mt.find((n) => n.tool === this.tool).icon}></ha-icon>
         <span class="grow">${e}</span>
-        ${t ? u`<button class="text" @click=${this.finishDraft}>Fertig</button>` : f}
+        ${t ? u`<button class="text" @click=${this.finishDraft}>Fertig</button>` : m}
         <button class="text" @click=${() => this.setTool("auswahl")}>${this.tool === "zellen" ? "Fertig" : "Abbrechen"}</button>
       </div>`;
     }
-    return this.kannAendern ? this.istMelder ? this.umriss.length >= 3 || this.tool !== "auswahl" ? f : u`<div class="bubble">
+    return this.kannAendern ? this.istMelder ? this.umriss.length >= 3 || this.tool !== "auswahl" ? m : u`<div class="bubble">
         <ha-icon icon="mdi:wall"></ha-icon>
         <span class="grow">Links mit <b>Wände zeichnen</b> den Umriss des Raums einzeichnen, dann Türen in die Wände. So passt er in den Hausplan.</span>
       </div>` : !this.zones.length && this.tool === "auswahl" ? u`<div class="bubble">
         <ha-icon icon="mdi:gesture-tap"></ha-icon>
         <span class="grow">Zuerst den <b>Sensor</b> an seinen Platz ziehen und am gelben Griff drehen. Dann links ein Werkzeug wählen und die erste Zone zeichnen.</span>
-      </div>` : f : f;
+      </div>` : m : m;
   }
   renderLayers() {
-    if (!this.layersOpen) return f;
+    if (!this.layersOpen) return m;
     const e = (n, s) => u`<label class="check"
         ><input
           type="checkbox"
@@ -4101,46 +4137,46 @@ let v = class extends de {
               ${this.renderHandles()} ${this.renderDraft()} ${this.renderWizMarken()}`}
       </svg>
       <div class="tools" role="toolbar" aria-label="Werkzeuge" @pointerdown=${(t) => t.stopPropagation()}>
-        ${this.kannAendern && this.page === "raum" ? u`${zt.filter((t) => !this.istMelder || is.includes(t.tool)).map(
+        ${this.kannAendern && this.page === "raum" ? u`${Mt.filter((t) => !this.istMelder || os.includes(t.tool)).map(
       (t) => u`<button class="icon ${this.tool === t.tool ? "on" : ""}" title=${t.label} aria-label=${t.label} @click=${() => this.setTool(t.tool)}>
                   <ha-icon icon=${t.icon}></ha-icon>
                 </button>`
     )}
-              <span class="sep"></span>` : f}
+              <span class="sep"></span>` : m}
         ${this.page === "raum" && !this.istMelder ? u`<button class="icon ${this.layersOpen ? "on" : ""}" title="Ebenen und Bewegungskarte" aria-label="Ebenen" @click=${() => this.layersOpen = !this.layersOpen}>
                 <ha-icon icon="mdi:layers-outline"></ha-icon>
               </button>
-              <span class="sep"></span>` : f}
+              <span class="sep"></span>` : m}
         ${this.data?.plaene?.length ? u`<button
               class="icon ${this.zeigePlan ? "on" : ""}"
               title="Grundriss im Hintergrund"
               aria-label="Grundriss im Hintergrund"
               @click=${() => {
-      this.zeigePlan = !this.zeigePlan, Be("raumzonen-zeige-plan", this.zeigePlan);
+      this.zeigePlan = !this.zeigePlan, De("raumzonen-zeige-plan", this.zeigePlan);
     }}
             >
               <ha-icon icon="mdi:image-outline"></ha-icon>
-            </button>` : f}
+            </button>` : m}
         ${this.page === "raum" ? u`<button
               class="icon ${this.masse ? "on" : ""}"
               title="Maße der Wände"
               aria-label="Maße der Wände"
               @click=${() => {
-      this.masse = !this.masse, Be("raumzonen-masse", this.masse);
+      this.masse = !this.masse, De("raumzonen-masse", this.masse);
     }}
             >
               <ha-icon icon="mdi:ruler"></ha-icon>
-            </button>` : f}
+            </button>` : m}
         ${this.page === "raum" && this.raum?.haus_gesetzt && Math.abs(this.raum.haus_winkel ?? 0) > 0.01 ? u`<button
               class="icon ${this.wieImHaus ? "on" : ""}"
               title=${this.wieImHaus ? "Ansicht wie im Hausplan (tippen: Raum gerade)" : "Raum gerade (tippen: wie im Hausplan)"}
               aria-label="Ansicht drehen"
               @click=${() => {
-      this.wieImHaus = !this.wieImHaus, Be("raumzonen-wie-im-haus", this.wieImHaus), this.viewTouched = !1, this.fit();
+      this.wieImHaus = !this.wieImHaus, De("raumzonen-wie-im-haus", this.wieImHaus), this.viewTouched = !1, this.fit();
     }}
             >
               <ha-icon icon="mdi:rotate-3d-variant"></ha-icon>
-            </button>` : f}
+            </button>` : m}
         <button class="icon" title="Vergrößern" aria-label="Vergrößern" @click=${() => this.zoom(1.25)}><ha-icon icon="mdi:plus"></ha-icon></button>
         <button class="icon" title="Verkleinern" aria-label="Verkleinern" @click=${() => this.zoom(0.8)}><ha-icon icon="mdi:minus"></ha-icon></button>
         <button
@@ -4154,29 +4190,29 @@ let v = class extends de {
           <ha-icon icon="mdi:fit-to-screen-outline"></ha-icon>
         </button>
       </div>
-      ${this.page === "raum" ? u`${this.renderLayers()} ${this.renderBubble()}` : f} ${this.renderScalebar()}
+      ${this.page === "raum" ? u`${this.renderLayers()} ${this.renderBubble()}` : m} ${this.renderScalebar()}
     </div>`;
   }
   // -- Seitenleiste ------------------------------------------------------------
   renderZoneItem(e, t) {
-    const n = t === this.selected, s = ae(e), i = ze(s), r = e.id ? this.live?.zonen[e.id] : void 0, a = r ? u`<span class="badge ${r.belegt ? "on" : "off"}">${r.belegt ? r.personen > 1 ? `belegt · ${r.personen}` : "belegt" : "frei"}</span>` : u`<span class="badge new">neu</span>`;
-    return u`<li class="item ${n ? "open" : ""}" style="--zone:${ce(s)}">
+    const n = t === this.selected, s = he(e), i = Me(s), r = e.id ? this.live?.zonen[e.id] : void 0, a = r ? u`<span class="badge ${r.belegt ? "on" : "off"}">${r.belegt ? r.personen > 1 ? `belegt · ${r.personen}` : "belegt" : "frei"}</span>` : u`<span class="badge new">neu</span>`;
+    return u`<li class="item ${n ? "open" : ""}" style="--zone:${de(s)}">
       <div class="row" @click=${() => this.select(n ? -1 : t)}>
         <span class="dot"></span>
         <ha-icon icon=${i.icon}></ha-icon>
         <span class="name">${e.name}</span>
         ${a}
       </div>
-      ${n ? this.renderInspector(e, t) : f}
+      ${n ? this.renderInspector(e, t) : m}
     </li>`;
   }
   renderInspector(e, t) {
-    const n = e.regel, s = ae(e), i = this.data.grenzen, r = (c, d, g, p, m) => u`<label class="field"
+    const n = e.regel, s = he(e), i = this.data.grenzen, r = (c, d, g, p, f) => u`<label class="field"
         >${d}<input
           type="number"
           min="0"
           max=${p}
-          step=${m}
+          step=${f}
           .value=${String(n[c])}
           @change=${(b) => {
       const $ = Number(b.target.value);
@@ -4184,10 +4220,10 @@ let v = class extends de {
     }}
         /><span class="unit">${g}</span></label
       >`, a = (c, d, g, p) => u`<label class="check"
-        ><input type="checkbox" .checked=${g} @change=${(m) => p(m.target.checked)} /><span
+        ><input type="checkbox" .checked=${g} @change=${(f) => p(f.target.checked)} /><span
           >${c}<small>${d}</small></span
         ></label
-      >`, o = De(e.form), l = (this.data?.raeume ?? []).filter((c) => c.id !== this.raumId), h = this.istMelder ? u`<div class="label-text">Welcher Melder meldet diese Zone?</div>
+      >`, o = Ce(e.form), l = (this.data?.raeume ?? []).filter((c) => c.id !== this.raumId), h = this.istMelder ? u`<div class="label-text">Welcher Melder meldet diese Zone?</div>
           <ul class="melder-liste">
             ${this.melder.map(
       (c) => u`<li>
@@ -4196,7 +4232,7 @@ let v = class extends de {
                     type="checkbox"
                     .checked=${(e.melder ?? []).includes(c)}
                     @change=${(d) => {
-        const g = d.target.checked, p = (e.melder ?? []).filter((m) => m !== c);
+        const g = d.target.checked, p = (e.melder ?? []).filter((f) => f !== c);
         this.updateZone(t, { melder: g ? [...p, c] : p });
       }}
                   /><span>${this.melderName(c)}</span></label
@@ -4204,7 +4240,7 @@ let v = class extends de {
               </li>`
     )}
           </ul>
-          ${(e.melder ?? []).length ? f : u`<p class="note warn">Ohne Melder lässt sich die Zone nicht speichern.</p>`}` : f;
+          ${(e.melder ?? []).length ? m : u`<p class="note warn">Ohne Melder lässt sich die Zone nicht speichern.</p>`}` : m;
     return this.kannAendern ? u`<div class="inspector">
       ${h}
       <label class="field"
@@ -4217,13 +4253,13 @@ let v = class extends de {
       /></label>
       <div class="label-text">Wofür ist die Zone?</div>
       <div class="levels">
-        ${Ce.map(
+        ${Ue.map(
       (c) => u`<button class=${c.rolle === s ? "active" : ""} @click=${() => this.setRolle(t, c.rolle)}>
             <ha-icon icon=${c.icon}></ha-icon>${c.name}
           </button>`
     )}
       </div>
-      <p class="hint small">${ze(s).text}</p>
+      <p class="hint small">${Me(s).text}</p>
       ${s === "tuer" ? u`<label class="field"
               >Wohin führt die Tür?<select
                 @change=${(c) => {
@@ -4235,7 +4271,7 @@ let v = class extends de {
                 ${l.map((c) => u`<option value=${c.id} ?selected=${e.fuehrt_zu === c.id}>${c.name}</option>`)}
               </select></label
             >
-            <p class="hint small">Damit weiß Raumzonen später, wer von wo nach wo geht.</p>` : f}
+            <p class="hint small">Damit weiß Raumzonen später, wer von wo nach wo geht.</p>` : m}
       ${s === "bett" ? u`${a(
       "Nur eine Person im Bett",
       "Dann wird ein starrer Punkt, den der Sensor beim Aufstehen zurücklässt, verworfen.",
@@ -4247,8 +4283,8 @@ let v = class extends de {
       "Nur ein Hinweis; ob es der Hund ist, ergibt sich aus Hundeplätzen oder der Art, die der Sensor meldet.",
       n.hund_ignorieren,
       (c) => this.updateRegel(t, { hund_ignorieren: c })
-    )}` : f}
-      ${s !== "ignorieren" ? u`<div class="summary">${ft(e)}</div>
+    )}` : m}
+      ${s !== "ignorieren" ? u`<div class="summary">${bt(e)}</div>
             <details class="fine">
               <summary>Feineinstellung</summary>
               <div class="fields">
@@ -4258,28 +4294,41 @@ let v = class extends de {
               ${n.schlaefer_halten ? u`<p class="hint small">Als „aufgestanden“ gilt erst, wer sich draußen bewegt, weit genug weg ist oder zur Tür geht:</p>
                     <div class="fields">
                       ${r("weg_rahmen", "Bewegte Meldungen", "", i.weg_rahmen, 1)} ${r("weg_cm", "oder Abstand", "cm", i.weg_cm, 5)}
-                    </div>` : f}
-            </details>` : f}
+                    </div>` : m}
+            </details>` : m}
       ${e.form.art !== "zellen" ? u`<div class="label-text">Form</div>
             <div class="actions">
               <button class="text small" title="Gegen den Uhrzeigersinn" @click=${() => this.turnZone(t, 15)}><ha-icon icon="mdi:rotate-left"></ha-icon>15°</button>
               <button class="text small" title="Im Uhrzeigersinn" @click=${() => this.turnZone(t, -15)}><ha-icon icon="mdi:rotate-right"></ha-icon>15°</button>
               ${e.form.art === "vieleck" ? u`<button class="text small" ?disabled=${this.selVertex < 0 || e.form.punkte.length <= 3} @click=${() => this.deleteVertex(t, this.selVertex)}>
                     <ha-icon icon="mdi:vector-point-minus"></ha-icon>Punkt löschen
-                  </button>` : f}
+                  </button>` : m}
             </div>
             <p class="hint small">
               Am gelben Griff drehen. ${e.form.art === "vieleck" ? "Das „+“ auf einer Kante fügt einen Punkt ein; Rechtsklick auf einen Punkt löscht ihn." : ""}
-            </p>` : f}
-      ${o ? u`<div class="note warn">${o}</div>` : f}
+            </p>` : u`<div class="label-text">Form</div>
+            <div class="actions">
+              <button
+                class="text small ${this.tool === "zellen" && this.selected === t ? "on" : ""}"
+                @click=${() => {
+      this.selected = t, this.setTool(this.tool === "zellen" ? "auswahl" : "zellen");
+    }}
+              >
+                <ha-icon icon="mdi:grid"></ha-icon>${this.tool === "zellen" && this.selected === t ? "Fertig" : "Zellen bearbeiten"}
+              </button>
+            </div>
+            <p class="hint small">
+              Beim Bearbeiten: leere Zelle antippen oder darüberziehen = dazu, volle Zelle = weg. Die ganze Zone verschieben: in der Auswahl ziehen.
+            </p>`}
+      ${o ? u`<div class="note warn">${o}</div>` : m}
       <div class="actions">
         <span class="spacer"></span>
         <button class="text danger" @click=${() => this.deleteZone(t)}><ha-icon icon="mdi:delete-outline"></ha-icon>Löschen</button>
       </div>
     </div>` : u`<div class="inspector">
-        <p class="hint small">${ze(s).text}</p>
-        ${s === "tuer" ? u`<div class="summary">Führt ${En(e, l)}.</div>` : f}
-        ${s !== "ignorieren" ? u`<div class="summary">${ft(e)}</div>` : f}
+        <p class="hint small">${Me(s).text}</p>
+        ${s === "tuer" ? u`<div class="summary">Führt ${Ln(e, l)}.</div>` : m}
+        ${s !== "ignorieren" ? u`<div class="summary">${bt(e)}</div>` : m}
       </div>`;
   }
   renderZonesTab() {
@@ -4289,21 +4338,28 @@ let v = class extends de {
           </ul>` : u`<p class="hint">
             ${this.kannAendern ? this.istMelder ? "Noch keine Zonen. Eine Zone ist der Bereich, den ein Melder meldet (z. B. eine Zone eines FP2). Unter „Melder und Raum“ beim Melder „Zone für diesen Melder“ tippen, oder hier links zeichnen und dann den Melder wählen. „Anwesenheit“ für den ganzen Raum gibt es immer." : "Noch keine Zonen. Mit den Werkzeugen links am Plan zeichnen, z. B. ein Rechteck über das Bett." : "Noch keine Zonen eingezeichnet."}
           </p>`}
-      ${this.kannAendern ? this.renderNewZone() : f}`;
+      ${this.kannAendern ? this.renderNewZone() : m}`;
   }
   renderNewZone() {
     return u`<h3>Neue Zone</h3>
       <div class="actions">
         <button class="text small" @click=${() => this.setTool("rechteck")}><ha-icon icon="mdi:rectangle-outline"></ha-icon>Rechteck</button>
         <button class="text small" @click=${() => this.setTool("vieleck")}><ha-icon icon="mdi:vector-polygon"></ha-icon>Vieleck</button>
-        <button class="text small" @click=${() => this.setTool("zellen")}><ha-icon icon="mdi:grid"></ha-icon>Zellen</button>
+        <button
+          class="text small"
+          @click=${() => {
+      this.selected = -1, this.setTool("zellen");
+    }}
+        >
+          <ha-icon icon="mdi:grid"></ha-icon>Zellen
+        </button>
       </div>
-      ${this.istMelder ? f : u`<div class="actions">
+      ${this.istMelder ? m : u`<div class="actions">
             <button class="text small" @click=${this.importConverter}><ha-icon icon="mdi:import"></ha-icon>Aus dem Konverter übernehmen</button>
           </div>`}`;
   }
   renderMelderTab() {
-    const e = this.live, t = !!e && e.verfuegbar && !e.problem, n = !!e?.zonen[V]?.belegt, s = this.kandidaten, i = (l) => s?.melder.find((h) => h.id === l || h.entity_id === l)?.name ?? l, r = (s?.melder ?? []).filter((l) => !l.benutzt_von || l.benutzt_von === this.raumId || this.melder.includes(l.id)), a = this.melder.filter((l) => !r.some((h) => h.id === l || h.entity_id === l)).map((l) => ({ id: l, entity_id: l, name: "Unbekannter Melder", klasse: "", bereich_id: null, benutzt_von: this.raumId, geraet: null, typ: "nicht mehr in Home Assistant (gelöscht oder abgeschaltet), bitte abwählen" })), o = this.melderAuswahl([...r, ...a], this.raum?.bereich_id, this.melder);
+    const e = this.live, t = !!e && e.verfuegbar && !e.problem, n = !!e?.zonen[K]?.belegt, s = this.kandidaten, i = (l) => s?.melder.find((h) => h.id === l || h.entity_id === l)?.name ?? l, r = (s?.melder ?? []).filter((l) => !l.benutzt_von || l.benutzt_von === this.raumId || this.melder.includes(l.id)), a = this.melder.filter((l) => !r.some((h) => h.id === l || h.entity_id === l)).map((l) => ({ id: l, entity_id: l, name: "Unbekannter Melder", klasse: "", bereich_id: null, benutzt_von: this.raumId, geraet: null, typ: "nicht mehr in Home Assistant (gelöscht oder abgeschaltet), bitte abwählen" })), o = this.melderAuswahl([...r, ...a], this.raum?.bereich_id, this.melder);
     return u`<h3>Melder</h3>
       <ul class="list">
         <li class="item">
@@ -4326,14 +4382,14 @@ let v = class extends de {
         const d = c.target.checked;
         if (this.melder = d ? [...this.melder, l.id] : this.melder.filter((g) => g !== l.id && g !== l.entity_id), !d) {
           const { [l.id]: g, ...p } = this.melderLagen;
-          this.melderLagen = p, this.zones = this.zones.map((m) => ({ ...m, melder: (m.melder ?? []).filter((b) => b !== l.id) }));
+          this.melderLagen = p, this.zones = this.zones.map((f) => ({ ...f, melder: (f.melder ?? []).filter((b) => b !== l.id) }));
         }
         this.dirty = !0;
       }}
                         /><span>${l.name}<small>${this.melderInfo(l)}</small></span></label
                       >
                       ${h ? u`<div class="actions melder-aktionen">
-                            ${this.melderLagen[l.id] ? f : u`<button class="text small" @click=${() => this.melderPlatzieren(l.id)}>
+                            ${this.melderLagen[l.id] ? m : u`<button class="text small" @click=${() => this.melderPlatzieren(l.id)}>
                                   <ha-icon icon="mdi:map-marker-plus-outline"></ha-icon>Im Plan platzieren
                                 </button>`}
                             ${this.renderMelderErfassung(l.id)}
@@ -4345,7 +4401,7 @@ let v = class extends de {
                             >
                               <ha-icon icon="mdi:shape-rectangle-plus"></ha-icon>Zone für diesen Melder
                             </button>
-                          </div>` : f}
+                          </div>` : m}
                     </li>`;
     })}
                 </ul>` : u`<p class="hint">Lädt …</p>`}
@@ -4366,7 +4422,7 @@ let v = class extends de {
             </div>` : u`<ul class="doors">
             ${this.melder.map((l) => u`<li class="door"><ha-icon icon="mdi:motion-sensor"></ha-icon><span>${i(l)}</span></li>`)}
           </ul>`}
-      ${this.kannAendern ? this.renderRoomEdit() : f}`;
+      ${this.kannAendern ? this.renderRoomEdit() : m}`;
   }
   renderRoomTab() {
     if (this.istMelder) return this.renderMelderTab();
@@ -4398,11 +4454,11 @@ let v = class extends de {
                   <dd>${n == null ? "–" : n < 120 ? `vor ${Math.round(n)} s` : `vor ${Math.round(n / 60)} min`}</dd>
                 </dl>
                 <p class="hint small">Liegt jemand ruhig, meldet der Sensor oft minutenlang nichts. Das ist normal; Raumzonen hält die Figur.</p>
-                ${this.kannAendern ? this.renderSensorEdit(i) : f}
-              </div>` : f}
+                ${this.kannAendern ? this.renderSensorEdit(i) : m}
+              </div>` : m}
         </li>
       </ul>
-      ${this.kannAendern ? u`${this.renderWizard()} ${this.renderRoomEdit()}` : f}`;
+      ${this.kannAendern ? u`${this.renderWizard()} ${this.renderRoomEdit()}` : m}`;
   }
   renderWizard() {
     const e = this.wiz;
@@ -4416,7 +4472,7 @@ let v = class extends de {
           <button class="text small" @click=${() => this.wizStart("umsetzen")}><ha-icon icon="mdi:map-marker-path"></ha-icon>Vor dem Umhängen starten</button>
           <button class="text small" @click=${() => this.wizStart("einmessen")}><ha-icon icon="mdi:crosshairs-gps"></ha-icon>Sensor hängt schon: einmessen</button>
         </div>`;
-    const t = e.aktiv + 1, n = e.messung, s = n ? Math.max(0, Math.ceil((n.bis - Date.now()) / 1e3)) : 0, i = (o) => n ? u`<div class="note">Bitte ruhig stehen … noch ${s} s${n.hinweis ? u`<br />${n.hinweis}` : f}</div>` : u`<div class="actions"><span class="spacer"></span><button class="primary" ?disabled=${this.dirty} @click=${this.wizMessen}><ha-icon icon="mdi:human-handsdown"></ha-icon>${o}</button></div>`, r = u`<ol class="wiz-stellen">
+    const t = e.aktiv + 1, n = e.messung, s = n ? Math.max(0, Math.ceil((n.bis - Date.now()) / 1e3)) : 0, i = (o) => n ? u`<div class="note">Bitte ruhig stehen … noch ${s} s${n.hinweis ? u`<br />${n.hinweis}` : m}</div>` : u`<div class="actions"><span class="spacer"></span><button class="primary" ?disabled=${this.dirty} @click=${this.wizMessen}><ha-icon icon="mdi:human-handsdown"></ha-icon>${o}</button></div>`, r = u`<ol class="wiz-stellen">
       ${[0, 1, 2].map((o) => {
       const l = e.schritt === "vorher" ? !!e.raum[o] : e.modus === "umsetzen" ? !!e.sensor[o] : !!e.sensor[o] && !!e.raum[o];
       return u`<li class=${l ? "fertig" : o === e.aktiv ? "aktiv" : ""}>Stelle ${o + 1}${l ? " ✓" : ""}</li>`;
@@ -4445,10 +4501,10 @@ let v = class extends de {
       d === -180 && (d = 180);
       const g = d === 0 ? "gleich ausgerichtet" : `um ${Math.abs(d)}° ${d > 0 ? "nach links" : "nach rechts"} gedreht`;
       a = u`<p class="summary">
-          ${e.modus === "umsetzen" || c > 0 ? u`Der Sensor hängt jetzt ${c < 10 ? "fast an derselben Stelle" : `${c} cm von der alten Stelle entfernt`} und ist ${g}.` : f}
+          ${e.modus === "umsetzen" || c > 0 ? u`Der Sensor hängt jetzt ${c < 10 ? "fast an derselben Stelle" : `${c} cm von der alten Stelle entfernt`} und ist ${g}.` : m}
           Genauigkeit: etwa ± ${Math.max(1, Math.round(o.rest_cm))} cm.
         </p>
-        ${l ? f : u`<p class="note warn">Ungenau. Besser noch einmal messen, ruhig stehen und genau dieselben Stellen treffen.</p>`}
+        ${l ? m : u`<p class="note warn">Ungenau. Besser noch einmal messen, ruhig stehen und genau dieselben Stellen treffen.</p>`}
         <p class="hint small">Im Plan zeigt der grüne Punkt die neue Lage. Die Zonen bleiben, wo sie im Raum sind.</p>
         <div class="actions">
           <button class="text small" @click=${() => this.wizStart(e.modus)}>Noch einmal</button>
@@ -4458,8 +4514,8 @@ let v = class extends de {
     }
     return u`<div class="neu-raum">
       <h3>${e.modus === "umsetzen" ? "Sensor umsetzen" : "Sensor einmessen"}</h3>
-      ${this.dirty && e.schritt !== "ergebnis" ? u`<p class="note warn">Erst speichern oder verwerfen, dann messen.</p>` : f}
-      ${e.fehler ? u`<p class="note warn">${e.fehler}</p>` : f} ${a}
+      ${this.dirty && e.schritt !== "ergebnis" ? u`<p class="note warn">Erst speichern oder verwerfen, dann messen.</p>` : m}
+      ${e.fehler ? u`<p class="note warn">${e.fehler}</p>` : m} ${a}
       <div class="actions">
         <button class="text small" @click=${this.wizEnde}>Abbrechen</button>
       </div>
@@ -4481,7 +4537,7 @@ let v = class extends de {
                 </details>`;
   }
   renderRoomEdit() {
-    return u`${this.istMelder ? f : u`<p class="hint small">
+    return u`${this.istMelder ? m : u`<p class="hint small">
             So richtest du den Sensor ein: Den dunklen Punkt im Plan an die Stelle ziehen, an der er hängt, und am gelben Griff
             drehen, bis die Abdeckung in den Raum zeigt. Am besten mit eingeschalteter Bewegungskarte einmal durch den Raum gehen.
           </p>`}
@@ -4492,7 +4548,7 @@ let v = class extends de {
       </p>
       <div class="actions">
         <button class="text small" @click=${() => this.setTool("umriss")}><ha-icon icon="mdi:wall"></ha-icon>${this.umriss.length ? "Neu zeichnen" : "Wände zeichnen"}</button>
-        ${this.umriss.length >= 3 ? u`<button class="text small" @click=${() => this.setTool("oeffnung")}><ha-icon icon="mdi:door"></ha-icon>Tür / Öffnung</button>` : f}
+        ${this.umriss.length >= 3 ? u`<button class="text small" @click=${() => this.setTool("oeffnung")}><ha-icon icon="mdi:door"></ha-icon>Tür / Öffnung</button>` : m}
         ${this.umriss.length ? u`<button
               class="text small danger"
               @click=${() => {
@@ -4500,14 +4556,14 @@ let v = class extends de {
     }}
             >
               Entfernen
-            </button>` : f}
+            </button>` : m}
       </div>
       ${this.oeffnungen.length ? u`<ul class="list">
             ${this.oeffnungen.map(
       (e, t) => u`<li class="item ${t === this.selOpening ? "open" : ""}">
                 <div class="row" @click=${() => this.selOpening = t === this.selOpening ? -1 : t}>
                   <ha-icon icon=${e.art === "tuer" ? "mdi:door" : "mdi:door-open"}></ha-icon>
-                  <span class="name">${e.art === "tuer" ? "Tür" : "Offen"}<small>${Math.round(e.bis - e.von)} cm breit</small></span>
+                  <span class="name">${We(e, t)}<small>${e.art === "tuer" ? "Tür" : "Offen"} · ${Math.round(e.bis - e.von)} cm breit${e.fuehrt_zu ? ` · zu ${this.tuerZielText(e.gegenstueck ? `tuer:${e.gegenstueck}` : e.fuehrt_zu)}` : ""}</small></span>
                 </div>
                 ${t === this.selOpening ? u`<div class="inspector">
                       <div class="levels">
@@ -4535,18 +4591,30 @@ let v = class extends de {
                             >
                               <ha-icon icon="mdi:swap-vertical"></ha-icon>${e.aufgehen === "aussen" ? "Nach innen aufgehen" : "Nach außen aufgehen"}
                             </button>
-                          </div>` : f}
+                          </div>` : m}
+                      <label class="field"
+                        >Name<input
+                          type="text"
+                          maxlength="60"
+                          .value=${e.name ?? ""}
+                          placeholder=${We(e, t)}
+                          @change=${(n) => this.changeOpening(t, { name: n.target.value.trim() })}
+                      /></label>
+                      ${this.renderTuerZiel(this.raumId, e.gegenstueck ? `tuer:${e.gegenstueck}` : e.fuehrt_zu ?? "", (n) => {
+        const s = n.startsWith("tuer:") ? n.slice(5) : "";
+        this.changeOpening(t, { gegenstueck: s, fuehrt_zu: s ? s.split("/")[0] : n });
+      })}
                       <p class="hint small">
-                        Breite: die Punkte an den Enden ziehen; verschieben: die Öffnung selbst ziehen. Wohin sie führt, stellst du im Hausplan ein.${this.istMelder ? "" : " Damit Raumzonen „betreten“ und „verlassen“ genau erkennt, zusätzlich eine Zone mit der Rolle „Tür“ davor zeichnen."}
+                        Breite: die Punkte an den Enden ziehen; verschieben: die Öffnung selbst ziehen.${this.istMelder ? "" : " Damit Raumzonen „betreten“ und „verlassen“ genau erkennt, zusätzlich eine Zone mit der Rolle „Tür“ davor zeichnen."}
                       </p>
                       <div class="actions">
                         <span class="spacer"></span>
                         <button class="text danger" @click=${() => this.deleteOpening(t)}><ha-icon icon="mdi:delete-outline"></ha-icon>Löschen</button>
                       </div>
-                    </div>` : f}
+                    </div>` : m}
               </li>`
     )}
-          </ul>` : f}
+          </ul>` : m}
       <h3>Aufnahme</h3>
       <label class="check"
         ><input
@@ -4573,7 +4641,7 @@ let v = class extends de {
       Number.isFinite(t) && (this.aufnahmeTage = Math.max(1, Math.min(this.data?.grenzen.aufnahme_tage ?? 365, t)), this.dirty = !0);
     }}
             /><span class="unit">Tage</span></label
-          >` : f}
+          >` : m}
       <h3>Raum löschen</h3>
       <div class="actions">
         <button class="text danger" ?disabled=${this.saving} @click=${this.deleteRoom}><ha-icon icon="mdi:delete-outline"></ha-icon>Raum löschen</button>
@@ -4581,24 +4649,38 @@ let v = class extends de {
   }
   renderHausSide() {
     const e = this.data?.raeume ?? [], t = e.find((i) => i.id === this.hausSel), n = (i, r, a) => u`<button class="text small" @click=${() => this.turnRoom(t.id, i)}><ha-icon icon=${r}></ha-icon>${a}</button>`, s = (i, r) => {
-      const a = r.key, o = this.tueren[a] ?? "", l = e.filter((h) => h.id !== i.id);
-      if (!this.kannAendern) {
-        const h = o === "aussen" ? "nach draußen" : o ? l.find((c) => c.id === o)?.name ?? "weiß nicht" : "weiß nicht";
-        return u`<li class="door"><ha-icon icon="mdi:door-open"></ha-icon><span>${r.name}: ${h}</span></li>`;
-      }
+      const a = r.key, o = this.tueren[a] ?? "", l = this.tuerNamen[a] ?? r.name;
+      if (!this.kannAendern)
+        return u`<li class="door"><ha-icon icon="mdi:door-open"></ha-icon><span>${l}: ${this.tuerZielText(o)}</span></li>`;
+      const h = o ? null : Ne(e, i.id, r.punkt);
       return u`<li class="door">
         <ha-icon icon="mdi:door-open"></ha-icon>
-        <label class="field"
-          >${r.name} führt zu<select
-            @change=${(h) => {
-        this.tueren = { ...this.tueren, [a]: h.target.value }, this.dirty = !0;
+        <div class="door-felder">
+          <span class="door-name">${l}</span>
+          ${r.oeffnung !== void 0 ? u`<label class="field"
+                >Name<input
+                  type="text"
+                  maxlength="60"
+                  .value=${this.tuerNamen[a] ?? i.oeffnungen?.[r.oeffnung]?.name ?? ""}
+                  placeholder=${r.name}
+                  @input=${(c) => {
+        this.tuerNamen = { ...this.tuerNamen, [a]: c.target.value }, this.dirty = !0;
       }}
-          >
-            <option value="" ?selected=${!o}>weiß nicht</option>
-            <option value="aussen" ?selected=${o === "aussen"}>draußen / Raum ohne Raumzonen</option>
-            ${l.map((h) => u`<option value=${h.id} ?selected=${o === h.id}>${h.name}</option>`)}
-          </select></label
-        >
+              /></label>` : m}
+          ${this.renderTuerZiel(i.id, o, (c) => {
+        this.tueren = { ...this.tueren, [a]: c }, this.dirty = !0;
+      })}
+          ${h ? u`<div class="actions">
+                <button
+                  class="text small"
+                  @click=${() => {
+        this.tueren = { ...this.tueren, [a]: `tuer:${h.tuer.key}` }, this.dirty = !0;
+      }}
+                >
+                  <ha-icon icon="mdi:link-variant"></ha-icon>Nächste Tür: ${this.tuerText(h.tuer)} (${(h.abstand / 100).toFixed(1).replace(".", ",")} m)
+                </button>
+              </div>` : m}
+        </div>
       </li>`;
     };
     return u`<aside class="side">
@@ -4608,10 +4690,13 @@ let v = class extends de {
         <p class="hint small">
           ${this.kannAendern ? "Räume am Plan an ihren Platz ziehen und hier drehen. Bei jeder Tür eintragen, wohin sie führt; dann sieht Raumzonen, wer von wo nach wo geht." : "So liegen die Räume im Haus. Die Punkte zeigen, wo gerade jemand ist."}
         </p>
-        ${this.kannAendern ? u`${this.renderNeuRaum()} ${this.renderPlanImport()}` : f}
+        ${this.kannAendern ? u`${this.renderNeuRaum()} ${this.renderPlanImport()}` : m}
+        ${this.kannAendern && e.some((i) => N(i).length) ? u`<div class="actions">
+              <button class="text small" @click=${() => this.tuerenAutomatisch()}><ha-icon icon="mdi:link-variant"></ha-icon>Türen automatisch verbinden</button>
+            </div>` : m}
         <ul class="list">
           ${e.filter((i) => this.aufStockwerk(i)).map((i) => {
-      const r = this.hausLive[i.id], a = r ? r.figuren.filter((g) => !g.tags.includes("wiederhergestellt") && !g.tags.includes("stoerung")).length : 0, o = i.id === this.hausSel, l = he(i), h = i.art === "melder", c = h ? !!r?.zonen[V]?.belegt : a > 0, d = !!r && r.verfuegbar && !r.problem;
+      const r = this.hausLive[i.id], a = r ? r.figuren.filter((g) => !g.tags.includes("wiederhergestellt") && !g.tags.includes("stoerung")).length : 0, o = i.id === this.hausSel, l = N(i), h = i.art === "melder", c = h ? !!r?.zonen[K]?.belegt : a > 0, d = !!r && r.verfuegbar && !r.problem;
       return u`<li class="item ${o ? "open" : ""}">
               <div class="row" @click=${() => this.hausSel = o ? "" : i.id}>
                 <span class="marker-icon"><ha-icon icon=${h ? "mdi:motion-sensor" : "mdi:radar"}></ha-icon></span>
@@ -4625,8 +4710,8 @@ let v = class extends de {
                           <div class="actions">
                             ${n(90, "mdi:rotate-left", "90°")} ${n(-90, "mdi:rotate-right", "90°")} ${n(5, "mdi:rotate-left", "5°")}
                             ${n(-5, "mdi:rotate-right", "5°")}
-                          </div>` : f}
-                    ${this.kannAendern ? this.renderRaumStockwerke(i) : f}
+                          </div>` : m}
+                    ${this.kannAendern ? this.renderRaumStockwerke(i) : m}
                     ${l.length ? u`<div class="label-text">Türen</div>
                           <ul class="doors">
                             ${l.map((g) => s(i, g))}
@@ -4635,13 +4720,55 @@ let v = class extends de {
                       <span class="spacer"></span>
                       <button class="text small" @click=${() => this.selectRoom(i.id)}><ha-icon icon="mdi:pencil-outline"></ha-icon>Raum öffnen</button>
                     </div>
-                  </div>` : f}
+                  </div>` : m}
             </li>`;
     })}
         </ul>
-        ${this.kannAendern ? u`${this.renderPlanListe()} ${this.renderProfil()}` : f}
+        ${this.kannAendern ? u`${this.renderPlanListe()} ${this.renderProfil()}` : m}
       </div>
     </aside>`;
+  }
+  /** „Küche · Tür zum Flur“ */
+  tuerText(e) {
+    return `${this.data?.raeume.find((n) => n.id === e.raumId)?.name ?? e.raumId} · ${this.tuerNamen[e.key] || e.name}`;
+  }
+  tuerZielText(e) {
+    if (!e) return "weiß nicht";
+    if (e === "aussen") return "nach draußen";
+    if (e.startsWith("tuer:")) {
+      const t = e.slice(5), n = (this.data?.raeume ?? []).flatMap((s) => N(s)).find((s) => s.key === t);
+      return n ? this.tuerText(n) : "weiß nicht";
+    }
+    return this.data?.raeume.find((t) => t.id === e)?.name ?? "weiß nicht";
+  }
+  /** Auswahl „führt zu“: draußen, ein Raum oder eine bestimmte Tür darin. */
+  renderTuerZiel(e, t, n) {
+    const s = (this.data?.raeume ?? []).filter((i) => i.id !== e);
+    return u`<label class="field"
+      >Führt zu<select @change=${(i) => n(i.target.value)}>
+        <option value="" ?selected=${!t}>weiß nicht</option>
+        <option value="aussen" ?selected=${t === "aussen"}>draußen / Raum ohne Raumzonen</option>
+        ${s.map(
+      (i) => u`<optgroup label=${i.name}>
+            <option value=${i.id} ?selected=${t === i.id}>${i.name} (irgendeine Tür)</option>
+            ${N(i).map((r) => u`<option value=${`tuer:${r.key}`} ?selected=${t === `tuer:${r.key}`}>${i.name} · ${this.tuerNamen[r.key] || r.name}</option>`)}
+          </optgroup>`
+    )}
+      </select></label
+    >`;
+  }
+  /** Alle Türen ohne Ziel mit der nächsten Tür verbinden (höchstens 1,5 m). */
+  tuerenAutomatisch() {
+    const e = this.data?.raeume ?? [], t = { ...this.tueren };
+    let n = 0;
+    for (const s of e)
+      for (const i of N(s)) {
+        const r = (o, l) => !t[o] || !t[o].startsWith("tuer:") && t[o] !== "aussen" && (!l || t[o] === l);
+        if (!r(i.key)) continue;
+        const a = Ne(e, s.id, i.punkt);
+        !a || !r(a.tuer.key, s.id) || t[i.key] && t[i.key] !== a.tuer.raumId || (t[i.key] = `tuer:${a.tuer.key}`, t[a.tuer.key] = `tuer:${i.key}`, n++);
+      }
+    this.tueren = t, n && (this.dirty = !0), this.showToast(n ? `${n} ${n === 1 ? "Verbindung" : "Verbindungen"} vorgeschlagen. Prüfen und oben „Speichern“.` : "Keine Tür ohne Ziel mit einer Tür in der Nähe gefunden.");
   }
   renderPlanListe() {
     const e = this.data?.plaene ?? [];
@@ -4676,7 +4803,7 @@ let v = class extends de {
                           <option value="" ?selected=${!this.planLage(t).stockwerk}>jedes Stockwerk</option>
                           ${this.data.stockwerke_ha.map((n) => u`<option value=${n.id} ?selected=${this.planLage(t).stockwerk === n.id}>${n.name}</option>`)}
                         </select></label
-                      >` : f}
+                      >` : m}
                   <div class="label-text">Drehen</div>
                   <div class="actions">
                     ${[
@@ -4737,10 +4864,10 @@ let v = class extends de {
                     <span class="spacer"></span>
                     <button class="text small danger" ?disabled=${this.saving} @click=${() => this.planLoeschen(t)}><ha-icon icon="mdi:delete-outline"></ha-icon>Löschen</button>
                   </div>
-                </div>` : f}
+                </div>` : m}
           </li>`
     )}
-      </ul>` : f;
+      </ul>` : m;
   }
   async planLoeschen(e) {
     if (!(!this._hass || !confirm(`Grundriss „${e.name}“ löschen? Wände und Türen der Räume bleiben, nur das Bild im Hintergrund verschwindet.`))) {
@@ -4752,7 +4879,7 @@ let v = class extends de {
         const { [e.id]: n, ...s } = this.planBilder;
         this.planBilder = s, this.showToast("Grundriss gelöscht."), await new Promise((i) => window.setTimeout(i, 1500)), await this.load();
       } catch (t) {
-        this.showToast(`Nicht gelöscht: ${T(t)}`);
+        this.showToast(`Nicht gelöscht: ${I(t)}`);
       } finally {
         this.saving = !1;
       }
@@ -4765,8 +4892,8 @@ let v = class extends de {
         <div class="label-text">Im PDF sind ${t.bilder.length} Grundrisse. Welchen übernehmen?</div>
         <div class="plan-bilder">
           ${t.bilder.map(
-        (p, m) => u`<button class="plan-bild-wahl" @click=${() => void this.planAuswaehlen(m)}>
-              <img src=${p.url} alt="Grundriss ${m + 1}" /><span>Grundriss ${m + 1}</span>
+        (p, f) => u`<button class="plan-bild-wahl" @click=${() => void this.planAuswaehlen(f)}>
+              <img src=${p.url} alt="Grundriss ${f + 1}" /><span>Grundriss ${f + 1}</span>
             </button>`
       )}
         </div>
@@ -4782,29 +4909,29 @@ let v = class extends de {
             accept=".pdf,image/png,image/jpeg"
             ?disabled=${this.planLaedt || this.dirty}
             @change=${(p) => {
-        const m = p.target.files?.[0];
-        m && this.planLaden(m), p.target.value = "";
+        const f = p.target.files?.[0];
+        f && this.planLaden(f), p.target.value = "";
       }}
           />
         </label>
       </div>`;
     const n = this.planCmProPx(), s = this.data?.raeume ?? [], i = (p) => {
       if (!n) return "Größe: erst ein Maß eingeben";
-      const m = ne(e.g.raeume[p].punkte), b = ($) => ($ / 100).toFixed(1).replace(".", ",");
-      return `ca. ${b((m.x1 - m.x0) * n)} × ${b((m.y1 - m.y0) * n)} m`;
+      const f = se(e.g.raeume[p].punkte), b = ($) => ($ / 100).toFixed(1).replace(".", ",");
+      return `ca. ${b((f.x1 - f.x0) * n)} × ${b((f.y1 - f.y0) * n)} m`;
     }, r = (p) => this.plan = { ...e, ...p }, a = (p) => P({ art: "vieleck", punkte: p }), o = (p) => {
-      const m = p.currentTarget.getBoundingClientRect(), b = [(p.clientX - m.left) / m.width * e.g.breite, (p.clientY - m.top) / m.height * e.g.hoehe];
+      const f = p.currentTarget.getBoundingClientRect(), b = [(p.clientX - f.left) / f.width * e.g.breite, (p.clientY - f.top) / f.height * e.g.hoehe];
       r({ strecke: e.strecke.length >= 2 ? [b] : [...e.strecke, b] });
-    }, l = e.g.breite / 120, h = x`${e.strecke.length === 2 ? x`<line class="plan-strecke" x1=${e.strecke[0][0]} y1=${e.strecke[0][1]} x2=${e.strecke[1][0]} y2=${e.strecke[1][1]} stroke-width=${l / 1.5} />` : f}${e.strecke.map(([p, m]) => x`<circle class="plan-strecke" cx=${p} cy=${m} r=${l} />`)}`, c = x`<svg class="plan-vorschau" viewBox="0 0 ${e.g.breite} ${e.g.hoehe}" @click=${o}>
+    }, l = e.g.breite / 120, h = x`${e.strecke.length === 2 ? x`<line class="plan-strecke" x1=${e.strecke[0][0]} y1=${e.strecke[0][1]} x2=${e.strecke[1][0]} y2=${e.strecke[1][1]} stroke-width=${l / 1.5} />` : m}${e.strecke.map(([p, f]) => x`<circle class="plan-strecke" cx=${p} cy=${f} r=${l} />`)}`, c = x`<svg class="plan-vorschau" viewBox="0 0 ${e.g.breite} ${e.g.hoehe}" @click=${o}>
       <image href=${e.bild} x="0" y="0" width=${e.g.breite} height=${e.g.hoehe} opacity="0.55" />
-      ${e.g.raeume.map((p, m) => {
-      const [b, $] = a(p.punkte), k = !!e.zuordnung[m];
+      ${e.g.raeume.map((p, f) => {
+      const [b, $] = a(p.punkte), k = !!e.zuordnung[f];
       return x`<polygon class="plan-raum ${k ? "on" : ""}" points=${p.punkte.map((_) => _.join(",")).join(" ")} />
-          <circle class="plan-nr" cx=${b} cy=${$} r=${e.g.breite / 40} /><text class="plan-nr" x=${b} y=${$} dy="0.35em" font-size=${e.g.breite / 30}>${m + 1}</text>`;
+          <circle class="plan-nr" cx=${b} cy=${$} r=${e.g.breite / 40} /><text class="plan-nr" x=${b} y=${$} dy="0.35em" font-size=${e.g.breite / 30}>${f + 1}</text>`;
     })}
-      ${e.g.luecken.map((p, m) => {
-      const b = e.g.raeume[p.raum].punkte, $ = b[p.kante], k = b[(p.kante + 1) % b.length], _ = Math.hypot(k[0] - $[0], k[1] - $[1]) || 1, w = (B) => [$[0] + (k[0] - $[0]) * B / _, $[1] + (k[1] - $[1]) * B / _], [M, A] = w(p.von_px), [S, I] = w(p.bis_px);
-      return x`<line class="plan-luecke ${e.art[m]}" x1=${M} y1=${A} x2=${S} y2=${I} stroke-width=${e.g.breite / 150} />`;
+      ${e.g.luecken.map((p, f) => {
+      const b = e.g.raeume[p.raum].punkte, $ = b[p.kante], k = b[(p.kante + 1) % b.length], _ = Math.hypot(k[0] - $[0], k[1] - $[1]) || 1, w = (H) => [$[0] + (k[0] - $[0]) * H / _, $[1] + (k[1] - $[1]) * H / _], [M, A] = w(p.von_px), [S, E] = w(p.bis_px);
+      return x`<line class="plan-luecke ${e.art[f]}" x1=${M} y1=${A} x2=${S} y2=${E} stroke-width=${e.g.breite / 150} />`;
     })}
       ${h}
     </svg>`, d = e.zuordnung.filter(Boolean), g = d.length !== new Set(d).size;
@@ -4814,7 +4941,7 @@ let v = class extends de {
         ${e.g.raeume.length ? `${e.g.raeume.length} ${e.g.raeume.length === 1 ? "Raum" : "Räume"} erkannt. Grün sind Türen, grau Fenster. Übernommen werden Wände, Türen, die Lage im Haus und das Bild als Hintergrund (es bleibt in deinem Home Assistant).` : "Keine Räume erkannt (dafür braucht es die blauen Umrisslinien eines Scans). Das Bild lässt sich trotzdem als Hintergrund übernehmen; die Wände zeichnest du dann darüber."}
       </p>
       ${c}
-      ${this.stockwerk ? u`<p class="hint small">Gehört zum Stockwerk „${this.data?.stockwerke_ha?.find((p) => p.id === this.stockwerk)?.name ?? this.stockwerk}“ (oben gewählt).</p>` : this.data?.stockwerke_ha?.length ? u`<p class="note">Tipp: oben erst das Stockwerk wählen, dann gehört der Grundriss dazu.</p>` : f}
+      ${this.stockwerk ? u`<p class="hint small">Gehört zum Stockwerk „${this.data?.stockwerke_ha?.find((p) => p.id === this.stockwerk)?.name ?? this.stockwerk}“ (oben gewählt).</p>` : this.data?.stockwerke_ha?.length ? u`<p class="note">Tipp: oben erst das Stockwerk wählen, dann gehört der Grundriss dazu.</p>` : m}
       <div class="label-text">Maßstab: zweimal ins Bild tippen (Anfang und Ende einer bekannten Strecke), dann ihre Länge</div>
       <div class="mass">
         <span>${e.strecke.length === 2 ? "Strecke ist" : `${e.strecke.length} von 2 Punkten`}</span>
@@ -4831,10 +4958,10 @@ let v = class extends de {
           /><span class="unit">m</span></label
         >
       </div>
-      ${e.g.raeume.length ? u`<div class="label-text">oder über einen erkannten Raum</div>` : f}
+      ${e.g.raeume.length ? u`<div class="label-text">oder über einen erkannten Raum</div>` : m}
       <div class="mass" style=${e.g.raeume.length ? "" : "display:none"}>
         <select @change=${(p) => r({ massRaum: Number(p.target.value) })}>
-          ${e.g.raeume.map((p, m) => u`<option value=${m} ?selected=${e.massRaum === m}>Raum ${m + 1}</option>`)}
+          ${e.g.raeume.map((p, f) => u`<option value=${f} ?selected=${e.massRaum === f}>Raum ${f + 1}</option>`)}
         </select>
         <span>ist innen</span>
         <select @change=${(p) => r({ massSeite: p.target.value })}>
@@ -4855,21 +4982,21 @@ let v = class extends de {
       </div>
       <ul class="list">
         ${e.g.raeume.map(
-      (p, m) => u`<li class="item">
+      (p, f) => u`<li class="item">
             <div class="row static">
-              <span class="marker-icon"><b>${m + 1}</b></span>
-              <span class="name">Raum ${m + 1}<small>${i(m)}</small></span>
+              <span class="marker-icon"><b>${f + 1}</b></span>
+              <span class="name">Raum ${f + 1}<small>${i(f)}</small></span>
               <select
                 @change=${(b) => {
         const $ = [...e.zuordnung];
-        $[m] = b.target.value, r({ zuordnung: $ });
+        $[f] = b.target.value, r({ zuordnung: $ });
       }}
               >
-                <option value="" ?selected=${!e.zuordnung[m]}>nicht übernehmen</option>
-                ${s.map((b) => u`<option value=${b.id} ?selected=${e.zuordnung[m] === b.id}>${b.name}</option>`)}
+                <option value="" ?selected=${!e.zuordnung[f]}>nicht übernehmen</option>
+                ${s.map((b) => u`<option value=${b.id} ?selected=${e.zuordnung[f] === b.id}>${b.name}</option>`)}
               </select>
             </div>
-            ${e.g.luecken.map((b, $) => ({ l: b, li: $ })).filter(({ l: b }) => b.raum === m).map(
+            ${e.g.luecken.map((b, $) => ({ l: b, li: $ })).filter(({ l: b }) => b.raum === f).map(
         ({ l: b, li: $ }) => u`<div class="row static luecke">
                   <ha-icon icon="mdi:door"></ha-icon>
                   <span class="name"
@@ -4887,9 +5014,9 @@ let v = class extends de {
           </li>`
     )}
       </ul>
-      ${s.some((p) => e.zuordnung.includes(p.id) && p.art !== "melder") ? u`<p class="note">Bei Räumen mit Radarsensor danach den Sensor einmessen (Sensor und Raum → Sensor umsetzen), damit er zu den neuen Wänden passt.</p>` : f}
-      ${g ? u`<p class="note warn">Jeder Raum nur einmal zuordnen.</p>` : f}
-      ${s.length ? f : u`<p class="hint small">Zuerst Räume anlegen (Raum hinzufügen), dann hier zuordnen.</p>`}
+      ${s.some((p) => e.zuordnung.includes(p.id) && p.art !== "melder") ? u`<p class="note">Bei Räumen mit Radarsensor danach den Sensor einmessen (Sensor und Raum → Sensor umsetzen), damit er zu den neuen Wänden passt.</p>` : m}
+      ${g ? u`<p class="note warn">Jeder Raum nur einmal zuordnen.</p>` : m}
+      ${s.length ? m : u`<p class="hint small">Zuerst Räume anlegen (Raum hinzufügen), dann hier zuordnen.</p>`}
       <div class="actions">
         <button class="text small" @click=${this.planZu}>Abbrechen</button>
         <span class="spacer"></span>
@@ -4901,14 +5028,14 @@ let v = class extends de {
   }
   renderStockwerkWahl() {
     const e = this.data?.stockwerke_ha ?? [];
-    if (!e.length) return f;
+    if (!e.length) return m;
     const t = (n, s, i) => u`<button
         class=${this.stockwerk === n ? "active" : ""}
         @click=${() => {
       this.stockwerk = n, this.hausSel = "", this.viewTouched = !1, this.fit();
     }}
       >
-        ${i ? u`<ha-icon icon=${i}></ha-icon>` : f}${s}
+        ${i ? u`<ha-icon icon=${i}></ha-icon>` : m}${s}
       </button>`;
     return u`<div class="levels stockwerke" role="group" aria-label="Stockwerk">
       ${t("", "Alle", "mdi:home-outline")} ${e.map((n) => t(n.id, n.name, n.icon))}
@@ -4917,7 +5044,7 @@ let v = class extends de {
   /** Im Hausplan: auf welchen Stockwerken liegt der Raum, zu welchem Bereich gehört er? */
   renderRaumStockwerke(e) {
     const t = this.data?.stockwerke_ha ?? [], n = this.data?.bereiche_ha ?? [];
-    if (!t.length && !n.length) return f;
+    if (!t.length && !n.length) return m;
     const s = this.hausExtra[e.id] ?? {}, i = s.stockwerke ?? e.stockwerke ?? [], r = this.stockwerkeVon(e), a = s.bereich_id ?? e.bereich_id ?? "", o = (l) => {
       this.hausExtra = { ...this.hausExtra, [e.id]: { ...s, ...l } }, this.dirty = !0;
     };
@@ -4943,7 +5070,7 @@ let v = class extends de {
                 >`
     )}
             </div>
-            <p class="hint small">Eine Treppe liegt auf zwei Stockwerken; sie erscheint dann in beiden Plänen an derselben Stelle.</p>` : f}`;
+            <p class="hint small">Eine Treppe liegt auf zwei Stockwerken; sie erscheint dann in beiden Plänen an derselben Stelle.</p>` : m}`;
   }
   /** Melder nach Gerät gruppieren (ein FP2 liefert z. B. einen Melder je Zone). */
   melderGruppen(e) {
@@ -5012,7 +5139,7 @@ let v = class extends de {
                         </div>
                       </li>`
     )}
-                  </ul>` : f}
+                  </ul>` : m}
             <div class="label-text">Selbst anlegen</div>
             <label class="field">Name<input type="text" .value=${t.name} maxlength="60" @input=${(o) => n({ name: o.target.value })} /></label>
             <div class="levels" role="group" aria-label="Art des Raums">
@@ -5036,7 +5163,7 @@ let v = class extends de {
                       ${i.map((o) => u`<option value=${o.device_id} ?selected=${t.device_id === o.device_id}>${o.name}</option>`)}
                     </select></label
                   >` : u`<p class="hint small">Kein freier FP400 gefunden (alle sind schon einem Raum zugeordnet).</p>`}
-            ${this.dirty ? u`<p class="note warn">Erst den Hausplan speichern oder verwerfen.</p>` : f}` : u`<p class="hint">Lädt …</p>`}
+            ${this.dirty ? u`<p class="note warn">Erst den Hausplan speichern oder verwerfen.</p>` : m}` : u`<p class="hint">Lädt …</p>`}
       <div class="actions">
         <button class="text small" @click=${() => this.neuRaum = null}>Abbrechen</button>
         <span class="spacer"></span>
@@ -5052,12 +5179,12 @@ let v = class extends de {
         <rect class="leiste-grund" x="0" y="0" width="1000" height="10" rx="2" />
         ${r.map(([o, l]) => x`<rect x=${((o - e.von) / a * 1e3).toFixed(1)} y="0" width=${Math.max(3, (l - o) / a * 1e3).toFixed(1)} height="10" fill="var(--rz-bereich)" />`)}
       </svg>`;
-    }, i = e ? Un(e.raeume).slice(-12).reverse() : [];
+    }, i = e ? Vn(e.raeume).slice(-12).reverse() : [];
     return u`<h3>Bewegungsprofil</h3>
       <div class="label-text">Wann war wo jemand? Die letzten</div>
       <div class="levels" role="group" aria-label="Zeitraum">
         <button class=${this.profilStunden === 0 ? "active" : ""} @click=${() => this.loadProfil(0)}>aus</button>
-        ${yt.map((r) => u`<button class=${this.profilStunden === r ? "active" : ""} @click=${() => this.loadProfil(r)}>${r} h</button>`)}
+        ${_t.map((r) => u`<button class=${this.profilStunden === r ? "active" : ""} @click=${() => this.loadProfil(r)}>${r} h</button>`)}
       </div>
       ${this.profilLaedt ? u`<p class="hint">Rechnet …</p>` : e ? u`<ul class="list ausw">
                 ${t.map((r) => {
@@ -5065,9 +5192,9 @@ let v = class extends de {
       return u`<li class="item" style="--zone:var(--rz-bereich)">
                     <div class="row static">
                       <span class="name">${r.name}<small>${a ? a.length ? `${a.length}-mal` : "niemand" : "keine Aufnahme"}</small></span>
-                      <span class="dauer">${a?.length ? le(jn(a)) : ""}</span>
+                      <span class="dauer">${a?.length ? ue(Wn(a)) : ""}</span>
                     </div>
-                    ${a ? s(a) : f}
+                    ${a ? s(a) : m}
                   </li>`;
     })}
               </ul>
@@ -5075,11 +5202,11 @@ let v = class extends de {
               ${i.length ? u`<div class="label-text">Letzte Wechsel zwischen Räumen</div>
                     <ul class="doors">
                       ${i.map((r) => u`<li class="door"><ha-icon icon="mdi:arrow-right"></ha-icon><span>${this.uhr(r.zeit)} ${n(r.von)} → ${n(r.nach)}</span></li>`)}
-                    </ul>` : f}
+                    </ul>` : m}
               <p class="hint small">
                 Ein Wechsel heißt: In einem Raum endet die Bewegung, im anderen beginnt sie kurz danach. Welche Person es war, weiß Raumzonen noch nicht;
                 das ist der nächste Schritt.
-              </p>` : f}`;
+              </p>` : m}`;
   }
   uhr(e) {
     return new Date(e * 1e3).toLocaleTimeString("de-AT", { hour: "2-digit", minute: "2-digit" });
@@ -5099,11 +5226,11 @@ let v = class extends de {
     return e.figur === "kurz" ? "Kurze Spuren" : `${e.hund ? "Hund?" : "Figur"} ${e.nummer}`;
   }
   renderAuswertungTab() {
-    const e = this.ausw, t = (o) => o === V && this.istMelder ? "Jemand da" : this.zones.find((l) => l.id === o)?.name ?? o, n = (o) => {
+    const e = this.ausw, t = (o) => o === K && this.istMelder ? "Jemand da" : this.zones.find((l) => l.id === o)?.name ?? o, n = (o) => {
       const l = this.zones.find((h) => h.id === o);
-      return l ? ce(ae(l)) : o === V ? "var(--rz-bereich)" : "var(--muted)";
+      return l ? de(he(l)) : o === K ? "var(--rz-bereich)" : "var(--muted)";
     }, s = u`<div class="levels" role="group" aria-label="Zeitraum">
-      ${yt.map(
+      ${_t.map(
       (o) => u`<button
           class=${this.auswStunden === o ? "active" : ""}
           @click=${() => {
@@ -5132,7 +5259,7 @@ let v = class extends de {
                   <span class="name">${t(o.zone_id)}<small
                     >${o.figuren.length ? o.figuren.slice(0, 4).map((l) => this.figurName(e.figuren.find((h) => h.figur === l))).join(", ") + (o.figuren.length > 4 ? ` und ${o.figuren.length - 4} weitere` : "") : "nur kurz"}</small
                   ></span>
-                  <span class="dauer" title=${o.sekunden > o.belegt_s + 60 ? `Alle Figuren zusammen: ${le(o.sekunden)}` : ""}>${le(o.belegt_s)}</span>
+                  <span class="dauer" title=${o.sekunden > o.belegt_s + 60 ? `Alle Figuren zusammen: ${ue(o.sekunden)}` : ""}>${ue(o.belegt_s)}</span>
                 </div>
                 ${this.renderLeiste(o.abschnitte, "var(--zone)")}
               </li>`
@@ -5143,11 +5270,11 @@ let v = class extends de {
   }
   /** Wo sich jemand lange aufhielt und noch keine Zone ist: als Zone vorschlagen. */
   renderVorschlaege(e) {
-    if (!this.kannAendern) return f;
-    const t = kt(xt(e.figuren.filter((i) => !i.hund).map((i) => i.zellen)), e.zelle_cm, 8);
-    if (!t) return f;
-    const n = Zn(t, 600).filter((i) => !this.zones.some((r) => Te(i.mitte, r.form))).slice(0, 4);
-    if (!n.length) return f;
+    if (!this.kannAendern) return m;
+    const t = vt(wt(e.figuren.filter((i) => !i.hund).map((i) => i.zellen)), e.zelle_cm, 8);
+    if (!t) return m;
+    const n = Fn(t, 600).filter((i) => !this.zones.some((r) => Ie(i.mitte, r.form))).slice(0, 4);
+    if (!n.length) return m;
     const s = (i) => (i / 100).toFixed(1).replace(".", ",");
     return u`<h3>Vorschläge für Zonen</h3>
       <p class="hint small">Hier hielt sich jemand lange auf, aber es ist noch keine Zone. Zum Beispiel ein Liegeplatz, das Sofa oder ein Schreibtisch.</p>
@@ -5156,7 +5283,7 @@ let v = class extends de {
       (i, r) => u`<li class="item">
             <div class="row static">
               <span class="marker-icon"><ha-icon icon="mdi:selection-marker"></ha-icon></span>
-              <span class="name">Platz ${r + 1}<small>ca. ${s(i.breite)} × ${s(i.tiefe)} m · ${le(i.sekunden)}</small></span>
+              <span class="name">Platz ${r + 1}<small>ca. ${s(i.breite)} × ${s(i.tiefe)} m · ${ue(i.sekunden)}</small></span>
               <button
                 class="text small"
                 @click=${() => {
@@ -5179,7 +5306,7 @@ let v = class extends de {
                 <div class="row" role="button" aria-pressed=${i ? "true" : "false"} title="Nur diese Figur auf der Karte zeigen" @click=${() => this.auswFigur = i ? "" : s.figur}>
                   <span class="dot"></span>
                   <span class="name">${this.figurName(s)}<small>${this.uhr(s.erst)} bis ${this.uhr(s.zuletzt)}${a ? ` · ${a}` : ""}</small></span>
-                  <span class="dauer">${le(s.sekunden)}</span>
+                  <span class="dauer">${ue(s.sekunden)}</span>
                 </div>
                 ${this.renderLeiste(s.abschnitte, "var(--zone)")}
               </li>`;
@@ -5196,7 +5323,7 @@ let v = class extends de {
       <div class="tabs" role="tablist">
         <button class=${this.tab === "zonen" ? "active" : ""} role="tab" @click=${() => this.openTab("zonen")}><ha-icon icon="mdi:shape-outline"></ha-icon>Zonen</button>
         <button class=${this.tab === "raum" ? "active" : ""} role="tab" @click=${() => this.openTab("raum")}><ha-icon icon="mdi:floor-plan"></ha-icon>${this.istMelder ? "Melder und Raum" : "Sensor und Raum"}</button>
-        ${this.kannAendern ? u`<button class=${this.tab === "auswertung" ? "active" : ""} role="tab" @click=${() => this.openTab("auswertung")}><ha-icon icon="mdi:chart-bubble"></ha-icon>Auswertung</button>` : f}
+        ${this.kannAendern ? u`<button class=${this.tab === "auswertung" ? "active" : ""} role="tab" @click=${() => this.openTab("auswertung")}><ha-icon icon="mdi:chart-bubble"></ha-icon>Auswertung</button>` : m}
       </div>
       <div class="side-body">${this.tab === "zonen" ? this.renderZonesTab() : this.tab === "raum" ? this.renderRoomTab() : this.renderAuswertungTab()}</div>
     </aside>`;
@@ -5214,21 +5341,21 @@ let v = class extends de {
             ${this.data.raeume.map(
       (n) => u`<button class=${this.page === "raum" && n.id === this.raumId ? "active" : ""} @click=${() => this.selectRoom(n.id)}>${n.name}</button>`
     )}
-          </nav>` : f}
-      ${this.raum && this.page === "raum" ? u`<span class="live-chip ${t ? "ok" : "down"}" title=${e?.problem ?? ""}><span class="led"></span><span class="text">${t ? "live" : "nicht erreichbar"}</span></span>` : f}
+          </nav>` : m}
+      ${this.raum && this.page === "raum" ? u`<span class="live-chip ${t ? "ok" : "down"}" title=${e?.problem ?? ""}><span class="led"></span><span class="text">${t ? "live" : "nicht erreichbar"}</span></span>` : m}
       <span class="spacer"></span>
-      ${this.raum && !this.kannAendern ? u`<span class="badge off" title="Ändern dürfen nur Admins">nur ansehen</span>` : f}
-      ${this.raum && this.kannAendern ? u`${this.page === "raum" ? u`<button class="icon" title="Rückgängig (Strg+Z)" ?disabled=${!this.history.size} @click=${this.undo}><ha-icon icon="mdi:undo"></ha-icon></button>` : f}
+      ${this.raum && !this.kannAendern ? u`<span class="badge off" title="Ändern dürfen nur Admins">nur ansehen</span>` : m}
+      ${this.raum && this.kannAendern ? u`${this.page === "raum" ? u`<button class="icon" title="Rückgängig (Strg+Z)" ?disabled=${!this.history.size} @click=${this.undo}><ha-icon icon="mdi:undo"></ha-icon></button>` : m}
             <button class="text" ?disabled=${!this.dirty || this.saving} @click=${this.discard}><span class="label">Verwerfen</span><ha-icon icon="mdi:close" style=${this.narrow ? "" : "display:none"}></ha-icon></button>
             <button class="primary" ?disabled=${!this.dirty || this.saving} @click=${() => this.page === "haus" ? this.saveHaus() : this.save()}>
               <ha-icon icon="mdi:content-save-outline"></ha-icon><span class="label">${this.saving ? "Speichert …" : "Speichern"}</span>
-            </button>` : f}
+            </button>` : m}
     </header>`;
   }
   render() {
     return this.data ? this.data.raeume.length ? u`${this.renderHeader()}
       <div class="layout">${this.renderStage()} ${this.renderSide()}</div>
-      ${this.toast ? u`<div class="toast" role="status">${this.toast}</div>` : f}` : u`${this.renderHeader()}
+      ${this.toast ? u`<div class="toast" role="status">${this.toast}</div>` : m}` : u`${this.renderHeader()}
         <div class="empty">
           <ha-icon icon="mdi:floor-plan"></ha-icon>
           <p>
@@ -5238,7 +5365,7 @@ let v = class extends de {
         </div>` : u`${this.renderHeader()}<div class="empty">${this.error ? u`<ha-icon icon="mdi:alert-circle-outline"></ha-icon><p>${this.error}</p>` : u`<p>Lädt …</p>`}</div>`;
   }
 };
-v.styles = Hn;
+v.styles = Zn;
 y([
   Ht({ type: Boolean, reflect: !0 })
 ], v.prototype, "narrow", 2);
@@ -5406,6 +5533,9 @@ y([
 ], v.prototype, "tueren", 2);
 y([
   z()
+], v.prototype, "tuerNamen", 2);
+y([
+  z()
 ], v.prototype, "hausLive", 2);
 y([
   z()
@@ -5429,7 +5559,7 @@ y([
   z()
 ], v.prototype, "aufnahmeTage", 2);
 v = y([
-  hn("raumzonen-panel")
+  dn("raumzonen-panel")
 ], v);
 export {
   v as RaumzonenPanel

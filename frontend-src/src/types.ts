@@ -30,6 +30,8 @@ export interface Zone {
   fuehrt_zu?: string;
   /** Nur in Melder-Räumen: diese Melder melden die Zone. */
   melder?: string[];
+  /** Nur bei Türen: bestimmte Tür im anderen Raum. */
+  gegenstueck?: string;
 }
 
 /** Wo ein Melder im Raum hängt (nur Anzeige). */
@@ -65,6 +67,10 @@ export interface Oeffnung {
   aufgehen?: "innen" | "aussen";
   /** Wohin sie führt: Raum-ID, "aussen" oder leer (weiß nicht). */
   fuehrt_zu?: string;
+  /** Feste Kennung im Raum, Name und Tür auf der anderen Seite (`raum/#id` oder `raum/zone`). */
+  id?: string;
+  name?: string;
+  gegenstueck?: string;
 }
 
 export interface Raum {

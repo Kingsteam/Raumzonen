@@ -3,7 +3,7 @@
  * Bewegungsprofil des Hauses (wann war in welchem Raum jemand).
  */
 
-import { formCenter } from "./geometry";
+import { formCenter, toHouse } from "./geometry";
 import type { Oeffnung, Point, Raum } from "./types";
 
 export interface Tuer {
@@ -14,8 +14,40 @@ export interface Tuer {
   /** Mitte der Tür im Raum (cm). */
   punkt: Point;
   ziel: string;
+  /** Bestimmte Tür im anderen Raum (ihr `key`), leer = keine. */
+  gegenstueck: string;
   zoneId?: string;
   oeffnung?: number;
+}
+
+/** Schlüssel einer Öffnung (feste Kennung, sonst die Nummer). */
+export function oeffnungKey(raumId: string, o: Oeffnung, i: number): string {
+  return `${raumId}/#${o.id || i}`;
+}
+
+/** Name einer Öffnung: eigener Name, sonst „Tür 2“ bzw. „Durchgang 2“. */
+export function oeffnungName(o: Oeffnung, i: number): string {
+  return o.name?.trim() || (o.art === "offen" ? `Durchgang ${i + 1}` : `Tür ${i + 1}`);
+}
+
+/**
+ * Die nächste Tür eines anderen Raums (im Haus gemessen), höchstens `max` cm
+ * entfernt; Räume ohne Lage im Haus zählen nicht.
+ */
+export function naechsteTuer(raeume: Raum[], raumId: string, punkt: Point, max = 150): { tuer: Tuer; abstand: number } | null {
+  const raum = raeume.find((r) => r.id === raumId);
+  if (!raum?.haus_gesetzt) return null;
+  const hier = toHouse(punkt, { x: raum.haus_x, y: raum.haus_y, winkel: raum.haus_winkel });
+  let best: { tuer: Tuer; abstand: number } | null = null;
+  for (const r of raeume) {
+    if (r.id === raumId || !r.haus_gesetzt) continue;
+    for (const t of tuerenVon(r)) {
+      const [x, y] = toHouse(t.punkt, { x: r.haus_x, y: r.haus_y, winkel: r.haus_winkel });
+      const d = Math.hypot(x - hier[0], y - hier[1]);
+      if (d <= max && (!best || d < best.abstand)) best = { tuer: t, abstand: d };
+    }
+  }
+  return best;
 }
 
 /** Mitte einer Öffnung in der Wand. */
@@ -35,13 +67,12 @@ export function tuerenVon(raum: Raum): Tuer[] {
   const out: Tuer[] = [];
   for (const z of raum.zonen) {
     if (z.art !== "ausgang" || !z.id) continue;
-    out.push({ key: `${raum.id}/${z.id}`, raumId: raum.id, name: z.name, punkt: formCenter(z.form), ziel: z.fuehrt_zu ?? "", zoneId: z.id });
+    out.push({ key: `${raum.id}/${z.id}`, raumId: raum.id, name: z.name, punkt: formCenter(z.form), ziel: z.fuehrt_zu ?? "", gegenstueck: z.gegenstueck ?? "", zoneId: z.id });
   }
   (raum.oeffnungen ?? []).forEach((o, i) => {
     const p = oeffnungMitte(raum.umriss, o);
     if (!p) return;
-    const name = o.art === "offen" ? `Durchgang ${i + 1}` : `Tür ${i + 1} in der Wand`;
-    out.push({ key: `${raum.id}/#${i}`, raumId: raum.id, name, punkt: p, ziel: o.fuehrt_zu ?? "", oeffnung: i });
+    out.push({ key: oeffnungKey(raum.id, o, i), raumId: raum.id, name: oeffnungName(o, i), punkt: p, ziel: o.fuehrt_zu ?? "", gegenstueck: o.gegenstueck ?? "", oeffnung: i });
   });
   return out;
 }

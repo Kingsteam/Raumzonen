@@ -174,7 +174,9 @@ HACS-Prüfung (`.github/workflows/`).
   mit Knöpfen 15° (vom Besitzer gewünscht, 0.6.0); Punkte über „+“ auf der
   Kante einfügen, per Rechtsklick oder Knopf löschen.
 - Wände bekommen Türen/offene Stellen (`oeffnungen`, nur Zeichnung; Tür mit
-  `anschlag` anfang/ende und `aufgehen` innen/aussen);
+  `anschlag` anfang/ende und `aufgehen` innen/aussen, feste `id`, `name`,
+  `gegenstueck` = Schlüssel der Tür im Nachbarraum `raum/#id` bzw.
+  `raum/zone`; `tueren_abgleichen()` in `model.py` hält beide Seiten gleich);
   „betreten/verlassen“ kommt weiter von Zonen der Rolle „Tür“.
 - Alle Nutzer sehen das Panel und die Live-Punkte; nur Admins ändern.
   Die Rechte prüft Python (`require_admin`), das Panel blendet nur aus.

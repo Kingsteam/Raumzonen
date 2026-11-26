@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { oeffnungMitte, summeDauer, tuerenVon, vereinigen, wechsel } from "./haus";
+import { naechsteTuer, oeffnungMitte, summeDauer, tuerenVon, vereinigen, wechsel } from "./haus";
 import type { Raum } from "./types";
 
 const raum = (extra: Partial<Raum>): Raum =>
@@ -58,5 +58,25 @@ describe("profil", () => {
       { zeit: 95, von: "bad", nach: "flur" },
       { zeit: 130, von: "flur", nach: "kueche" },
     ]);
+  });
+});
+
+describe("naechsteTuer", () => {
+  it("findet die Tür im Nachbarraum und nennt Türen beim Namen", () => {
+    const wand: [number, number][] = [
+      [0, 0],
+      [300, 0],
+      [300, 300],
+      [0, 300],
+    ];
+    const a = { ...raum({ id: "a" }), umriss: wand, haus_gesetzt: true, haus_x: 0, haus_y: 0, haus_winkel: 0, oeffnungen: [{ kante: 1, von: 100, bis: 180, art: "tuer" as const, id: "o1", name: "Zum Flur" }] };
+    const b = { ...raum({ id: "b" }), umriss: wand, haus_gesetzt: true, haus_x: 310, haus_y: 0, haus_winkel: 0, oeffnungen: [{ kante: 3, von: 120, bis: 200, art: "tuer" as const, id: "o1" }] };
+    const [ta] = tuerenVon(a);
+    expect(ta.key).toBe("a/#o1");
+    expect(ta.name).toBe("Zum Flur");
+    const v = naechsteTuer([a, b], "a", ta.punkt);
+    expect(v?.tuer.key).toBe("b/#o1");
+    expect(v!.abstand).toBeLessThan(20);
+    expect(naechsteTuer([a, b], "a", ta.punkt, 5)).toBeNull();
   });
 });

@@ -60,6 +60,7 @@ def zone_from_dict(data: dict[str, Any]) -> ZoneConfig:
         regel=regel_from_dict(data.get("regel", {})),
         fuehrt_zu=str(data.get("fuehrt_zu", "")),
         melder=[str(m) for m in data.get("melder", [])],
+        gegenstueck=str(data.get("gegenstueck") or ""),
     )
 
 
@@ -73,6 +74,7 @@ def zone_to_dict(zone: ZoneConfig) -> dict[str, Any]:
         "regel": regel_to_dict(zone.regel),
         "fuehrt_zu": zone.fuehrt_zu,
         "melder": list(zone.melder),
+        "gegenstueck": zone.gegenstueck,
     }
 
 
@@ -101,7 +103,7 @@ def raum_from_dict(data: dict[str, Any]) -> RaumConfig:
         zonen=[zone_from_dict(z) for z in data.get("zonen", [])],
         ansicht_winkel=float(data.get("ansicht_winkel", 0.0)),
         umriss=[[float(x), float(y)] for x, y in data.get("umriss", [])],
-        oeffnungen=[oeffnung_from_dict(o) for o in data.get("oeffnungen", [])],
+        oeffnungen=oeffnungen_from_list(data.get("oeffnungen", [])),
         bereich_id=str(data.get("bereich_id", "")),
         haus_x=float(data.get("haus_x", 0.0)),
         haus_y=float(data.get("haus_y", 0.0)),
@@ -152,7 +154,29 @@ def oeffnung_from_dict(data: dict[str, Any]) -> OeffnungConfig:
         anschlag=str(data.get("anschlag", "anfang")),
         aufgehen=str(data.get("aufgehen", "innen")),
         fuehrt_zu=str(data.get("fuehrt_zu", "")),
+        id=str(data.get("id") or ""),
+        name=str(data.get("name") or "").strip(),
+        gegenstueck=str(data.get("gegenstueck") or ""),
     )
+
+
+def oeffnungen_from_list(daten: list[dict[str, Any]]) -> list[OeffnungConfig]:
+    """Öffnungen aus JSON; fehlende oder doppelte Kennungen werden vergeben."""
+    out = [oeffnung_from_dict(o) for o in daten]
+    vergeben: set[str] = set()
+    for o in out:
+        if o.id in vergeben:
+            o.id = ""
+        if o.id:
+            vergeben.add(o.id)
+    n = 1
+    for o in out:
+        if not o.id:
+            while f"o{n}" in vergeben:
+                n += 1
+            o.id = f"o{n}"
+            vergeben.add(o.id)
+    return out
 
 
 def oeffnung_to_dict(o: OeffnungConfig) -> dict[str, Any]:
@@ -165,6 +189,9 @@ def oeffnung_to_dict(o: OeffnungConfig) -> dict[str, Any]:
         "anschlag": o.anschlag,
         "aufgehen": o.aufgehen,
         "fuehrt_zu": o.fuehrt_zu,
+        "id": o.id,
+        "name": o.name,
+        "gegenstueck": o.gegenstueck,
     }
 
 

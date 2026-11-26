@@ -108,6 +108,9 @@ class ZoneConfig:
     fuehrt_zu: str = ""
     # Nur in Melder-Räumen: diese Melder melden die Zone (einer an = belegt).
     melder: list[str] = field(default_factory=list)
+    # Nur für Türen: die Tür auf der anderen Seite („<raum>/<zone>“ oder
+    # „<raum>/#<öffnung>“), leer = keine bestimmte.
+    gegenstueck: str = ""
 
 
 @dataclass(slots=True)
@@ -167,6 +170,11 @@ class OeffnungConfig:
     aufgehen: str = "innen"
     # Wohin sie führt: Raum-ID, „aussen“ oder leer (weiß nicht).
     fuehrt_zu: str = ""
+    # Feste Kennung im Raum (für Verbindungen) und Name („Tür zum Flur“).
+    id: str = ""
+    name: str = ""
+    # Die Tür auf der anderen Seite (wie bei ZoneConfig), leer = keine bestimmte.
+    gegenstueck: str = ""
 
 
 @dataclass(slots=True)
@@ -260,6 +268,19 @@ class RaumzonenModel:
             for o in raum.oeffnungen:
                 if o.fuehrt_zu == raum_id:
                     o.fuehrt_zu = ""
+        tueren_abgleichen(self, set())
+
+    def tueren(self) -> dict[str, tuple[RaumConfig, ZoneConfig | OeffnungConfig]]:
+        """Alle Türen: Schlüssel „<raum>/<zone>“ bzw. „<raum>/#<öffnung>“."""
+        out: dict[str, tuple[RaumConfig, ZoneConfig | OeffnungConfig]] = {}
+        for raum in self.raeume:
+            for zone in raum.zonen:
+                if zone.art == ART_AUSGANG:
+                    out[f"{raum.id}/{zone.id}"] = (raum, zone)
+            for o in raum.oeffnungen:
+                if o.id:
+                    out[f"{raum.id}/#{o.id}"] = (raum, o)
+        return out
 
     def validate(self) -> None:
         """Prüft das ganze Modell; wirft ``ValueError`` mit Klartext."""
@@ -447,13 +468,43 @@ def _check_ziel(was: str, ziel: str, raum_id: str, raum_ids: set[str]) -> None:
         raise ValueError(f"{was}: unbekannter Raum {ziel!r}")
 
 
+def tueren_abgleichen(model: RaumzonenModel, vorrang: set[str]) -> None:
+    """Verbindungen zwischen Türen beidseitig machen.
+
+    Türen in Räumen aus ``vorrang`` (gerade gespeichert) setzen sich durch:
+    ihr Gegenstück zeigt danach auf sie zurück und führt in ihren Raum. Was
+    auf eine fehlende Tür, in den eigenen Raum oder einseitig auf eine Tür
+    zeigt, die woanders hin verbunden ist, wird gelöst.
+    """
+    alle = model.tueren()
+    for key, (raum, tuer) in alle.items():
+        if raum.id not in vorrang or not tuer.gegenstueck:
+            continue
+        ziel = alle.get(tuer.gegenstueck)
+        if ziel is None or ziel[0].id == raum.id:
+            tuer.gegenstueck = ""
+            continue
+        ziel[1].gegenstueck = key
+        ziel[1].fuehrt_zu = raum.id
+        tuer.fuehrt_zu = ziel[0].id
+    for key, (raum, tuer) in alle.items():
+        if not tuer.gegenstueck:
+            continue
+        ziel = alle.get(tuer.gegenstueck)
+        if ziel is None or ziel[0].id == raum.id or ziel[1].gegenstueck != key:
+            tuer.gegenstueck = ""
+
+
 def _check_oeffnungen(raum: RaumConfig, raum_ids: set[str]) -> None:
     n = len(raum.umriss)
     if raum.oeffnungen and n < 3:
         raise ValueError(f"Raum {raum.id}: Öffnungen brauchen Wände")
     if len(raum.oeffnungen) > MAX_ZONEN_JE_RAUM:
         raise ValueError(f"Raum {raum.id}: zu viele Öffnungen")
+    _unique(f"Raum {raum.id} (Öffnung)", [o.id for o in raum.oeffnungen if o.id])
     for o in raum.oeffnungen:
+        if len(o.name) > 60:
+            raise ValueError(f"Raum {raum.id}: Name einer Öffnung zu lang")
         if o.art not in OEFFNUNG_ARTEN:
             raise ValueError(f"Raum {raum.id}: unbekannte Öffnung {o.art!r}")
         if o.anschlag not in ANSCHLAG or o.aufgehen not in AUFGEHEN:

@@ -71,7 +71,7 @@ import {
 import { styles } from "./styles";
 import { dauer, dichte, flecken, pixel, summe, type HeatCell } from "./heat";
 import { fehlerText } from "./fehler";
-import { summeDauer, tuerenVon, vereinigen, wechsel, type Tuer } from "./haus";
+import { naechsteTuer, oeffnungMitte, oeffnungName, summeDauer, tuerenVon, vereinigen, wechsel, type Tuer } from "./haus";
 import { einmessen, stelle, stellenProblem, type Einmessung } from "./einmessen";
 import { bbox, erkenneGrundriss, jpegsAusPdf, uebernehmen, type Grundriss } from "./grundriss";
 import type { Auswertung, AuswertungFigur, Form, Hass, Heat, Kandidaten, MelderLage, Plan, Live, Oeffnung, Point, Raum, Regel, RoomsResult, Zone } from "./types";
@@ -295,7 +295,10 @@ export class RaumzonenPanel extends LitElement {
   @state() private page: Page = "raum";
   @state() private lagen: Record<string, HausLage> = {};
   /** "<raum_id>/<zone_id>" → wohin die Tür führt ("" = weiß nicht). */
+  /** Ziel je Tür: "", "aussen", Raum-ID oder "tuer:<Schlüssel der anderen Tür>". */
   @state() private tueren: Record<string, string> = {};
+  /** Geänderte Namen von Türen in Wänden. */
+  @state() private tuerNamen: Record<string, string> = {};
   @state() private hausLive: Record<string, Live> = {};
   @state() private hausSel = "";
   @state() private aufnahme = true;
@@ -598,8 +601,9 @@ export class RaumzonenPanel extends LitElement {
       })),
     );
     const tueren: Record<string, string> = {};
-    for (const r of raeume) for (const t of tuerenVon(r)) tueren[t.key] = t.ziel;
+    for (const r of raeume) for (const t of tuerenVon(r)) tueren[t.key] = t.gegenstueck ? `tuer:${t.gegenstueck}` : t.ziel;
     this.tueren = tueren;
+    this.tuerNamen = {};
     const wasHaus = this.page === "haus";
     this.page = "haus";
     this.hausSel = "";
@@ -1081,13 +1085,20 @@ export class RaumzonenPanel extends LitElement {
     this.saving = true;
     try {
       const alle = new Map(this.data.raeume.flatMap((r) => tuerenVon(r)).map((t) => [t.key, t]));
-      const tueren = Object.entries(this.tueren)
-        .filter(([key, ziel]) => alle.has(key) && alle.get(key)!.ziel !== ziel)
-        .map(([key, ziel]) => {
+      const vorher = (t: Tuer) => (t.gegenstueck ? `tuer:${t.gegenstueck}` : t.ziel);
+      const keys = new Set([...Object.keys(this.tueren), ...Object.keys(this.tuerNamen)]);
+      const tueren = [...keys]
+        .filter((key) => alle.has(key))
+        .filter((key) => (this.tueren[key] ?? vorher(alle.get(key)!)) !== vorher(alle.get(key)!) || key in this.tuerNamen)
+        .map((key) => {
           const t = alle.get(key)!;
+          const wert = this.tueren[key] ?? vorher(t);
+          const gegen = wert.startsWith("tuer:") ? wert.slice(5) : "";
+          const ziel = gegen ? gegen.split("/")[0] : wert;
+          const basis = { fuehrt_zu: ziel || null, gegenstueck: gegen || null };
           return t.oeffnung !== undefined
-            ? { raum_id: t.raumId, oeffnung: t.oeffnung, fuehrt_zu: ziel || null }
-            : { raum_id: t.raumId, zone_id: t.zoneId, fuehrt_zu: ziel || null };
+            ? { raum_id: t.raumId, oeffnung: t.oeffnung, ...basis, ...(key in this.tuerNamen ? { name: this.tuerNamen[key] } : {}) }
+            : { raum_id: t.raumId, zone_id: t.zoneId, ...basis };
         });
       await this._hass.callWS({
         type: `${DOMAIN}/haus/save`,
@@ -1098,6 +1109,7 @@ export class RaumzonenPanel extends LitElement {
       this.dirty = false;
       this.hausExtra = {};
       this.planAenderung = {};
+      this.tuerNamen = {};
       this.planEdit = "";
       this.showToast("Hausplan gespeichert.");
       await this.unsubscribeHaus();
@@ -1865,6 +1877,18 @@ export class RaumzonenPanel extends LitElement {
       this.openingDraft = null;
       if (o) {
         this.remember();
+        const ids = new Set(this.oeffnungen.map((x) => x.id));
+        let n = this.oeffnungen.length + 1;
+        while (ids.has(`o${n}`)) n++;
+        o.id = `o${n}`;
+        // Standard: die nächste Tür im Nachbarraum (im Hausplan änderbar).
+        const mitte = oeffnungMitte(this.umriss, o);
+        const v = mitte && this.data ? naechsteTuer(this.data.raeume, this.raumId, mitte) : null;
+        if (v) {
+          o.gegenstueck = v.tuer.key;
+          o.fuehrt_zu = v.tuer.raumId;
+          this.showToast(`Verbunden mit ${this.tuerText(v.tuer)}. Ändern unter „Führt zu“.`);
+        }
         this.oeffnungen = [...this.oeffnungen, o];
         this.selOpening = this.oeffnungen.length - 1;
         this.selected = -1;
@@ -2505,14 +2529,18 @@ export class RaumzonenPanel extends LitElement {
       }
       for (const tuer of tuerenVon(raum)) {
         // Wohin führt die Tür? Linie zur passenden Tür im anderen Raum.
-        const ziel = this.tueren[tuer.key] ?? "";
+        const wert = this.tueren[tuer.key] ?? "";
+        const gegen = wert.startsWith("tuer:") ? wert.slice(5) : "";
+        const ziel = gegen ? gegen.split("/")[0] : wert;
         const [fx, fy] = this.toScreen(toHouse(tuer.punkt, lage));
         if (ziel === "aussen") {
           labels.push(svg`<text class="label sub" x=${fx} y=${fy - 10}>nach draußen</text>`);
         } else if (ziel) {
           const other = raeume.find((x) => x.id === ziel);
           if (!other) continue;
-          const back = tuerenVon(other).find((t) => this.tueren[t.key] === raum.id);
+          const back = gegen
+            ? tuerenVon(other).find((t) => t.key === gegen)
+            : tuerenVon(other).find((t) => this.tueren[t.key] === raum.id || this.tueren[t.key] === `tuer:${tuer.key}`);
           // Jede Verbindung nur einmal zeichnen.
           if (back && raum.id > other.id) continue;
           const ol = this.lagen[other.id];
@@ -2859,7 +2887,21 @@ export class RaumzonenPanel extends LitElement {
             <p class="hint small">
               Am gelben Griff drehen. ${zone.form.art === "vieleck" ? "Das „+“ auf einer Kante fügt einen Punkt ein; Rechtsklick auf einen Punkt löscht ihn." : ""}
             </p>`
-        : nothing}
+        : html`<div class="label-text">Form</div>
+            <div class="actions">
+              <button
+                class="text small ${this.tool === "zellen" && this.selected === index ? "on" : ""}"
+                @click=${() => {
+                  this.selected = index;
+                  this.setTool(this.tool === "zellen" ? "auswahl" : "zellen");
+                }}
+              >
+                <ha-icon icon="mdi:grid"></ha-icon>${this.tool === "zellen" && this.selected === index ? "Fertig" : "Zellen bearbeiten"}
+              </button>
+            </div>
+            <p class="hint small">
+              Beim Bearbeiten: leere Zelle antippen oder darüberziehen = dazu, volle Zelle = weg. Die ganze Zone verschieben: in der Auswahl ziehen.
+            </p>`}
       ${problem ? html`<div class="note warn">${problem}</div>` : nothing}
       <div class="actions">
         <span class="spacer"></span>
@@ -2889,7 +2931,16 @@ export class RaumzonenPanel extends LitElement {
       <div class="actions">
         <button class="text small" @click=${() => this.setTool("rechteck")}><ha-icon icon="mdi:rectangle-outline"></ha-icon>Rechteck</button>
         <button class="text small" @click=${() => this.setTool("vieleck")}><ha-icon icon="mdi:vector-polygon"></ha-icon>Vieleck</button>
-        <button class="text small" @click=${() => this.setTool("zellen")}><ha-icon icon="mdi:grid"></ha-icon>Zellen</button>
+        <button
+          class="text small"
+          @click=${() => {
+            // Neue Zone: nicht in die gerade gewählte malen.
+            this.selected = -1;
+            this.setTool("zellen");
+          }}
+        >
+          <ha-icon icon="mdi:grid"></ha-icon>Zellen
+        </button>
       </div>
       ${this.istMelder
         ? nothing
@@ -3173,7 +3224,7 @@ export class RaumzonenPanel extends LitElement {
               (o, i) => html`<li class="item ${i === this.selOpening ? "open" : ""}">
                 <div class="row" @click=${() => (this.selOpening = i === this.selOpening ? -1 : i)}>
                   <ha-icon icon=${o.art === "tuer" ? "mdi:door" : "mdi:door-open"}></ha-icon>
-                  <span class="name">${o.art === "tuer" ? "Tür" : "Offen"}<small>${Math.round(o.bis - o.von)} cm breit</small></span>
+                  <span class="name">${oeffnungName(o, i)}<small>${o.art === "tuer" ? "Tür" : "Offen"} · ${Math.round(o.bis - o.von)} cm breit${o.fuehrt_zu ? ` · zu ${this.tuerZielText(o.gegenstueck ? `tuer:${o.gegenstueck}` : o.fuehrt_zu)}` : ""}</small></span>
                 </div>
                 ${i === this.selOpening
                   ? html`<div class="inspector">
@@ -3207,8 +3258,20 @@ export class RaumzonenPanel extends LitElement {
                             </button>
                           </div>`
                         : nothing}
+                      <label class="field"
+                        >Name<input
+                          type="text"
+                          maxlength="60"
+                          .value=${o.name ?? ""}
+                          placeholder=${oeffnungName(o, i)}
+                          @change=${(e: Event) => this.changeOpening(i, { name: (e.target as HTMLInputElement).value.trim() })}
+                      /></label>
+                      ${this.renderTuerZiel(this.raumId, o.gegenstueck ? `tuer:${o.gegenstueck}` : (o.fuehrt_zu ?? ""), (v) => {
+                        const gegen = v.startsWith("tuer:") ? v.slice(5) : "";
+                        this.changeOpening(i, { gegenstueck: gegen, fuehrt_zu: gegen ? gegen.split("/")[0] : v });
+                      })}
                       <p class="hint small">
-                        Breite: die Punkte an den Enden ziehen; verschieben: die Öffnung selbst ziehen. Wohin sie führt, stellst du im Hausplan ein.${this.istMelder
+                        Breite: die Punkte an den Enden ziehen; verschieben: die Öffnung selbst ziehen.${this.istMelder
                           ? ""
                           : " Damit Raumzonen „betreten“ und „verlassen“ genau erkennt, zusätzlich eine Zone mit der Rolle „Tür“ davor zeichnen."}
                       </p>
@@ -3267,26 +3330,47 @@ export class RaumzonenPanel extends LitElement {
       html`<button class="text small" @click=${() => this.turnRoom(sel!.id, deg)}><ha-icon icon=${icon}></ha-icon>${label}</button>`;
     const doorRow = (raum: Raum, tuer: Tuer) => {
       const key = tuer.key;
-      const ziel = this.tueren[key] ?? "";
-      const andere = raeume.filter((x) => x.id !== raum.id);
+      const wert = this.tueren[key] ?? "";
+      const name = this.tuerNamen[key] ?? tuer.name;
       if (!this.kannAendern) {
-        const text = ziel === "aussen" ? "nach draußen" : ziel ? (andere.find((x) => x.id === ziel)?.name ?? "weiß nicht") : "weiß nicht";
-        return html`<li class="door"><ha-icon icon="mdi:door-open"></ha-icon><span>${tuer.name}: ${text}</span></li>`;
+        return html`<li class="door"><ha-icon icon="mdi:door-open"></ha-icon><span>${name}: ${this.tuerZielText(wert)}</span></li>`;
       }
+      const vorschlag = wert ? null : naechsteTuer(raeume, raum.id, tuer.punkt);
       return html`<li class="door">
         <ha-icon icon="mdi:door-open"></ha-icon>
-        <label class="field"
-          >${tuer.name} führt zu<select
-            @change=${(e: Event) => {
-              this.tueren = { ...this.tueren, [key]: (e.target as HTMLSelectElement).value };
-              this.dirty = true;
-            }}
-          >
-            <option value="" ?selected=${!ziel}>weiß nicht</option>
-            <option value="aussen" ?selected=${ziel === "aussen"}>draußen / Raum ohne Raumzonen</option>
-            ${andere.map((x) => html`<option value=${x.id} ?selected=${ziel === x.id}>${x.name}</option>`)}
-          </select></label
-        >
+        <div class="door-felder">
+          <span class="door-name">${name}</span>
+          ${tuer.oeffnung !== undefined
+            ? html`<label class="field"
+                >Name<input
+                  type="text"
+                  maxlength="60"
+                  .value=${this.tuerNamen[key] ?? (raum.oeffnungen?.[tuer.oeffnung]?.name ?? "")}
+                  placeholder=${tuer.name}
+                  @input=${(e: Event) => {
+                    this.tuerNamen = { ...this.tuerNamen, [key]: (e.target as HTMLInputElement).value };
+                    this.dirty = true;
+                  }}
+              /></label>`
+            : nothing}
+          ${this.renderTuerZiel(raum.id, wert, (v) => {
+            this.tueren = { ...this.tueren, [key]: v };
+            this.dirty = true;
+          })}
+          ${vorschlag
+            ? html`<div class="actions">
+                <button
+                  class="text small"
+                  @click=${() => {
+                    this.tueren = { ...this.tueren, [key]: `tuer:${vorschlag.tuer.key}` };
+                    this.dirty = true;
+                  }}
+                >
+                  <ha-icon icon="mdi:link-variant"></ha-icon>Nächste Tür: ${this.tuerText(vorschlag.tuer)} (${(vorschlag.abstand / 100).toFixed(1).replace(".", ",")} m)
+                </button>
+              </div>`
+            : nothing}
+        </div>
       </li>`;
     };
     return html`<aside class="side">
@@ -3299,6 +3383,11 @@ export class RaumzonenPanel extends LitElement {
             : "So liegen die Räume im Haus. Die Punkte zeigen, wo gerade jemand ist."}
         </p>
         ${this.kannAendern ? html`${this.renderNeuRaum()} ${this.renderPlanImport()}` : nothing}
+        ${this.kannAendern && raeume.some((r) => tuerenVon(r).length)
+          ? html`<div class="actions">
+              <button class="text small" @click=${() => this.tuerenAutomatisch()}><ha-icon icon="mdi:link-variant"></ha-icon>Türen automatisch verbinden</button>
+            </div>`
+          : nothing}
         <ul class="list">
           ${raeume.filter((r) => this.aufStockwerk(r)).map((raum) => {
             const live = this.hausLive[raum.id];
@@ -3346,6 +3435,62 @@ export class RaumzonenPanel extends LitElement {
         ${this.kannAendern ? html`${this.renderPlanListe()} ${this.renderProfil()}` : nothing}
       </div>
     </aside>`;
+  }
+
+  /** „Küche · Tür zum Flur“ */
+  private tuerText(t: Tuer): string {
+    const raum = this.data?.raeume.find((r) => r.id === t.raumId);
+    return `${raum?.name ?? t.raumId} · ${this.tuerNamen[t.key] || t.name}`;
+  }
+
+  private tuerZielText(wert: string): string {
+    if (!wert) return "weiß nicht";
+    if (wert === "aussen") return "nach draußen";
+    if (wert.startsWith("tuer:")) {
+      const key = wert.slice(5);
+      const t = (this.data?.raeume ?? []).flatMap((r) => tuerenVon(r)).find((x) => x.key === key);
+      return t ? this.tuerText(t) : "weiß nicht";
+    }
+    return this.data?.raeume.find((r) => r.id === wert)?.name ?? "weiß nicht";
+  }
+
+  /** Auswahl „führt zu“: draußen, ein Raum oder eine bestimmte Tür darin. */
+  private renderTuerZiel(raumId: string, wert: string, setze: (v: string) => void): TemplateResult {
+    const andere = (this.data?.raeume ?? []).filter((x) => x.id !== raumId);
+    return html`<label class="field"
+      >Führt zu<select @change=${(e: Event) => setze((e.target as HTMLSelectElement).value)}>
+        <option value="" ?selected=${!wert}>weiß nicht</option>
+        <option value="aussen" ?selected=${wert === "aussen"}>draußen / Raum ohne Raumzonen</option>
+        ${andere.map(
+          (r) => html`<optgroup label=${r.name}>
+            <option value=${r.id} ?selected=${wert === r.id}>${r.name} (irgendeine Tür)</option>
+            ${tuerenVon(r).map((t) => html`<option value=${`tuer:${t.key}`} ?selected=${wert === `tuer:${t.key}`}>${r.name} · ${this.tuerNamen[t.key] || t.name}</option>`)}
+          </optgroup>`,
+        )}
+      </select></label
+    >`;
+  }
+
+  /** Alle Türen ohne Ziel mit der nächsten Tür verbinden (höchstens 1,5 m). */
+  private tuerenAutomatisch(): void {
+    const raeume = this.data?.raeume ?? [];
+    const neu = { ...this.tueren };
+    let n = 0;
+    for (const r of raeume) {
+      for (const t of tuerenVon(r)) {
+        // Frei oder nur „irgendeine Tür“ in einem Raum: genauer machen.
+        const frei = (key: string, raumId?: string) => !neu[key] || (!neu[key].startsWith("tuer:") && neu[key] !== "aussen" && (!raumId || neu[key] === raumId));
+        if (!frei(t.key)) continue;
+        const v = naechsteTuer(raeume, r.id, t.punkt);
+        if (!v || !frei(v.tuer.key, r.id) || (neu[t.key] && neu[t.key] !== v.tuer.raumId)) continue;
+        neu[t.key] = `tuer:${v.tuer.key}`;
+        neu[v.tuer.key] = `tuer:${t.key}`;
+        n++;
+      }
+    }
+    this.tueren = neu;
+    if (n) this.dirty = true;
+    this.showToast(n ? `${n} ${n === 1 ? "Verbindung" : "Verbindungen"} vorgeschlagen. Prüfen und oben „Speichern“.` : "Keine Tür ohne Ziel mit einer Tür in der Nähe gefunden.");
   }
 
   private renderPlanListe(): TemplateResult | typeof nothing {

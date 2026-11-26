@@ -93,7 +93,18 @@ dieses Stockwerk gewählt ist (unter „Alle“ nur Grundrisse ohne Stockwerk).
 Liegt ein Raum im Hausplan schräg, zeigt ihn auch die Raumansicht so, wie er
 im Haus liegt; der Grundriss im Hintergrund ist dann gerade. Der Knopf links
 in der Werkzeugleiste (Pfeile im Kreis) schaltet auf „Raum gerade“ und
-zurück. Das ist nur die Ansicht; Zonen und Sensor bleiben, wo sie sind. Stimmt die Größe nicht,
+zurück. Das ist nur die Ansicht; Zonen und Sensor bleiben, wo sie sind.
+
+**Türen verbinden:** Eine Tür in der Wand bekommt im Raum (Werkzeug „Tür /
+Öffnung“, dann die Tür in der Liste antippen) einen **Namen** und unter
+**„Führt zu“** die Tür auf der anderen Seite. Zeichnest du eine Tür neben
+einer Tür des Nachbarraums, verbindet Raumzonen die beiden gleich. Im
+Hausplan steht bei jeder Tür ohne Ziel ein Vorschlag („Nächste Tür: …“);
+„Türen automatisch verbinden“ übernimmt alle Vorschläge auf einmal. Danach
+„Speichern“. Eine Verbindung gilt immer in beide Richtungen.
+
+**Zellen-Zone ändern:** Zone in der Liste öffnen, „Zellen bearbeiten“, dann
+leere Zellen antippen (dazu) oder volle (weg), zum Schluss „Fertig“. Stimmt die Größe nicht,
 dort mit „1 %“/„10 %“ größer oder kleiner machen, oder „Maß neu setzen“:
 zwei Punkte einer bekannten Strecke im Bild antippen (z. B. die Enden
 einer Wand), die echte Länge in Metern eingeben, „Maß übernehmen“.

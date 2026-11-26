@@ -16,6 +16,19 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
   Raumansicht jetzt genauso gedreht, mit geradem Grundriss im Hintergrund.
   Der Knopf links (Pfeile im Kreis) schaltet zurück auf „Raum gerade“. Nur
   Anzeige: Zonen, Sensor und Daten ändern sich nicht.
+- Türen mit Namen („Tür zum Flur“) und mit einer bestimmten Tür im
+  Nachbarraum verbinden („Führt zu“ im Raum und im Hausplan). Eine neu
+  gezeichnete Tür wird mit der nächsten Tür eines Nachbarraums (bis 1,5 m)
+  verbunden; im Hausplan schlägt jede Tür ohne Ziel die nächste vor, und
+  „Türen automatisch verbinden“ macht das für alle. Verbindungen gelten
+  immer in beide Richtungen.
+- Zellen-Zonen bearbeiten: bei der Zone „Zellen bearbeiten“, dann Zellen
+  dazu malen oder wegnehmen.
+
+### Behoben
+
+- „Neue Zone → Zellen“ malte in eine gerade gewählte Zellen-Zone, statt eine
+  neue anzulegen.
 
 ## [0.14.0] - 2026-11-26
 

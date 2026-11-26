@@ -80,11 +80,17 @@ from .const import (
 )
 from .core.room import ZONE_ARTEN
 from .discovery import converter_zones, find_fp400_entities, suggest_topic
-from .model import REGEL_VORLAGEN, PlanConfig, RaumConfig, SensorConfig
+from .model import (
+    REGEL_VORLAGEN,
+    PlanConfig,
+    RaumConfig,
+    SensorConfig,
+    tueren_abgleichen,
+)
 from .panel import async_reload_keep_panel
 from .serialize import (
     melder_lage_from_dict,
-    oeffnung_from_dict,
+    oeffnungen_from_list,
     plan_to_dict,
     raum_to_dict,
     regel_from_dict,
@@ -188,6 +194,8 @@ ZONE_SCHEMA = vol.Schema(
         vol.Optional("fuehrt_zu", default=""): vol.Any(None, str),
         # Nur in Melder-Räumen: welche Melder die Zone melden.
         vol.Optional("melder", default=[]): [str],
+        # Nur bei Türen: bestimmte Tür im anderen Raum.
+        vol.Optional("gegenstueck", default=""): vol.Any(None, str),
     }
 )
 
@@ -228,6 +236,11 @@ MELDER_LAGE_SCHEMA = vol.Schema(
                     vol.Optional("anschlag", default="anfang"): str,
                     vol.Optional("aufgehen", default="innen"): str,
                     vol.Optional("fuehrt_zu", default=""): vol.Any(None, str),
+                    vol.Optional("id"): vol.Any(None, str),
+                    vol.Optional("name"): vol.Any(
+                        None, vol.All(str, vol.Length(max=60))
+                    ),
+                    vol.Optional("gegenstueck"): vol.Any(None, str),
                 }
             )
         ],
@@ -283,10 +296,12 @@ async def ws_room_save(
         if "umriss" in msg:
             raum.umriss = [list(p) for p in msg["umriss"]]
         if "oeffnungen" in msg:
-            raum.oeffnungen = [
-                oeffnung_from_dict({**o, "fuehrt_zu": o.get("fuehrt_zu") or ""})
-                for o in msg["oeffnungen"]
-            ]
+            raum.oeffnungen = oeffnungen_from_list(
+                [
+                    {**o, "fuehrt_zu": o.get("fuehrt_zu") or ""}
+                    for o in msg["oeffnungen"]
+                ]
+            )
         if "melder" in msg:
             raum.melder = [_melder_key(hass, m) for m in msg["melder"]]
         if "melder_lagen" in msg:
@@ -297,6 +312,7 @@ async def ws_room_save(
         for key in ("aufnahme", "aufnahme_tage", "melder_nachlauf_s"):
             if key in msg:
                 setattr(raum, key, msg[key])
+        tueren_abgleichen(model, {raum.id})
         model.validate()
     except (ValueError, TypeError, KeyError) as err:
         connection.send_error(msg["id"], "invalid", str(err))
@@ -445,6 +461,11 @@ def ws_converter_zones(
                     vol.Exclusive("zone_id", "tuer"): str,
                     vol.Exclusive("oeffnung", "tuer"): int,
                     vol.Required("fuehrt_zu"): vol.Any(None, str),
+                    # Bestimmte Tür im anderen Raum (Schlüssel wie im Panel).
+                    vol.Optional("gegenstueck"): vol.Any(None, str),
+                    vol.Optional("name"): vol.Any(
+                        None, vol.All(str, vol.Length(max=60))
+                    ),
                 }
             )
         ],
@@ -484,18 +505,34 @@ async def ws_haus_save(
                 plan.cm_pro_px = daten["cm_pro_px"]
             if "stockwerk" in daten:
                 plan.stockwerk = daten["stockwerk"] or ""
+        vorrang: set[str] = set()
         for tuer in msg["tueren"]:
             raum = model.raum(tuer["raum_id"])
             ziel = tuer["fuehrt_zu"] or ""
+            ding: Any
             if "oeffnung" in tuer:
                 if not 0 <= tuer["oeffnung"] < len(raum.oeffnungen):
                     raise KeyError(tuer["oeffnung"])
-                raum.oeffnungen[tuer["oeffnung"]].fuehrt_zu = ziel
+                ding = raum.oeffnungen[tuer["oeffnung"]]
+                if tuer.get("name") is not None:
+                    ding.name = tuer["name"].strip()
             elif "zone_id" in tuer:
-                zone = next(z for z in raum.zonen if z.id == tuer["zone_id"])
-                zone.fuehrt_zu = ziel
+                ding = next(z for z in raum.zonen if z.id == tuer["zone_id"])
             else:
                 raise KeyError("tuer")
+            ding.fuehrt_zu = ziel
+            if "gegenstueck" in tuer:
+                alt = ding.gegenstueck
+                ding.gegenstueck = tuer["gegenstueck"] or ""
+                # Die alte Gegenseite zeigt nicht mehr hierher.
+                if (
+                    alt
+                    and alt != ding.gegenstueck
+                    and (partner := model.tueren().get(alt))
+                ):
+                    partner[1].gegenstueck = ""
+                vorrang.add(raum.id)
+        tueren_abgleichen(model, vorrang)
         model.validate()
     except KeyError, StopIteration:
         connection.send_error(msg["id"], "not_found", "Raum oder Tür nicht gefunden")
@@ -997,10 +1034,12 @@ async def ws_plan_import(
         for data in msg["raeume"]:
             raum = model.raum(data["raum_id"])
             raum.umriss = [list(p) for p in data["umriss"]]
-            raum.oeffnungen = [
-                oeffnung_from_dict({**o, "fuehrt_zu": o.get("fuehrt_zu") or ""})
-                for o in data["oeffnungen"]
-            ]
+            raum.oeffnungen = oeffnungen_from_list(
+                [
+                    {**o, "fuehrt_zu": o.get("fuehrt_zu") or ""}
+                    for o in data["oeffnungen"]
+                ]
+            )
             winkel = (data["haus"]["winkel"] + 180) % 360 - 180
             raum.haus_x, raum.haus_y = data["haus"]["x"], data["haus"]["y"]
             if "stockwerke" in data:

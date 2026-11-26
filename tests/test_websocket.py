@@ -167,6 +167,9 @@ async def test_room_save(
             "anschlag": "ende",
             "aufgehen": "aussen",
             "fuehrt_zu": "",
+            "id": "o1",
+            "name": "",
+            "gegenstueck": "",
         }
     ]
     assert raum["sensor"]["mqtt_topic"] == "zigbee2mqtt/Testsensor"  # unverändert

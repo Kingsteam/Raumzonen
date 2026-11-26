@@ -659,6 +659,16 @@ export const styles = css`
     font-size: 11px;
     fill: var(--rz-tuer);
   }
+  .door-name {
+    font-weight: 500;
+  }
+  .door-felder {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+  }
   .melder-erfassung {
     display: flex;
     flex-direction: column;
