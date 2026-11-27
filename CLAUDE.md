@@ -50,9 +50,22 @@ Nächstes: 4b (Herkunft, Einstufung, Sicherheit, `hinweis/1`); siehe
    hast du das Okay.“ Fertige Versionen von Raumzonen dürfen darum ohne
    Rückfrage veröffentlicht und über den Marketplace eingespielt werden.
    Bedingungen bleiben: alle Tests grün (auch mit den Aufnahmen, Regel 3),
-   kein Neustart durch mich (nur anmelden), jede Version dem Besitzer kurz
+   Neustart nur nach Abstimmung im Postfach (siehe unten), jede Version dem Besitzer kurz
    melden. Gilt nur fürs Installieren von Raumzonen, nicht für andere
    Änderungen an der echten Installation.
+   **Hausregel für alle Sitzungen (Besitzer, 27.11.2026):** „Wenn es in
+   deinem Task und deinem Zuständigkeitsbereich ist, wie zum Beispiel
+   Neustarten, Dinge analysieren, alles, was nicht grundlegende
+   Veränderungen mit sich zieht oder wichtige Dinge löschen könnte, hast du
+   die Freigabe … Bei dir gehört zum Beispiel auch das Neustarten des
+   Systems des Home Assistants dazu, natürlich über die Abstimmung mit den
+   anderen Threads, über die Mailingbox.“ Darum ohne Rückfrage: aus der
+   echten Installation lesen und auswerten (nur lesen), und Home Assistant
+   neu starten, aber **erst nach Abstimmung im Postfach**
+   (`haus-privat/postfach/an-haus.md`, Sperrliste/Einwände der anderen
+   Sitzungen beachten, nicht nachts, wenn die Nachtlicht-Logik läuft).
+   Weiter nur nach Rückfrage: grundlegende Änderungen, Löschen von
+   Wichtigem, alles außerhalb von Raumzonen.
 2. **Nichts im Haus schalten.** Diese Integration meldet Zustände; sie
    schaltet kein Licht und keine Geräte. Automationen macht der Besitzer.
    Ausnahme (Besitzer, 26.11.2026: „dass Raumzonen die Sensoren, die in
