@@ -293,3 +293,76 @@ def test_kurze_person_dann_vorhang_ist_stoerung() -> None:
     run(r, [(i * 0.3, [Target(1, 300, 300, True, "person")]) for i in range(5)])
     run(r, [(2 + i * 0.3, [Target(1, 300, 300, True, "curtain")]) for i in range(10)])
     assert r.figure_count == 0
+
+
+def _liegt_mit_hund(r: Room) -> float:
+    """Jemand liegt still im Bett, der Hund liegt vor dem Bett (erfunden)."""
+    frames = [
+        (i * 0.3, [Target(0, -150, 200 + i % 2), Target(1, 40, 150, False, "pet")])
+        for i in range(70)
+    ]
+    run(r, frames)
+    assert r.states["bett"].occupied
+    return 21.0
+
+
+def test_tausch_mit_hund_haelt_das_bett() -> None:
+    """Der Sensor hängt das Ziel des Schläfers an den Hund: Bett bleibt belegt."""
+    r = room()
+    t = _liegt_mit_hund(r)
+    # Ziel 0 springt zum Hund, Ziel 1 (Hund) ist im selben Rahmen weg.
+    events = run(r, [(t + i * 0.3, [Target(0, 30, 140)]) for i in range(30)])
+    assert r.states["bett"].occupied
+    assert r.states["bett"].count == 1
+    # Nach 9 s findet der Sensor den Schläfer mit neuer ID wieder.
+    events += run(
+        r,
+        [
+            (t + 9 + i * 0.3, [Target(0, 30, 140), Target(2, -148, 205)])
+            for i in range(10)
+        ],
+    )
+    assert r.states["bett"].occupied
+    assert free_time(events) is None
+
+
+def test_aufstehen_mit_hund_daneben_bleibt_schnell() -> None:
+    """Steht der Schläfer auf und der Hund bleibt sichtbar: kein Tausch."""
+    r = room()
+    t = _liegt_mit_hund(r)
+    path = walk_out(t)
+    frames = [(ts, [*tg, Target(1, 40, 150, False, "pet")]) for ts, tg in path]
+    events = run(r, frames)
+    events += r.advance(t + 10)
+    left = free_time(events)
+    assert left is not None
+    assert left - t <= 5.0
+
+
+def test_tausch_dann_zur_tuer_gibt_das_bett_frei() -> None:
+    """Nach einem Tausch geht das Ziel zur Tür: es war doch der Schläfer."""
+    r = room()
+    t = _liegt_mit_hund(r)
+    events = run(r, [(t, [Target(0, 30, 140)])])
+    assert r.states["bett"].occupied
+    events += run(
+        r,
+        [(t + 0.3 + i * 0.3, [Target(0, 30 + i * 5, 140 - i * 30)]) for i in range(5)],
+    )
+    events += r.advance(t + 6)
+    left = free_time(events)
+    assert left is not None
+    assert left - t <= 5.0
+
+
+def test_tausch_ohne_wiederfinden_gibt_spaeter_frei() -> None:
+    """Findet der Sensor niemanden mehr im Bett, wird es nach einer Minute frei."""
+    r = room()
+    t = _liegt_mit_hund(r)
+    run(r, [(t + i * 0.3, [Target(0, 30, 140)]) for i in range(5)])
+    assert r.states["bett"].occupied
+    events = r.advance(t + 30)
+    assert r.states["bett"].occupied
+    events += r.advance(t + 70)
+    assert not r.states["bett"].occupied
+    assert free_time(events) is not None

@@ -4,6 +4,19 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.22.2] - 2026-11-27
+
+### Behoben
+
+- Liegt der Hund vor dem Bett, hängt der Sensor das Ziel des Schläfers
+  manchmal an den Hund: das Ziel springt aus dem Bett, und fast gleichzeitig
+  verschwindet das Ziel des Hundes. Raumzonen erkennt diesen Tausch
+  (höchstens 1,5 s Abstand, höchstens 2,5 m entfernt) und hält den Schläfer
+  im Bett. Geht das andere Ziel danach zur Tür, war es doch der Schläfer und
+  das Bett wird sofort frei; findet der Sensor im Bett niemanden mehr, nach
+  einer Minute. Wer aufsteht, während der Hund weiter zu sehen ist, ist wie
+  bisher in höchstens 5 s „aufgestanden“.
+
 ## [0.22.1] - 2026-11-27
 
 ### Behoben

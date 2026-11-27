@@ -35,8 +35,9 @@ Arten von Zonen (``Zone.art``):
 
 from __future__ import annotations
 
+from collections import deque
 from collections.abc import Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 import math
 
 from .geometry import Shape, inner_point
@@ -74,6 +75,14 @@ TAG_WIEDERHERGESTELLT = "wiederhergestellt"
 ECHO_STILL_S = 3.0
 # So lange nach dem Verlassen des Betts zählt der Weg zur Tür noch als Aufstehen.
 ECHO_WINDOW_S = 10.0
+# Tausch: Springt das Ziel eines Schläfers aus dem Bett und verschwindet fast
+# gleichzeitig ein anderes Ziel in der Nähe (meist der Hund vor dem Bett), hat
+# der Sensor die Ziele vertauscht. Der Schläfer bleibt dann im Bett.
+TAUSCH_S = 1.5
+TAUSCH_CM = 250.0
+# So lange hält Raumzonen den Schläfer nach einem Tausch höchstens, wenn ihn
+# der Sensor nicht wiederfindet; geht das andere Ziel zur Tür, sofort frei.
+TAUSCH_HALTE_S = 60.0
 
 # Sensor-Arten, die sicher keine Person sind (Zigbee2MQTT-Konverter).
 NOT_PERSON = frozenset(
@@ -176,6 +185,13 @@ class Room:
         # Spur → (Schläferzone, Zeit), die sie zuletzt verlassen hat.
         self._left_sleeper: dict[int, tuple[str, float]] = {}
         self._last_t: float | None = None
+        # Für die Tausch-Erkennung: Ausstiege aus Schläferzonen
+        # (Zeit, Spur, Zone, Stand vor dem Ausstieg) und verschwundene Ziele
+        # (Zeit, Spur, Position).
+        self._ausstiege: deque[tuple[float, int, str, Track]] = deque(maxlen=8)
+        self._verschwunden: deque[tuple[float, int, float, float]] = deque(maxlen=8)
+        # Nach einem Tausch gehaltener Schläfer → (Spur mit dem Ziel, seit).
+        self._tausch: dict[int, tuple[int, float]] = {}
 
     # -- Hilfen für den Tracker -------------------------------------------
 
@@ -196,6 +212,8 @@ class Room:
         )
 
     def _hold_time(self, track: Track) -> float:
+        if track.track_id in self._tausch:
+            return TAUSCH_HALTE_S
         if self._in_sleeper_zone(track):
             return math.inf
         if self._in_exit(track):
@@ -214,8 +232,69 @@ class Room:
         if targets is not None:
             targets = [t for t in targets if not self._is_suppressed(t)]
             self._drop_placeholders()
+        before: dict[int, Track] = {}
+        if targets is not None:
+            before = {
+                tid: replace(t, history=deque(t.history, maxlen=64), tags=set(t.tags))
+                for tid, t in self.tracker.tracks.items()
+            }
         self.tracker.update(now, targets)
-        return self._evaluate(now)
+        events = self._evaluate(now, before)
+        if self._tausch_pruefen(now):
+            events += self._evaluate(now)
+        return events
+
+    def _tausch_pruefen(self, now: float) -> bool:
+        """Ausstieg + verschwundenes Ziel in der Nähe = vertauschte Ziele."""
+        while self._ausstiege and now - self._ausstiege[0][0] > TAUSCH_S + EPS_S:
+            self._ausstiege.popleft()
+        while self._verschwunden and now - self._verschwunden[0][0] > TAUSCH_S + EPS_S:
+            self._verschwunden.popleft()
+        tracks = self.tracker.tracks
+        for a in list(self._ausstiege):
+            t_a, l_id, zone_id, vorher = a
+            leaver = tracks.get(l_id)
+            if leaver is None or not leaver.visible:
+                continue
+            if self._inside.get((zone_id, l_id)):
+                continue
+            for v in list(self._verschwunden):
+                t_v, v_id, vx, vy = v
+                other = tracks.get(v_id)
+                if v_id == l_id or other is None or other.visible:
+                    continue
+                if abs(t_a - t_v) > TAUSCH_S + EPS_S:
+                    continue
+                if math.hypot(vx - leaver.raw_x, vy - leaver.raw_y) > TAUSCH_CM:
+                    continue
+                self._tauschen(leaver, other, vorher, zone_id, now)
+                self._ausstiege.remove(a)
+                self._verschwunden.remove(v)
+                return True
+        return False
+
+    def _tauschen(
+        self, leaver: Track, other: Track, vorher: Track, zone_id: str, now: float
+    ) -> None:
+        # Das andere Ziel bekommt, was der Sensor jetzt meldet.
+        for name in (
+            "sensor_id", "x", "y", "raw_x", "raw_y", "vx", "vy", "last_seen",
+            "last_moved", "moves_in_row", "sensor_moving", "type",
+        ):  # fmt: skip
+            setattr(other, name, getattr(leaver, name))
+        other.state = leaver.state
+        other.held_since = None
+        other.history.extend(p for p in leaver.history if p[0] > vorher.last_seen)
+        # Der Schläfer liegt weiter, wo er lag, gehalten.
+        for name in ("x", "y", "raw_x", "raw_y", "vx", "vy", "last_seen", "type"):
+            setattr(leaver, name, getattr(vorher, name))
+        leaver.history = vorher.history
+        leaver.sensor_id = -1
+        leaver.state = HELD
+        leaver.held_since = now
+        self._inside[(zone_id, leaver.track_id)] = True
+        self._left_sleeper.pop(leaver.track_id, None)
+        self._tausch[leaver.track_id] = (other.track_id, now)
 
     def restore(self, zone_id: str, now: float) -> None:
         """Zone war vor einem Neustart belegt: so weitermachen.
@@ -382,7 +461,9 @@ class Room:
             track.moves_in_row >= rule.weg_rahmen or d > rule.rand_cm + rule.weg_cm
         )
 
-    def _evaluate(self, now: float) -> list[ZoneEvent]:
+    def _evaluate(
+        self, now: float, before: dict[int, Track] | None = None
+    ) -> list[ZoneEvent]:
         dt = 0.0 if self._last_t is None else max(0.0, now - self._last_t)
         self._last_t = now
         events: list[ZoneEvent] = []
@@ -403,6 +484,42 @@ class Room:
                 self._inside[key] = now_in
                 if was and not now_in and zone.rule.schlaefer_halten:
                     self._left_sleeper[track.track_id] = (zone.id, now)
+                    if before and track.track_id in before and track.visible:
+                        self._ausstiege.append(
+                            (now, track.track_id, zone.id, before[track.track_id])
+                        )
+        if before:
+            for track in tracks:
+                alt = before.get(track.track_id)
+                if (
+                    alt is not None
+                    and alt.state != HELD
+                    and track.state == HELD
+                    and not self._in_sleeper_zone(track)
+                ):
+                    self._verschwunden.append(
+                        (now, track.track_id, track.raw_x, track.raw_y)
+                    )
+
+        # Nach einem Tausch: findet der Sensor den Schläfer wieder, ist alles
+        # gut; geht das andere Ziel zur Tür, war es doch der Schläfer.
+        for l_id, (v_id, _since) in list(self._tausch.items()):
+            leaver = self.tracker.tracks.get(l_id)
+            other = self.tracker.tracks.get(v_id)
+            if leaver is None or leaver.visible:
+                del self._tausch[l_id]
+                continue
+            if other is not None and other.visible and self._in_exit(other):
+                del self._tausch[l_id]
+                for z_id, _t in [
+                    (k[0], k[1])
+                    for k in self._inside
+                    if k[1] == l_id and self._inside[k]
+                ]:
+                    self.states[z_id].left_via_exit = True
+                self.tracker.remove(l_id)
+                for key in [k for k in self._inside if k[1] == l_id]:
+                    del self._inside[key]
 
         # Echo: Wer aus einer Ein-Personen-Schläferzone zur Tür geht, lässt
         # kein unbewegtes Ziel im Bett zurück. Nur bei Weg zur Tür, denn ein
