@@ -100,6 +100,8 @@ export interface Raum {
   haus_winkel: number;
   /** Erst wahr, wenn der Raum im Hausplan liegt. */
   haus_gesetzt: boolean;
+  /** Fingerabdruck beim Laden; beim Speichern mitgeschickt, damit ein veralteter Stand nicht überschreibt. */
+  stand?: string;
 }
 
 /** Grundriss als Hintergrund: Bildpunkt (px, py), py nach unten, liegt im Haus bei (x + px·k, y + (hoehe_px − py)·k). */

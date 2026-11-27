@@ -2975,6 +2975,8 @@ let v = class extends fe {
       await this._hass.callWS({
         type: `${R}/room/save`,
         raum_id: this.raumId,
+        // Stand beim Laden: Hat inzwischen jemand anders gespeichert (z. B. am Handy), lehnt Python ab.
+        ...this.raum.stand ? { stand: this.raum.stand } : {},
         zonen: e ? this.zones.map((s) => ({ ...s, melder: (s.melder ?? []).filter((i) => this.melder.includes(i)) })) : this.zones,
         ...e ? {
           melder: this.melder,
@@ -2987,6 +2989,12 @@ let v = class extends fe {
         aufnahme_tage: this.aufnahmeTage
       }), this.dirty = !1, this.showToast("Gespeichert."), await this.unsubscribeLive(), await new Promise((s) => window.setTimeout(s, 1500)), await this.load();
     } catch (s) {
+      if (s?.code === "veraltet") {
+        this.saving = !1, confirm(
+          "Dieser Raum wurde inzwischen an anderer Stelle gespeichert, z. B. am Handy beim Einmessen. Neu laden, damit nichts überschrieben wird? Deine Änderungen hier gehen dabei verloren."
+        ) && (await this.load(), this.selectRoom(this.raumId, !0));
+        return;
+      }
       this.showToast(`Nicht gespeichert: ${T(s)}`);
     } finally {
       this.saving = !1;

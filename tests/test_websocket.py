@@ -563,3 +563,63 @@ async def test_datenstrom_kein_platz_und_nur_admin(
     )
     msg = await leser.receive_json()
     assert msg["error"]["code"] == "unauthorized"
+
+
+async def test_room_save_veralteter_stand(
+    hass: HomeAssistant, loaded: MockConfigEntry, hass_ws_client: Any
+) -> None:
+    """Ein Panel mit altem Stand überschreibt nicht still (z. B. die Lage).
+
+    Gerät A (Handy) misst ein und speichert; Gerät B hat den Raum vorher
+    geladen und speichert danach mit seinem alten Stand: abgelehnt.
+    """
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id({"type": f"{DOMAIN}/rooms/get"})
+    raum = (await client.receive_json())["result"]["raeume"][0]
+    alt = raum["stand"]
+    assert len(alt) == 16
+
+    zonen = raum["zonen"]
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/room/save",
+            "raum_id": raum["id"],
+            "stand": alt,
+            "zonen": zonen,
+            "sensor": {"x": 42, "y": 17, "winkel": 33},
+        }
+    )
+    msg = await client.receive_json()
+    assert msg["success"], msg
+    neu = msg["result"]["raum"]["stand"]
+    assert neu != alt
+    await hass.async_block_till_done()
+
+    # Nach dem Neuladen liefert rooms/get denselben neuen Stand.
+    await client.send_json_auto_id({"type": f"{DOMAIN}/rooms/get"})
+    geladen = (await client.receive_json())["result"]["raeume"][0]
+    assert geladen["stand"] == neu
+    assert geladen["sensor"]["x"] == 42
+
+    # Gerät B mit altem Stand: abgelehnt, die Lage bleibt.
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/room/save",
+            "raum_id": raum["id"],
+            "stand": alt,
+            "zonen": zonen,
+            "sensor": {"x": 0, "y": 0, "winkel": 0},
+        }
+    )
+    msg = await client.receive_json()
+    assert not msg["success"]
+    assert msg["error"]["code"] == "veraltet"
+    await client.send_json_auto_id({"type": f"{DOMAIN}/rooms/get"})
+    assert (await client.receive_json())["result"]["raeume"][0]["sensor"]["x"] == 42
+
+    # Ohne Stand (ältere Abnehmer) wird wie bisher gespeichert.
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/room/save", "raum_id": raum["id"], "zonen": zonen}
+    )
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()

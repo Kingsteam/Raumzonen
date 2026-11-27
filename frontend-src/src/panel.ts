@@ -514,6 +514,8 @@ export class RaumzonenPanel extends LitElement {
       await this._hass.callWS({
         type: `${DOMAIN}/room/save`,
         raum_id: this.raumId,
+        // Stand beim Laden: Hat inzwischen jemand anders gespeichert (z. B. am Handy), lehnt Python ab.
+        ...(this.raum.stand ? { stand: this.raum.stand } : {}),
         zonen: melder ? this.zones.map((z) => ({ ...z, melder: (z.melder ?? []).filter((m) => this.melder.includes(m)) })) : this.zones,
         ...(melder
           ? {
@@ -534,6 +536,19 @@ export class RaumzonenPanel extends LitElement {
       await new Promise((r) => window.setTimeout(r, 1500));
       await this.load();
     } catch (err) {
+      if ((err as { code?: string } | null)?.code === "veraltet") {
+        this.saving = false;
+        if (
+          confirm(
+            "Dieser Raum wurde inzwischen an anderer Stelle gespeichert, z. B. am Handy beim Einmessen. " +
+              "Neu laden, damit nichts überschrieben wird? Deine Änderungen hier gehen dabei verloren.",
+          )
+        ) {
+          await this.load();
+          this.selectRoom(this.raumId, true);
+        }
+        return;
+      }
       this.showToast(`Nicht gespeichert: ${fehlerText(err)}`);
     } finally {
       this.saving = false;

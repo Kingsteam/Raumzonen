@@ -201,6 +201,13 @@ nichts, Raumzonen nutzt sie nicht für eigene Zonen. Raumzonen schreibt nur
 in einen leeren Platz und überschreibt nie eine andere Zone. Mit
 **„Zurücknehmen“** entfernt Raumzonen nur diese eine Zone wieder.
 
+### Panel auf zwei Geräten offen
+
+Hat jemand den Raum inzwischen an einem anderen Gerät gespeichert (z. B. am
+Handy beim Einmessen), speichert das Panel nicht einfach darüber. Es fragt,
+ob es neu laden soll. Deine Änderungen am zweiten Gerät gehen dabei
+verloren; trag sie nach dem Neuladen noch einmal ein.
+
 ### Sensor umsetzen oder einmessen
 
 Unter **Sensor und Raum → Sensor umsetzen** (nur Admins):

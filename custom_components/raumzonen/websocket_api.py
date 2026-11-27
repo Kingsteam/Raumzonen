@@ -8,7 +8,8 @@ Für das Panel:
 * ``raumzonen/rooms/get``: Räume mit Zonen, Regeln, Ansicht; dazu Vorlagen,
   Zonenarten, Grenzen und ob der Nutzer ändern darf (alle).
 * ``raumzonen/room/save``: Zonen, Ansicht, Umriss und Aufnahme eines Raums
-  ersetzen.
+  ersetzen. Mit ``stand`` (aus ``rooms/get``) wird ein veralteter Stand
+  abgelehnt (``veraltet``), statt fremde Änderungen zu überschreiben.
   Gespeichert wird nur, wenn das ganze Modell gültig ist; danach lädt die
   Integration neu (das Panel bleibt offen). Nur Admins.
 * ``raumzonen/live/subscribe``: Figuren, Spuren, Rohziele und Zustand je
@@ -51,6 +52,8 @@ from __future__ import annotations
 
 import copy
 from datetime import timedelta
+import hashlib
+import json
 import re
 from typing import TYPE_CHECKING, Any
 
@@ -182,7 +185,10 @@ def ws_rooms_get(
     connection.send_result(
         msg["id"],
         {
-            "raeume": [raum_to_dict(r) for r in entry.runtime_data.store.model.raeume],
+            "raeume": [
+                {**raum_to_dict(r), "stand": raum_stand(r)}
+                for r in entry.runtime_data.store.model.raeume
+            ],
             # Je FP400-Raum: fehlt die Zone beim Treiber, die den Strom offen hält?
             "datenstrom": {
                 r.id: datenstrom(hass, r.sensor.device_id)
@@ -241,6 +247,10 @@ MELDER_LAGE_SCHEMA = vol.Schema(
     {
         vol.Required("type"): f"{DOMAIN}/room/save",
         vol.Required("raum_id"): str,
+        # Stand des Raums, den das Panel geladen hat (aus ``rooms/get``).
+        # Weicht er ab, hat inzwischen jemand anders gespeichert (z. B. am
+        # Handy beim Einmessen): dann nicht still überschreiben.
+        vol.Optional("stand"): str,
         vol.Required("zonen"): [ZONE_SCHEMA],
         vol.Optional("ansicht_winkel"): vol.Coerce(float),
         # Nur die Lage des Sensors; Gerät und Quelle bleiben im Options-Flow.
@@ -297,6 +307,13 @@ async def ws_room_save(
     except KeyError:
         connection.send_error(msg["id"], "not_found", "Raum nicht gefunden")
         return
+    if "stand" in msg and msg["stand"] != raum_stand(raum):
+        connection.send_error(
+            msg["id"],
+            "veraltet",
+            "Der Raum wurde inzwischen an anderer Stelle gespeichert",
+        )
+        return
     try:
         zonen = []
         taken: set[str] = set()
@@ -350,7 +367,15 @@ async def ws_room_save(
     store.model = model
     await store.async_save()
     async_reload_keep_panel(hass, entry.entry_id)
-    connection.send_result(msg["id"], {"raum": raum_to_dict(raum)})
+    connection.send_result(
+        msg["id"], {"raum": {**raum_to_dict(raum), "stand": raum_stand(raum)}}
+    )
+
+
+def raum_stand(raum: Any) -> str:
+    """Kurzer Fingerabdruck eines Raums; ändert sich bei jedem Speichern."""
+    text = json.dumps(raum_to_dict(raum), sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(text.encode()).hexdigest()[:16]
 
 
 def _new_id(name: str, taken: set[str]) -> str:

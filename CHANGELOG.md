@@ -4,6 +4,17 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.25.1] - 2026-11-27
+
+### Behoben
+
+- Ist das Panel auf zwei Geräten offen (z. B. Handy fürs Einmessen und
+  Computer mit älterem Stand), überschreibt Speichern am zweiten Gerät nicht
+  mehr still die Änderungen des ersten (etwa die frisch eingemessene Lage
+  des Sensors). Das Panel fragt dann, ob es neu laden soll. `rooms/get`
+  liefert je Raum `stand`, `room/save` lehnt mit `veraltet` ab, wenn der
+  mitgeschickte Stand nicht mehr stimmt.
+
 ## [0.25.0] - 2026-11-27
 
 ### Hinzugefügt
