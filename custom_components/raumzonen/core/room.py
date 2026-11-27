@@ -138,6 +138,11 @@ class RoomSettings:
     exit_hold_s: float = 1.0
     # Hunderkennung: so viele Sekunden ruhig auf einem Hundeplatz.
     dog_after_s: float = 60.0
+    # Wer so lange als Person gemeldet war, bleibt eine Person, auch wenn der
+    # Sensor die Art später wechselt (der FP400 meldet einen Liegenden, der
+    # sich bewegt, gern sekundenlang als „curtain“). Eine Figur löst sich nicht
+    # auf, nur weil der Sensor ihre Art anders rät.
+    person_bleibt_s: float = 20.0
 
 
 class Room:
@@ -307,7 +312,10 @@ class Room:
         return False
 
     def _update_tags(self, track: Track, dt: float, now: float) -> None:
-        if track.type in NOT_PERSON or any(
+        if track.type == "person" and track.visible:
+            track.person_s += dt
+        sicher_person = track.person_s >= self.settings.person_bleibt_s
+        if (track.type in NOT_PERSON and not sicher_person) or any(
             z.shape.contains(track.x, track.y)
             for z in self.zones.values()
             if z.art == ART_STOERQUELLE
@@ -331,9 +339,11 @@ class Room:
             track.dog_score = min(track.dog_score + dt, 4 * self.settings.dog_after_s)
         elif not on_dog_place and moving:
             track.dog_score = max(0.0, track.dog_score - 2 * dt)
-        if track.type == "pet" or track.dog_score >= self.settings.dog_after_s:
+        if (track.type == "pet" and not sicher_person) or (
+            track.dog_score >= self.settings.dog_after_s
+        ):
             track.tags.add(TAG_HUND)
-        elif track.type == "person" or track.dog_score == 0:
+        elif track.type == "person" or sicher_person or track.dog_score == 0:
             track.tags.discard(TAG_HUND)
 
     def _membership(self, zone: Zone, track: Track, now: float) -> bool:

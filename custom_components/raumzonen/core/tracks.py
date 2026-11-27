@@ -108,6 +108,8 @@ class Track:
     # Vom Besitzer im Panel gesetzt: ``ich`` (die eigene Figur) oder ``hund``.
     # Lebt nur so lange wie die Spur (nach dem Neuladen ist sie weg).
     markierung: str | None = None
+    # So lange hat der Sensor diese Figur schon als Person gemeldet (s).
+    person_s: float = 0.0
     # Rohe Position vom Sensor (``x``/``y`` sind gefiltert, wenn der Filter an
     # ist). Fangbereich und Bewegungserkennung rechnen mit der rohen Position.
     raw_x: float = 0.0

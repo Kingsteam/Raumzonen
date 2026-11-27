@@ -259,3 +259,37 @@ def test_restore_then_sleeper_seen() -> None:
     ev += r.advance(200)
     assert free_time(ev) is None
     assert r.states["bett"].count == 1
+
+
+def test_person_bleibt_person_wenn_sensor_art_wechselt() -> None:
+    """Liegender bewegt sich, der Sensor meldet ihn plötzlich als Vorhang.
+
+    Nachgestellt (erfundene Werte) nach einer Nacht, in der das Bett dadurch
+    frei wurde, obwohl niemand aufgestanden war.
+    """
+    r = room()
+    frames = [
+        (i * 0.3, [Target(1, -150, 200 + i % 3, False, "person")]) for i in range(100)
+    ]
+    run(r, frames)
+    assert r.states["bett"].occupied
+    t0 = 30.0
+    run(
+        r,
+        [
+            (t0 + i * 0.3, [Target(1, -150 + (i % 5) * 6, 195, True, "curtain")])
+            for i in range(40)
+        ],
+    )
+    assert r.states["bett"].occupied
+    assert r.figure_count == 1
+    (track,) = r.tracker.tracks.values()
+    assert "stoerung" not in track.tags
+
+
+def test_kurze_person_dann_vorhang_ist_stoerung() -> None:
+    """Ein Vorhang, der anfangs kurz als Person gemeldet wird, bleibt Störung."""
+    r = room()
+    run(r, [(i * 0.3, [Target(1, 300, 300, True, "person")]) for i in range(5)])
+    run(r, [(2 + i * 0.3, [Target(1, 300, 300, True, "curtain")]) for i in range(10)])
+    assert r.figure_count == 0

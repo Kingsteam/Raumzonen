@@ -4,6 +4,18 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.22.1] - 2026-11-27
+
+### Behoben
+
+- Eine Figur, die der Sensor mindestens 20 s als Person gemeldet hat, bleibt
+  eine Person, auch wenn er ihre Art später wechselt (`person_bleibt_s`).
+  Der FP400 meldet einen Liegenden, der sich im Bett bewegt, sekundenlang als
+  „curtain“; Raumzonen zählte sie dann als Störquelle, und Bett und Raum
+  wurden frei, obwohl niemand aufgestanden war. Gleiches gilt für einen
+  Wechsel zu „pet“. Ein Vorhang, der nur kurz als Person auftaucht, bleibt
+  eine Störquelle.
+
 ## [0.22.0] - 2026-11-27
 
 ### Hinzugefügt
