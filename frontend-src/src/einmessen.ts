@@ -32,6 +32,19 @@ export function stellenProblem(punkte: Point[]): string {
   return "";
 }
 
+/**
+ * Hat der Sensor an zwei Stellen fast dieselbe Position gemeldet? Dann schickt
+ * er meist gerade keine neuen Positionen (Funk, frisch gekoppelt), und
+ * Rechnen ist sinnlos.
+ */
+export function sensorStellenProblem(sensor: Point[]): string {
+  for (let i = 0; i < sensor.length; i++)
+    for (let j = i + 1; j < sensor.length; j++)
+      if (Math.hypot(sensor[i][0] - sensor[j][0], sensor[i][1] - sensor[j][1]) < 30)
+        return "Der Sensor hat an zwei Stellen fast dieselbe Position gemeldet. Wahrscheinlich schickt er gerade keine neuen Positionen: Im Plan muss dein Punkt mitgehen, wenn du gehst. Erst wenn das klappt, noch einmal einmessen.";
+  return "";
+}
+
 export function einmessen(sensor: Point[], raum: Point[]): Einmessung | null {
   const n = Math.min(sensor.length, raum.length);
   if (n < 2) return null;

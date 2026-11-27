@@ -47,7 +47,7 @@ import { styles } from "./styles";
 import { dauer, dichte, flecken, pixel, summe, type HeatCell } from "./heat";
 import { fehlerText } from "./fehler";
 import { hatTuerZone, naechsteTuer, oeffnungMitte, oeffnungName, summeDauer, tuerenVon, tuerZone, vereinigen, wechsel, type Tuer } from "./haus";
-import { ankerStellen, besteDrei, einmessen, stelle, stellenProblem, type Anker, type Einmessung } from "./einmessen";
+import { ankerStellen, besteDrei, einmessen, sensorStellenProblem, stelle, stellenProblem, type Anker, type Einmessung } from "./einmessen";
 import { bbox, erkenneGrundriss, jpegsAusPdf, uebernehmen, type Grundriss } from "./grundriss";
 import type { Auswertung, AuswertungFigur, Form, Hass, Heat, Kandidaten, MelderLage, Plan, Live, LiveFigur, Oeffnung, Point, Raum, Regel, RoomsResult, Zone } from "./types";
 
@@ -699,13 +699,15 @@ export class RaumzonenPanel extends LitElement {
   private wizPerson(): { punkt: Point | null; hinweis: string } {
     const live = this.live;
     if (!live || !live.verfuegbar || live.problem) return { punkt: null, hinweis: "Sensor nicht erreichbar." };
+    const alt = live.letzter_rahmen_vor_s ?? 0;
+    const stillHinweis = alt > 30 ? `Der Sensor hat seit ${Math.round(alt)} s keine neue Position geschickt. Kurz einen Schritt machen; geht dein Punkt im Plan nicht mit, liefert der Sensor gerade keine Daten.` : "";
     // „Das bin ich“ geht vor: dann stören andere Figuren (Partner, Hund) nicht.
     const ich = live.figuren.find((x) => x.markierung === "ich");
     if (ich) return ich.gehalten ? { punkt: null, hinweis: "Deine Figur ist gerade nicht zu sehen. Kurz bewegen." } : { punkt: [ich.x, ich.y], hinweis: "" };
     const f = live.figuren.filter((x) => !x.gehalten && !x.tags.some((t) => ["wiederhergestellt", "stoerung", "hund", "echo"].includes(t)));
     if (f.length === 0) return { punkt: null, hinweis: "Der Sensor sieht gerade niemanden." };
     if (f.length > 1) return { punkt: null, hinweis: "Der Sensor sieht mehr als eine Figur. Tippe unten bei deiner Figur auf „Das bin ich“." };
-    return { punkt: [f[0].x, f[0].y], hinweis: "" };
+    return { punkt: [f[0].x, f[0].y], hinweis: stillHinweis };
   }
 
   /** Figuren, die man im Plan sieht (ohne Platzhalter und Störquellen). */
@@ -904,7 +906,7 @@ export class RaumzonenPanel extends LitElement {
       return;
     }
     const raum = w.raum as Point[];
-    const problem = stellenProblem(raum);
+    const problem = sensorStellenProblem(w.sensor as Point[]) || stellenProblem(raum);
     const e = einmessen(w.sensor as Point[], raum);
     if (!e || problem) {
       this.wiz = { ...w, schritt: "nachher", aktiv: 0, sensor: [null, null, null], raum: w.modus === "einmessen" ? [null, null, null] : w.raum, fehler: problem || "Konnte nicht rechnen. Noch einmal." };

@@ -4,6 +4,15 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.24.1] - 2026-11-27
+
+### Geändert
+
+- Assistent „Sensor einmessen“: Meldet der Sensor an zwei Stellen fast
+  dieselbe Position, sagt der Assistent jetzt, dass der Sensor gerade keine
+  neuen Positionen schickt (statt „Konnte nicht rechnen“). Beim Messen
+  erscheint ein Hinweis, wenn seit über 30 s keine Position kam.
+
 ## [0.24.0] - 2026-11-27
 
 ### Hinzugefügt

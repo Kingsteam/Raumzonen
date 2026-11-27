@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ankerStellen, besteDrei, einmessen, stelle, stellenProblem } from "./einmessen";
+import { ankerStellen, besteDrei, einmessen, sensorStellenProblem, stelle, stellenProblem } from "./einmessen";
 import { roomToSensor, sensorToRoom } from "./geometry";
 import type { Point } from "./types";
 
@@ -77,5 +77,12 @@ describe("ankerStellen", () => {
     const drei = besteDrei(a);
     expect(drei).toHaveLength(3);
     expect(stellenProblem(drei.map((i) => a[i].punkt))).toBe("");
+  });
+});
+
+describe("sensorStellenProblem", () => {
+  it("meldet gleiche Positionen (Sensor liefert nichts Neues)", () => {
+    expect(sensorStellenProblem([[100, 200], [100, 201], [300, 50]])).toContain("dieselbe Position");
+    expect(sensorStellenProblem([[100, 200], [250, 300], [300, 50]])).toBe("");
   });
 });
