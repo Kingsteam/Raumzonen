@@ -43,6 +43,8 @@ Vertrag ``raumzonen/1`` (``vertrag.py``, ``api.py``):
   (``null`` = Markierung weg); gilt, solange die Spur lebt. Nur Admins.
 * ``raumzonen/figuren/aufraeumen``: alle Figuren eines Raums außer
   ``behalten`` entfernen (Fehlerkennungen). Nur Admins.
+* ``raumzonen/verwendung/get``: welche Automationen und Skripte Anzeigen,
+  Sensor oder Melder eines Raums nutzen (nur lesen). Nur Admins.
 * ``raumzonen/datenstrom/set``: beim Zigbee-Treiber des FP400 die Zone
   „Raumzonen Datenstrom“ eintragen (``an``) oder nur diese wieder entfernen,
   damit der Treiber laufend Positionen holt. Nur auf Knopfdruck. Nur Admins.
@@ -115,6 +117,7 @@ from .serialize import (
     regel_to_dict,
     zone_from_dict,
 )
+from .verwendung import raum_entitaeten, verwendung
 
 if TYPE_CHECKING:
     from . import RaumzonenConfigEntry
@@ -168,6 +171,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_figur_markieren,
         ws_figuren_aufraeumen,
         ws_datenstrom_set,
+        ws_verwendung_get,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -1479,4 +1483,29 @@ async def ws_datenstrom_set(
     # geschriebenen Wert rechnen.
     connection.send_result(
         msg["id"], datenstrom(hass, device_id, ersetzt={entity_id: wert})
+    )
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/verwendung/get", vol.Required("raum_id"): str}
+)
+@websocket_api.require_admin
+@callback
+def ws_verwendung_get(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Automationen und Skripte, die etwas aus dem Raum nutzen (nur lesen)."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Raumzonen ist nicht geladen")
+        return
+    raeume = entry.runtime_data.store.model.raeume
+    raum = next((r for r in raeume if r.id == msg["raum_id"]), None)
+    if raum is None:
+        connection.send_error(msg["id"], "not_found", "Raum nicht gefunden")
+        return
+    entitaeten = raum_entitaeten(hass, entry.entry_id, raum, [r.id for r in raeume])
+    connection.send_result(
+        msg["id"],
+        {"entitaeten": len(entitaeten), "nutzer": verwendung(hass, entitaeten)},
     )

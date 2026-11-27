@@ -623,3 +623,102 @@ async def test_room_save_veralteter_stand(
     )
     assert (await client.receive_json())["success"]
     await hass.async_block_till_done()
+
+
+async def test_verwendung(
+    hass: HomeAssistant,
+    loaded: MockConfigEntry,
+    hass_ws_client: Any,
+    hass_read_only_access_token: str,
+) -> None:
+    """Reiter „Verwendung“: wer nutzt Anzeigen des Raums, und wer löst aus."""
+    from homeassistant.helpers import (
+        category_registry as cr,
+        entity_registry as er,
+        label_registry as lr,
+    )
+    from homeassistant.setup import async_setup_component
+
+    reg = er.async_get(hass)
+    eigene = {
+        e.unique_id.split("_", 1)[1]: e.entity_id
+        for e in er.async_entries_for_config_entry(reg, loaded.entry_id)
+    }
+    bett = eigene["schlafzimmer_bett_belegt"]
+    personen = eigene["schlafzimmer_bett_personen"]
+    assert await async_setup_component(
+        hass,
+        "automation",
+        {
+            "automation": [
+                {
+                    "id": "licht_bett",
+                    "alias": "Licht am Bett",
+                    "triggers": [{"trigger": "state", "entity_id": bett}],
+                    "conditions": [
+                        {
+                            "condition": "numeric_state",
+                            "entity_id": personen,
+                            "above": 0,
+                        }
+                    ],
+                    "actions": [],
+                },
+                {
+                    "id": "fremd",
+                    "alias": "Fremd",
+                    "triggers": [{"trigger": "state", "entity_id": "sun.sun"}],
+                    "actions": [],
+                },
+            ]
+        },
+    )
+    assert await async_setup_component(
+        hass,
+        "script",
+        {
+            "script": {
+                "nachschauen": {
+                    "alias": "Nachschauen",
+                    "sequence": [
+                        {"condition": "state", "entity_id": bett, "state": "on"}
+                    ],
+                }
+            }
+        },
+    )
+    await hass.async_block_till_done()
+    kategorie = cr.async_get(hass).async_create(scope="automation", name="Licht")
+    label = lr.async_get(hass).async_create("Schlaf")
+    reg.async_update_entity(
+        "automation.licht_am_bett",
+        categories={"automation": kategorie.category_id},
+        labels={label.label_id},
+    )
+
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/verwendung/get", "raum_id": "schlafzimmer"}
+    )
+    msg = await client.receive_json()
+    assert msg["success"], msg
+    nutzer = {n["entity_id"]: n for n in msg["result"]["nutzer"]}
+    assert set(nutzer) == {"automation.licht_am_bett", "script.nachschauen"}
+    auto = nutzer["automation.licht_am_bett"]
+    assert auto["art"] == "automation"
+    assert auto["an"] is True
+    assert auto["kategorie"] == "Licht"
+    assert auto["labels"] == ["Schlaf"]
+    assert auto["editor"] == "/config/automation/edit/licht_bett"
+    rollen = {e["entity_id"]: e["loest_aus"] for e in auto["entitaeten"]}
+    assert rollen == {bett: True, personen: False}
+    skript = nutzer["script.nachschauen"]
+    assert skript["art"] == "skript"
+    assert skript["editor"] == "/config/script/edit/nachschauen"
+    assert [e["loest_aus"] for e in skript["entitaeten"]] == [False]
+
+    leser = await hass_ws_client(hass, hass_read_only_access_token)
+    await leser.send_json_auto_id(
+        {"type": f"{DOMAIN}/verwendung/get", "raum_id": "schlafzimmer"}
+    )
+    assert (await leser.receive_json())["error"]["code"] == "unauthorized"

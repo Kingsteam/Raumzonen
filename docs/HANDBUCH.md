@@ -129,9 +129,16 @@ raum: haus          # oder ein Raum, z. B. wohnzimmer
 stockwerk: erdgeschoss   # optional, nur beim Hausplan
 titel: Erdgeschoss       # optional
 hintergrund: true        # Grundriss zeigen
-figuren: true            # Personen zeigen
+figuren: true            # Personen als Punkte
+personen: true           # je Raum die Zahl der Personen
+kompakt: false           # true: nur Umrisse und Zahlen (z. B. Tablet)
 hoehe: 320               # Höhe in Pixel
 ```
+
+Mit `personen: true` steht in jedem Raum, wie viele Personen gerade drin
+sind (ein als Hund markiertes Tier zählt nicht); Räume mit jemandem darin
+sind leicht eingefärbt. Räume mit Bewegungsmeldern zeigen „jemand da“ oder
+„niemand“, weil Melder nicht zählen können.
 
 **Wege durchs Haus:** Damit Raumzonen sieht, wer von wo nach wo geht,
 braucht jede Tür (1) eine Verbindung zur Tür gegenüber (siehe oben) und (2)
@@ -200,6 +207,16 @@ die Zone „Raumzonen Datenstrom“ über den ganzen Bereich ein. Sie schaltet
 nichts, Raumzonen nutzt sie nicht für eigene Zonen. Raumzonen schreibt nur
 in einen leeren Platz und überschreibt nie eine andere Zone. Mit
 **„Zurücknehmen“** entfernt Raumzonen nur diese eine Zone wieder.
+
+### Verwendung: welche Automationen nutzen diesen Raum?
+
+Der Reiter **Verwendung** (nur Admins) listet alle Automationen und Skripte,
+die etwas aus dem Raum nutzen: die Anzeigen von Raumzonen, den Sensor und die
+Melder. Oben wählst du, ob nach **Kategorie**, **Label** oder gar nicht
+gruppiert wird. Unter jedem Eintrag stehen die benutzten Anzeigen; ein Blitz
+und ein grüner Rahmen heißen „löst die Automation aus“, ohne heißt „wird nur
+abgefragt“. Antippen öffnet die Automation oder das Skript im Editor von Home
+Assistant. Raumzonen ändert dort nichts.
 
 ### Panel auf zwei Geräten offen
 

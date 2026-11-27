@@ -250,3 +250,23 @@ export interface Hass {
   };
   language?: string;
 }
+
+/** Reiter „Verwendung“ (WebSocket ``raumzonen/verwendung/get``, nur Admins, nur lesen). */
+export interface Verwendung {
+  entitaeten: number;
+  nutzer: VerwendungNutzer[];
+}
+
+export interface VerwendungNutzer {
+  entity_id: string;
+  art: "automation" | "skript";
+  name: string;
+  /** Automation an/aus; bei Skripten null. */
+  an: boolean | null;
+  zuletzt: string | null;
+  kategorie: string | null;
+  labels: string[];
+  /** Pfad zum Editor in Home Assistant. */
+  editor: string | null;
+  entitaeten: { entity_id: string; name: string; loest_aus: boolean }[];
+}

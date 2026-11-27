@@ -331,6 +331,11 @@ def main() -> None:
     shutil.copy(HIER / "config" / "configuration.yaml", daten / "configuration.yaml")
     with (daten / "configuration.yaml").open("a") as datei:
         datei.write(f"\nhttp:\n  server_port: {args.port}\n")
+    # Beispiele für den Reiter „Verwendung“ (nur beim ersten Start; danach
+    # gehören sie der Instanz und lassen sich im Editor ändern).
+    for name in ("automations.yaml", "scripts.yaml"):
+        if not (daten / name).exists():
+            shutil.copy(HIER / "config" / name, daten / name)
     links = {
         "raumzonen": REPO / "custom_components" / "raumzonen",
         "raumzonen_sim": HIER / "custom_components" / "raumzonen_sim",

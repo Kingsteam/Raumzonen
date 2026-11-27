@@ -4,6 +4,26 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.26.0] - 2026-11-27
+
+### Hinzugefügt
+
+- Neuer Reiter „Verwendung“ im Panel (nur Admins, nur lesen): welche
+  Automationen und Skripte Anzeigen, Sensor oder Melder des Raums nutzen,
+  gruppiert nach Kategorie, Label oder ohne. Je Eintrag an/aus, zuletzt
+  ausgelöst und die benutzten Anzeigen; Auslöser mit Blitz. Antippen öffnet
+  den Editor. Neuer WebSocket-Befehl `raumzonen/verwendung/get`.
+- Dashboard-Karte: je Raum die Zahl der Personen (Melder-Räume: „jemand
+  da“), Räume mit jemandem darin eingefärbt; Form `kompakt: true` nur mit
+  Umrissen und Zahlen (z. B. fürs Tablet); Schalter `personen`.
+- Testinstanz: erfundene Beispiel-Automationen und ein Skript für den
+  neuen Reiter.
+
+### Geändert
+
+- Die Reiter im Panel zeigen Symbol und kurzes Wort („Raum“ statt „Sensor
+  und Raum“), damit vier Reiter Platz haben.
+
 ## [0.25.1] - 2026-11-27
 
 ### Behoben

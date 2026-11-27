@@ -1,0 +1,7 @@
+# Erfundenes Beispiel für die Testinstanz (Reiter „Verwendung“).
+gute_nacht:
+  alias: Gute Nacht
+  sequence:
+    - condition: state
+      entity_id: binary_sensor.schlafzimmer_bett
+      state: "on"

@@ -49,7 +49,7 @@ import { fehlerText } from "./fehler";
 import { hatTuerZone, naechsteTuer, oeffnungMitte, oeffnungName, summeDauer, tuerenVon, tuerZone, vereinigen, wechsel, type Tuer } from "./haus";
 import { ankerStellen, besteDrei, einmessen, sensorStellenProblem, stelle, stellenProblem, type Anker, type Einmessung } from "./einmessen";
 import { bbox, erkenneGrundriss, jpegsAusPdf, uebernehmen, type Grundriss } from "./grundriss";
-import type { Auswertung, AuswertungFigur, Datenstrom, Form, Hass, Heat, Kandidaten, MelderLage, Plan, Live, LiveFigur, Oeffnung, Point, Raum, Regel, RoomsResult, Zone } from "./types";
+import type { Auswertung, AuswertungFigur, Datenstrom, Verwendung, VerwendungNutzer, Form, Hass, Heat, Kandidaten, MelderLage, Plan, Live, LiveFigur, Oeffnung, Point, Raum, Regel, RoomsResult, Zone } from "./types";
 
 const DOMAIN = "raumzonen";
 const SNAP_CM = 5;
@@ -64,7 +64,8 @@ interface WegInfo {
 }
 
 type Tool = "auswahl" | "rechteck" | "vieleck" | "zellen" | "umriss" | "oeffnung";
-type Tab = "zonen" | "raum" | "auswertung";
+type Tab = "zonen" | "raum" | "auswertung" | "verwendung";
+type Gruppe = "kategorie" | "label" | "keine";
 
 /** Assistent „Sensor umsetzen / einmessen“. */
 interface Wizard {
@@ -212,6 +213,10 @@ export class RaumzonenPanel extends LitElement {
   @state() private selected = -1;
   @state() private sensorOpen = false;
   @state() private tab: Tab = "zonen";
+  /** Reiter „Verwendung“: geladene Liste, Gruppierung. */
+  @state() private verw?: Verwendung;
+  @state() private verwGruppe: Gruppe = "kategorie";
+  @state() private verwFehler = "";
   @state() private tool: Tool = "auswahl";
   @state() private draft: Point[] = [];
   @state() private rectDraft: [Point, Point] | null = null;
@@ -417,6 +422,7 @@ export class RaumzonenPanel extends LitElement {
       this.ausw = undefined;
       this.auswFigur = "";
       if (this.tab === "auswertung") void this.loadAuswertung();
+      if (this.tab === "verwendung") void this.loadVerwendung();
     }
   }
 
@@ -451,10 +457,85 @@ export class RaumzonenPanel extends LitElement {
   private openTab(tab: Tab): void {
     this.tab = tab;
     window.clearInterval(this.auswTimer);
+    if (tab === "verwendung") void this.loadVerwendung();
     if (tab !== "auswertung") return;
     void this.loadAuswertung();
     // Solange die Auswertung offen ist, jede Minute nachziehen.
     this.auswTimer = window.setInterval(() => void this.loadAuswertung(), 60_000);
+  }
+
+  private async loadVerwendung(): Promise<void> {
+    if (!this._hass || !this.kannAendern) return;
+    const raumId = this.raumId;
+    try {
+      const r = await this._hass.callWS<Verwendung>({ type: `${DOMAIN}/verwendung/get`, raum_id: raumId });
+      if (raumId !== this.raumId) return;
+      this.verw = r;
+      this.verwFehler = "";
+    } catch (err) {
+      this.verwFehler = fehlerText(err);
+    }
+  }
+
+  /** In den Editor von Home Assistant wechseln (wie ein Link in der Seitenleiste). */
+  private oeffneEditor(pfad: string): void {
+    window.history.pushState(null, "", pfad);
+    window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } }));
+  }
+
+  private renderVerwendungTab(): TemplateResult {
+    if (this.verwFehler) return html`<p class="note warn">Nicht geladen: ${this.verwFehler}</p>`;
+    const v = this.verw;
+    if (!v) return html`<p class="hint">Lädt …</p>`;
+    const gruppen = new Map<string, VerwendungNutzer[]>();
+    for (const n of v.nutzer) {
+      const namen =
+        this.verwGruppe === "kategorie" ? [n.kategorie ?? "Ohne Kategorie"] : this.verwGruppe === "label" ? (n.labels.length ? n.labels : ["Ohne Label"]) : [""];
+      for (const g of namen) gruppen.set(g, [...(gruppen.get(g) ?? []), n]);
+    }
+    const ohne = (g: string) => g.startsWith("Ohne ");
+    const reihe = [...gruppen.keys()].sort((a, b) => Number(ohne(a)) - Number(ohne(b)) || a.localeCompare(b, "de"));
+    return html`<p class="hint small">
+        Automationen und Skripte, die etwas aus diesem Raum nutzen (${v.entitaeten} Anzeigen, Sensor und Melder). Antippen öffnet den Editor.
+        Raumzonen ändert hier nichts.
+      </p>
+      <div class="label-text">Gruppieren nach</div>
+      <div class="levels" role="group" aria-label="Gruppieren nach">
+        ${(["kategorie", "label", "keine"] as Gruppe[]).map(
+          (g) => html`<button class=${this.verwGruppe === g ? "active" : ""} @click=${() => (this.verwGruppe = g)}>${{ kategorie: "Kategorie", label: "Label", keine: "keine" }[g]}</button>`,
+        )}
+      </div>
+      ${v.nutzer.length
+        ? reihe.map(
+            (g) => html`${g ? html`<h3>${g}</h3>` : nothing}
+              <ul class="list verw">
+                ${gruppen.get(g)!.map((n) => this.renderNutzer(n))}
+              </ul>`,
+          )
+        : html`<p class="hint">Keine Automation und kein Skript nutzt bisher etwas aus diesem Raum.</p>`}`;
+  }
+
+  private renderNutzer(n: VerwendungNutzer): TemplateResult {
+    const zuletzt = n.zuletzt ? new Date(n.zuletzt) : null;
+    const wann = zuletzt
+      ? `zuletzt ${zuletzt.toLocaleString("de-AT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}`
+      : n.art === "automation"
+        ? "noch nie ausgelöst"
+        : "";
+    const zustand = n.an === null ? "Skript" : n.an ? "an" : "aus";
+    return html`<li class="item">
+      <div class="row ${n.editor ? "" : "static"}" title=${n.editor ? "Im Editor öffnen" : ""} @click=${() => n.editor && this.oeffneEditor(n.editor)}>
+        <span class="marker-icon"><ha-icon icon=${n.art === "automation" ? "mdi:robot-outline" : "mdi:script-text-outline"}></ha-icon></span>
+        <span class="name">${n.name}<small>${[zustand, wann].filter(Boolean).join(" · ")}</small></span>
+        ${n.an === false ? html`<span class="badge off">aus</span>` : nothing}
+        ${n.editor ? html`<ha-icon class="weiter" icon="mdi:chevron-right"></ha-icon>` : nothing}
+      </div>
+      <div class="verw-chips">
+        ${n.entitaeten.map(
+          (e) => html`<span class="verw-chip ${e.loest_aus ? "ausloeser" : ""}" title=${e.entity_id}>${e.loest_aus ? html`<ha-icon icon="mdi:flash"></ha-icon>` : nothing}${e.name}</span>`,
+        )}
+      </div>
+    </li>`;
   }
 
   private async loadAuswertung(): Promise<void> {
@@ -4616,12 +4697,13 @@ export class RaumzonenPanel extends LitElement {
     return html`<aside class="side">
       <div class="tabs" role="tablist">
         <button class=${this.tab === "zonen" ? "active" : ""} role="tab" @click=${() => this.openTab("zonen")}><ha-icon icon="mdi:shape-outline"></ha-icon>Zonen</button>
-        <button class=${this.tab === "raum" ? "active" : ""} role="tab" @click=${() => this.openTab("raum")}><ha-icon icon="mdi:floor-plan"></ha-icon>${this.istMelder ? "Melder und Raum" : "Sensor und Raum"}</button>
+        <button class=${this.tab === "raum" ? "active" : ""} role="tab" title=${this.istMelder ? "Melder und Raum" : "Sensor und Raum"} @click=${() => this.openTab("raum")}><ha-icon icon="mdi:floor-plan"></ha-icon>Raum</button>
         ${this.kannAendern
-          ? html`<button class=${this.tab === "auswertung" ? "active" : ""} role="tab" @click=${() => this.openTab("auswertung")}><ha-icon icon="mdi:chart-bubble"></ha-icon>Auswertung</button>`
+          ? html`<button class=${this.tab === "auswertung" ? "active" : ""} role="tab" @click=${() => this.openTab("auswertung")}><ha-icon icon="mdi:chart-bubble"></ha-icon>Auswertung</button>
+              <button class=${this.tab === "verwendung" ? "active" : ""} role="tab" title="Welche Automationen und Skripte nutzen diesen Raum?" @click=${() => this.openTab("verwendung")}><ha-icon icon="mdi:robot-outline"></ha-icon>Verwendung</button>`
           : nothing}
       </div>
-      <div class="side-body">${this.tab === "zonen" ? this.renderZonesTab() : this.tab === "raum" ? this.renderRoomTab() : this.renderAuswertungTab()}</div>
+      <div class="side-body">${this.tab === "zonen" ? this.renderZonesTab() : this.tab === "raum" ? this.renderRoomTab() : this.tab === "verwendung" ? this.renderVerwendungTab() : this.renderAuswertungTab()}</div>
     </aside>`;
   }
 

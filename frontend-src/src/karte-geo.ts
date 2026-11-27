@@ -45,3 +45,26 @@ export function rahmen(punkte: Point[], rand = 40): [number, number, number, num
   return [Math.min(...xs) - rand, Math.min(...ys) - rand, Math.max(...xs) + rand, Math.max(...ys) + rand];
 }
 
+
+/** Was die Karte für einen Raum zeigt: Zahl der Personen (Radar) oder „da“ (Melder). */
+export interface RaumStand {
+  ok: boolean;
+  da: boolean;
+  /** Personen im Raum; bei Melder-Räumen unbekannt (null). */
+  personen: number | null;
+  text: string;
+}
+
+export function raumStand(
+  raum: Pick<Raum, "art">,
+  live: { verfuegbar: boolean; problem?: string | null; zonen: Record<string, { belegt: boolean; personen: number }> } | undefined,
+): RaumStand {
+  const ok = !!live && live.verfuegbar && !live.problem;
+  const zone = live?.zonen["anwesenheit"];
+  const da = !!zone?.belegt;
+  if (!ok) return { ok, da, personen: null, text: "nicht erreichbar" };
+  if (raum.art === "melder") return { ok, da, personen: null, text: da ? "jemand da" : "niemand" };
+  // Radar: gezählte Personen (ein als Hund markiertes Ziel zählt nicht); belegt ohne Zahl = gehaltene Figur.
+  const n = Math.max(zone?.personen ?? 0, da ? 1 : 0);
+  return { ok, da: n > 0, personen: n, text: n === 0 ? "niemand" : n === 1 ? "1 Person" : `${n} Personen` };
+}

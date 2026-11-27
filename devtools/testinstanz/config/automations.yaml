@@ -1,0 +1,18 @@
+# Erfundene Beispiele für die Testinstanz (Reiter „Verwendung“). Sie schalten nichts.
+- id: beispiel_bett
+  alias: Nachtlicht am Bett
+  triggers:
+    - trigger: state
+      entity_id: binary_sensor.schlafzimmer_bett
+  conditions:
+    - condition: state
+      entity_id: binary_sensor.schlafzimmer_anwesenheit
+      state: "on"
+  actions: []
+- id: beispiel_leer
+  alias: Licht aus, wenn leer
+  triggers:
+    - trigger: state
+      entity_id: binary_sensor.schlafzimmer_anwesenheit
+      to: "off"
+  actions: []

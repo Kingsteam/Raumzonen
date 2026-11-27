@@ -238,12 +238,47 @@ export const styles = css`
   }
   .tabs button {
     flex: 1;
+    min-width: 0;
+    flex-direction: column;
     justify-content: center;
+    gap: 2px;
     border-radius: 0;
-    padding: 14px 8px 12px;
+    padding: 10px 4px 8px;
     color: var(--muted);
     border-bottom: 2px solid transparent;
     font-weight: 500;
+    font-size: 12.5px;
+  }
+  .tabs button ha-icon {
+    --mdc-icon-size: 20px;
+  }
+  /* Reiter „Verwendung“ */
+  .verw .weiter {
+    color: var(--muted);
+    --mdc-icon-size: 20px;
+  }
+  .verw-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 0 12px 10px 48px;
+  }
+  .verw-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    border: 2px solid var(--line);
+    color: var(--primary-text-color);
+  }
+  .verw-chip.ausloeser {
+    border-color: var(--rz-tuer, var(--accent));
+  }
+  .verw-chip ha-icon {
+    --mdc-icon-size: 14px;
+    color: var(--rz-tuer, var(--accent));
   }
   .tabs button.active {
     color: var(--accent);

@@ -21,6 +21,9 @@ recorder:
   purge_keep_days: 1
 system_health:
 search:
+# Für den Reiter „Verwendung“: Beispiel-Automationen und -Skripte (start.py legt sie an)
+automation: !include automations.yaml
+script: !include scripts.yaml
 logger:
   default: warning
   logs:

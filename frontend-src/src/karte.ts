@@ -9,6 +9,8 @@
  *   hintergrund: true     # Grundriss zeigen
  *   figuren: true         # Personen als Punkte
  *   hoehe: 320            # Höhe in Pixel
+ *   personen: true        # je Raum die Zahl der Personen (Melder-Räume: „da“)
+ *   kompakt: false        # nur Umrisse und Zahlen (z. B. fürs Tablet)
  *
  * Daten kommen über die WebSocket-Befehle, die alle Nutzer lesen dürfen
  * (`rooms/get`, `live/subscribe`, `plan/bild/get`). Die Karte ändert nichts.
@@ -16,12 +18,11 @@
 
 import { LitElement, css, html, nothing, svg, type TemplateResult } from "lit";
 import { formCenter, formPoints, toHouse } from "./geometry";
-import { lageVon, planZuHaus, rahmen, stockwerkeVon, umrissVon } from "./karte-geo";
+import { lageVon, planZuHaus, rahmen, raumStand, stockwerkeVon, umrissVon } from "./karte-geo";
 import { kommenGehen, kommenGehenText, rolleOf } from "./editor";
 import type { Hass, Live, Plan, Point, Raum, RoomsResult } from "./types";
 
 const DOMAIN = "raumzonen";
-const ANWESENHEIT = "anwesenheit";
 
 export interface KartenConfig {
   type: string;
@@ -31,6 +32,8 @@ export interface KartenConfig {
   hintergrund?: boolean;
   figuren?: boolean;
   hoehe?: number;
+  personen?: boolean;
+  kompakt?: boolean;
 }
 
 /** Haus → SVG (y zeigt im Bild nach unten). */
@@ -69,15 +72,17 @@ export class RaumzonenKarte extends LitElement {
         { name: "hintergrund", selector: { boolean: {} } },
         { name: "figuren", selector: { boolean: {} } },
         { name: "hoehe", selector: { number: { min: 150, max: 1200, step: 10, unit_of_measurement: "px" } } },
+        { name: "personen", selector: { boolean: {} } },
+        { name: "kompakt", selector: { boolean: {} } },
       ],
       computeLabel: (s: { name: string }) =>
-        ({ raum: "Raum („haus“ oder Kennung des Raums)", stockwerk: "Stockwerk (nur Hausplan)", titel: "Titel", hintergrund: "Grundriss zeigen", figuren: "Personen zeigen", hoehe: "Höhe" })[s.name] ?? s.name,
+        ({ raum: "Raum („haus“ oder Kennung des Raums)", stockwerk: "Stockwerk (nur Hausplan)", titel: "Titel", hintergrund: "Grundriss zeigen", figuren: "Personen als Punkte", hoehe: "Höhe", personen: "Zahl der Personen je Raum", kompakt: "Kompakt: nur Umrisse und Zahlen" })[s.name] ?? s.name,
     };
   }
 
   setConfig(config: KartenConfig): void {
     if (!config) throw new Error("Keine Einstellungen");
-    this._config = { raum: "haus", hintergrund: true, figuren: true, hoehe: 320, ...config };
+    this._config = { raum: "haus", hintergrund: true, figuren: true, personen: true, kompakt: false, hoehe: 320, ...config };
     if (this._geladen) void this._laden();
   }
 
@@ -152,7 +157,7 @@ export class RaumzonenKarte extends LitElement {
         // Raum gerade nicht da: bleibt ohne Live-Daten.
       }
     }
-    if (this._config.hintergrund !== false) void this._ladeBilder();
+    if (this._config.hintergrund !== false && !this._config.kompakt) void this._ladeBilder();
   }
 
   private async _ladeBilder(): Promise<void> {
@@ -193,10 +198,13 @@ export class RaumzonenKarte extends LitElement {
   private _renderRaum(raum: Raum, skala: number): TemplateResult {
     const lage = lageVon(raum);
     const live = this._live[raum.id];
-    const ok = !!live && live.verfuegbar && !live.problem;
-    const da = !!live?.zonen[ANWESENHEIT]?.belegt;
+    const stand = raumStand(raum, live);
+    const { ok, da } = stand;
+    const kompakt = !!this._config?.kompakt;
     const umriss = umrissVon(raum).map((q) => toHouse(q, lage));
-    const zonen = raum.zonen
+    const zonen = kompakt
+      ? []
+      : raum.zonen
       .filter((z) => rolleOf(z) !== "ignorieren")
       .map((z) => {
         const belegt = !!(z.id && live?.zonen[z.id]?.belegt);
@@ -209,7 +217,7 @@ export class RaumzonenKarte extends LitElement {
         return svg`${poly}<text class="kg" x=${kx} y=${ky} style=${`font-size:${12 / skala}px`}>${kommenGehenText(kg, !!z.treppe)}</text>`;
       });
     const figuren =
-      this._config?.figuren !== false && raum.art !== "melder"
+      !kompakt && this._config?.figuren !== false && raum.art !== "melder"
         ? (live?.figuren ?? [])
             .filter((f) => !f.tags.includes("wiederhergestellt") && !f.tags.includes("stoerung"))
             .map((f) => {
@@ -220,11 +228,16 @@ export class RaumzonenKarte extends LitElement {
         : [];
     const [mx, my] = s(umriss.reduce((a, q) => [a[0] + q[0] / umriss.length, a[1] + q[1] / umriss.length], [0, 0] as Point));
     const schrift = 13 / skala;
+    const zahl = this._config?.personen !== false && ok && stand.personen !== null;
+    const gross = (kompakt ? 30 : 20) / skala;
     return svg`<g class="raum">
       <polygon class="umriss ${ok ? "" : "aus"} ${da ? "da" : ""}" points=${pts(umriss)} style=${`stroke-width:${Math.max(3, 2.5 / skala)}px`} />
       ${zonen}${figuren}
       <text class="name" x=${mx} y=${my} style=${`font-size:${schrift}px`}>${raum.name}</text>
-      <text class="stand" x=${mx} y=${my + schrift * 1.2} style=${`font-size:${schrift * 0.8}px`}>${!ok ? "nicht erreichbar" : da ? "jemand da" : "niemand"}</text>
+      ${zahl
+        ? svg`<text class="zahl ${da ? "da" : ""}" x=${mx} y=${my + schrift * 0.4 + gross} style=${`font-size:${gross}px`}>${stand.personen}</text>`
+        : svg`<text class="stand ${da ? "da" : ""}" x=${mx} y=${my + schrift * 1.2} style=${`font-size:${schrift * 0.8}px`}>${stand.text}</text>`}
+      <title>${raum.name}: ${stand.text}</title>
     </g>`;
   }
 
@@ -243,7 +256,7 @@ export class RaumzonenKarte extends LitElement {
       ${this._fehler
         ? html`<div class="hinweis">${this._fehler}</div>`
         : html`<svg viewBox="${x0} ${-y1} ${w} ${h}" style=${`height:${hoehe}px`} preserveAspectRatio="xMidYMid meet" role="img" aria-label=${titel ?? "Raumzonen"}>
-            ${c?.hintergrund !== false ? this._plaene().map((p) => this._renderPlan(p)) : nothing}
+            ${c?.hintergrund !== false && !c?.kompakt ? this._plaene().map((p) => this._renderPlan(p)) : nothing}
             ${raeume.map((r) => this._renderRaum(r, skala))}
           </svg>`}
     </ha-card>`;
@@ -314,6 +327,17 @@ export class RaumzonenKarte extends LitElement {
     .stand {
       fill: var(--secondary-text-color, #727272);
     }
+    .stand.da {
+      fill: var(--rz-bereich);
+      font-weight: 600;
+    }
+    .zahl {
+      font-weight: 700;
+      fill: var(--secondary-text-color, #727272);
+    }
+    .zahl.da {
+      fill: var(--rz-bereich);
+    }
     .hinweis {
       padding: 16px;
       color: var(--secondary-text-color, #727272);
@@ -330,4 +354,4 @@ declare global {
 }
 window.customCards = window.customCards ?? [];
 if (!window.customCards.some((c) => c.type === "raumzonen-karte"))
-  window.customCards.push({ type: "raumzonen-karte", name: "Raumzonen", description: "Raum oder Hausplan live: Zonen belegt/frei, Personen, Grundriss.", preview: false });
+  window.customCards.push({ type: "raumzonen-karte", name: "Raumzonen", description: "Raum oder Hausplan live: Zonen belegt/frei, Personen je Raum, Grundriss.", preview: false });
