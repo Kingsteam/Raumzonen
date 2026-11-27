@@ -375,3 +375,71 @@ async def test_haus_save_nur_admin(
     await client.send_json_auto_id({"type": f"{DOMAIN}/haus/save", "raeume": []})
     msg = await client.receive_json()
     assert msg["error"]["code"] == "unauthorized"
+
+
+async def test_figuren_markieren_und_aufraeumen(
+    hass: HomeAssistant,
+    loaded: MockConfigEntry,
+    hass_ws_client,
+    hass_read_only_access_token,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Knöpfe „Das bin ich“, „Das ist der Hund“ und „Aufräumen“."""
+    sim = SimFp400(hass, freezer)
+    await sim.frame((0, 0, 200), (1, 100, 300), (2, -100, 250))
+    controller = loaded.runtime_data.controllers["schlafzimmer"]
+    ids = sorted(controller.room.tracker.tracks)
+    assert len(ids) == 3
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/figur/markieren",
+            "raum_id": "schlafzimmer",
+            "figur": ids[0],
+            "markierung": "ich",
+        }
+    )
+    assert (await client.receive_json())["success"]
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/figur/markieren",
+            "raum_id": "schlafzimmer",
+            "figur": ids[1],
+            "markierung": "hund",
+        }
+    )
+    assert (await client.receive_json())["success"]
+    live = controller.live()
+    marks = {f["id"]: f["markierung"] for f in live["figuren"]}
+    assert marks == {ids[0]: "ich", ids[1]: "hund", ids[2]: None}
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/figur/markieren",
+            "raum_id": "schlafzimmer",
+            "figur": 999,
+            "markierung": "ich",
+        }
+    )
+    assert (await client.receive_json())["error"]["code"] == "not_found"
+
+    # Nur Admins dürfen markieren und aufräumen.
+    viewer = await hass_ws_client(hass, hass_read_only_access_token)
+    await viewer.send_json_auto_id(
+        {"type": f"{DOMAIN}/figuren/aufraeumen", "raum_id": "schlafzimmer"}
+    )
+    assert (await viewer.receive_json())["error"]["code"] == "unauthorized"
+
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/figuren/aufraeumen",
+            "raum_id": "schlafzimmer",
+            "behalten": [ids[0]],
+        }
+    )
+    msg = await client.receive_json()
+    assert msg["result"] == {"entfernt": 2}
+    assert sorted(controller.room.tracker.tracks) == [ids[0]]
+    # Dieselben Ziele an derselben Stelle kommen nicht zurück.
+    await sim.wait(0.5)
+    await sim.frame((0, 0, 200), (1, 100, 300), (2, -100, 250))
+    assert sorted(controller.room.tracker.tracks) == [ids[0]]

@@ -4,6 +4,19 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.22.0] - 2026-11-27
+
+### Hinzugefügt
+
+- Assistent „Sensor umsetzen/einmessen“: Liste der Figuren mit Nummern wie
+  im Plan und drei Knöpfen: **„Das bin ich“** (nur diese Figur zählt beim
+  Messen, andere dürfen im Raum sein), **„Hund“** (die Figur zählt in keiner
+  Zone außer dem Hundeplatz und nicht bei den Figuren) und **„Aufräumen“**
+  (entfernt nach Rückfrage alle Figuren außer der eigenen; meldet der Sensor
+  ein entferntes Ziel weiter an derselben Stelle, bleibt es weg, bis es sich
+  bewegt). Neu: WebSocket `figur/markieren` und `figuren/aufraeumen` (nur
+  Admins), `markierung` je Figur in `live/subscribe`.
+
 ## [0.21.0] - 2026-11-26
 
 ### Geändert

@@ -634,6 +634,65 @@ export const styles = css`
     font-weight: 700;
     color: var(--primary-text-color);
   }
+  /* Figuren im Assistenten: „Das bin ich“, „Hund“, „Aufräumen“. */
+  .wiz-figuren {
+    border-top: 2px solid var(--line);
+    margin-top: 12px;
+    padding-top: 8px;
+  }
+  .wiz-figurliste {
+    list-style: none;
+    margin: 4px 0;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+  }
+  .wiz-figurliste li {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    border: 2px solid var(--line);
+    border-radius: 8px;
+    padding: 4px 8px;
+  }
+  .wiz-figurliste li.ich {
+    border-color: var(--rz-person);
+  }
+  .wiz-figurliste li.hund {
+    border-color: var(--rz-tier);
+  }
+  .wiz-figurtext {
+    flex: 1;
+    min-width: 8em;
+  }
+  .wiz-nr {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--rz-person);
+    color: var(--text-primary-color, #fff);
+    font-weight: 700;
+  }
+  .wiz-nr.tier {
+    background: var(--rz-tier);
+    color: var(--primary-text-color);
+  }
+  .wiz-nr.held {
+    background: none;
+    border: 2px dashed var(--rz-person);
+    color: var(--primary-text-color);
+  }
+  .figure-nr {
+    text-anchor: middle;
+    font-size: 11px;
+    font-weight: 700;
+    fill: var(--text-primary-color, #fff);
+    pointer-events: none;
+  }
   /* Handy-Assistent: großer Plan oben, ein Schritt unten, große Knöpfe. */
   .layout.handy {
     flex-direction: column;

@@ -146,6 +146,8 @@ export interface LiveFigur {
   bewegt: boolean;
   art: string | null;
   tags: string[];
+  /** Vom Besitzer gesetzt: „ich“ oder „hund“ (nur solange die Spur lebt). */
+  markierung?: "ich" | "hund" | null;
   spur: Point[];
 }
 

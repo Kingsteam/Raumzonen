@@ -74,7 +74,7 @@ import { fehlerText } from "./fehler";
 import { hatTuerZone, naechsteTuer, oeffnungMitte, oeffnungName, summeDauer, tuerenVon, tuerZone, vereinigen, wechsel, type Tuer } from "./haus";
 import { ankerStellen, besteDrei, einmessen, stelle, stellenProblem, type Anker, type Einmessung } from "./einmessen";
 import { bbox, erkenneGrundriss, jpegsAusPdf, uebernehmen, type Grundriss } from "./grundriss";
-import type { Auswertung, AuswertungFigur, Form, Hass, Heat, Kandidaten, MelderLage, Plan, Live, Oeffnung, Point, Raum, Regel, RoomsResult, Zone } from "./types";
+import type { Auswertung, AuswertungFigur, Form, Hass, Heat, Kandidaten, MelderLage, Plan, Live, LiveFigur, Oeffnung, Point, Raum, Regel, RoomsResult, Zone } from "./types";
 
 const DOMAIN = "raumzonen";
 const SNAP_CM = 5;
@@ -724,10 +724,86 @@ export class RaumzonenPanel extends LitElement {
   private wizPerson(): { punkt: Point | null; hinweis: string } {
     const live = this.live;
     if (!live || !live.verfuegbar || live.problem) return { punkt: null, hinweis: "Sensor nicht erreichbar." };
+    // „Das bin ich“ geht vor: dann stören andere Figuren (Partner, Hund) nicht.
+    const ich = live.figuren.find((x) => x.markierung === "ich");
+    if (ich) return ich.gehalten ? { punkt: null, hinweis: "Deine Figur ist gerade nicht zu sehen. Kurz bewegen." } : { punkt: [ich.x, ich.y], hinweis: "" };
     const f = live.figuren.filter((x) => !x.gehalten && !x.tags.some((t) => ["wiederhergestellt", "stoerung", "hund", "echo"].includes(t)));
     if (f.length === 0) return { punkt: null, hinweis: "Der Sensor sieht gerade niemanden." };
-    if (f.length > 1) return { punkt: null, hinweis: "Der Sensor sieht mehr als eine Person. Bitte allein im Raum sein." };
+    if (f.length > 1) return { punkt: null, hinweis: "Der Sensor sieht mehr als eine Figur. Tippe unten bei deiner Figur auf „Das bin ich“." };
     return { punkt: [f[0].x, f[0].y], hinweis: "" };
+  }
+
+  /** Figuren, die man im Plan sieht (ohne Platzhalter und Störquellen). */
+  private sichtbareFiguren(): LiveFigur[] {
+    return (this.live?.figuren ?? []).filter((f) => !f.tags.includes("wiederhergestellt") && !f.tags.includes("stoerung"));
+  }
+
+  /** Knöpfe „Das bin ich“ / „Das ist der Hund“: Markierung setzen oder wieder weg. */
+  private async figurMarkieren(f: LiveFigur, markierung: "ich" | "hund"): Promise<void> {
+    if (!this._hass) return;
+    const neu = f.markierung === markierung ? null : markierung;
+    try {
+      await this._hass.callWS({ type: `${DOMAIN}/figur/markieren`, raum_id: this.raumId, figur: f.id, markierung: neu });
+    } catch (err) {
+      this.showToast(`Nicht markiert: ${fehlerText(err)}`);
+    }
+  }
+
+  /** Knopf „Aufräumen“: alle Figuren außer „ich“ entfernen (mit Rückfrage). */
+  private async figurenAufraeumen(): Promise<void> {
+    if (!this._hass) return;
+    const ich = this.live?.figuren.find((f) => f.markierung === "ich");
+    const frage = ich
+      ? "Alle Figuren außer dir entfernen? Wer wirklich da ist und sich bewegt, taucht gleich wieder auf. Eine Zone kann dadurch frei werden."
+      : "Alle Figuren entfernen? Wer wirklich da ist und sich bewegt, taucht gleich wieder auf. Eine Zone (z. B. das Bett) kann dadurch frei werden.";
+    if (!confirm(frage)) return;
+    try {
+      const r = await this._hass.callWS<{ entfernt: number }>({ type: `${DOMAIN}/figuren/aufraeumen`, raum_id: this.raumId, behalten: ich ? [ich.id] : [] });
+      this.showToast(r.entfernt === 1 ? "1 Figur entfernt." : `${r.entfernt} Figuren entfernt.`);
+    } catch (err) {
+      this.showToast(`Nicht aufgeräumt: ${fehlerText(err)}`);
+    }
+  }
+
+  /** Liste der Figuren im Assistenten: wer bin ich, wer ist der Hund, aufräumen. */
+  private renderFigurenWahl(): TemplateResult | typeof nothing {
+    if (!this.kannAendern || !this.live) return nothing;
+    const figs = this.sichtbareFiguren();
+    return html`<div class="wiz-figuren">
+      <p class="hint small">
+        ${figs.length > 1
+          ? "Mehrere Figuren im Raum: Sag Raumzonen, welche du bist. Den Hund kannst du ausschließen, Fehlerkennungen wegräumen."
+          : "Figuren im Raum (Nummer wie im Plan):"}
+      </p>
+      ${figs.length
+        ? html`<ul class="wiz-figurliste">
+            ${figs.map(
+              (f) => html`<li class=${f.markierung ?? ""}>
+                <span class="wiz-nr ${f.markierung === "hund" || f.tags.includes("hund") ? "tier" : ""} ${f.gehalten ? "held" : ""}">${f.id}</span>
+                <span class="wiz-figurtext">${this.figurText(f)}</span>
+                <button class="text small" aria-pressed=${f.markierung === "ich" ? "true" : "false"} @click=${() => void this.figurMarkieren(f, "ich")}>
+                  <ha-icon icon="mdi:account"></ha-icon>${f.markierung === "ich" ? "Bin ich ✓" : "Das bin ich"}
+                </button>
+                <button class="text small" aria-pressed=${f.markierung === "hund" ? "true" : "false"} @click=${() => void this.figurMarkieren(f, "hund")}>
+                  <ha-icon icon="mdi:dog-side"></ha-icon>${f.markierung === "hund" ? "Hund ✓" : "Hund"}
+                </button>
+              </li>`,
+            )}
+          </ul>`
+        : html`<p class="hint small">Der Sensor sieht gerade niemanden.</p>`}
+      <div class="actions">
+        <button class="text small" ?disabled=${!figs.length} @click=${() => void this.figurenAufraeumen()}>
+          <ha-icon icon="mdi:broom"></ha-icon>Aufräumen
+        </button>
+      </div>
+    </div>`;
+  }
+
+  private figurText(f: LiveFigur): string {
+    if (f.markierung === "ich") return "Du";
+    if (f.markierung === "hund") return "Hund (zählt nicht)";
+    if (f.tags.includes("hund") || f.art === "pet") return "vielleicht der Hund";
+    return f.gehalten ? "gerade nicht gesehen (gehalten)" : f.bewegt ? "bewegt sich" : "steht still";
   }
 
   private wizMessen(): void {
@@ -2636,7 +2712,7 @@ export class RaumzonenPanel extends LitElement {
     }
     for (const f of live.figuren) {
       if (f.tags.includes("wiederhergestellt") || f.tags.includes("stoerung")) continue;
-      const tier = f.tags.includes("hund") || f.art === "pet";
+      const tier = f.markierung === "hund" || f.tags.includes("hund") || f.art === "pet";
       const color = tier ? "var(--rz-tier)" : "var(--rz-person)";
       if (this.layers.spuren && f.spur.length > 1) {
         parts.push(svg`<polyline class="trail" points=${this.screenPoints(f.spur)} stroke=${color} />`);
@@ -2645,8 +2721,11 @@ export class RaumzonenPanel extends LitElement {
       const [x, y] = this.toScreen([f.x, f.y]);
       const r = Math.max(7, this.px(14));
       parts.push(svg`<circle class="figure ${f.gehalten ? "held" : ""}" cx=${x} cy=${y} r=${r} fill=${color} stroke=${f.gehalten ? color : "var(--card)"} />`);
-      if (tier || f.gehalten) {
-        parts.push(svg`<text class="label sub" x=${x} y=${y - r - 5}>${tier ? "Hund?" : "gehalten"}</text>`);
+      // Im Assistenten: Nummer in der Figur, wie in der Liste darunter.
+      if (this.wiz) parts.push(svg`<text class="figure-nr" x=${x} y=${y + 4}>${f.id}</text>`);
+      const name = f.markierung === "ich" ? "Ich" : f.markierung === "hund" ? "Hund" : tier ? "Hund?" : f.gehalten ? "gehalten" : "";
+      if (name) {
+        parts.push(svg`<text class="label sub" x=${x} y=${y - r - 5}>${name}${f.markierung !== "ich" && f.gehalten && tier ? " (gehalten)" : ""}</text>`);
       }
     }
     return svg`<g>${parts}</g>`;
@@ -3462,6 +3541,7 @@ export class RaumzonenPanel extends LitElement {
       <h3>${w.modus === "umsetzen" ? "Sensor umsetzen" : "Sensor einmessen"}</h3>
       ${this.dirty && w.schritt !== "ergebnis" ? html`<p class="note warn">Erst speichern oder verwerfen, dann messen.</p>` : nothing}
       ${w.fehler ? html`<p class="note warn">${w.fehler}</p>` : nothing} ${inhalt}
+      ${w.schritt === "vorher" || w.schritt === "nachher" ? this.renderFigurenWahl() : nothing}
       <div class="actions">
         <button class="text small" @click=${this.wizEnde}>Abbrechen</button>
       </div>

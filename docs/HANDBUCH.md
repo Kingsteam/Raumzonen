@@ -188,6 +188,20 @@ Unter **Sensor und Raum → Sensor umsetzen** (nur Admins):
 * **Sensor hängt schon: einmessen:** an eine Stelle stellen, „Messen“
   tippen, dann im Plan antippen, wo du standest. Dreimal.
 
+**Mehrere Figuren im Raum?** Unter dem Schritt stehen alle Figuren, die der
+Sensor gerade sieht, mit derselben Nummer wie im Plan:
+
+* **„Das bin ich“:** Nur diese Figur zählt beim Messen; Partner oder Hund
+  dürfen im Raum bleiben.
+* **„Hund“:** Die Figur zählt nicht als Person und macht keine Zone belegt
+  (außer einen Hundeplatz).
+* **„Aufräumen“:** Entfernt nach einer Rückfrage alle Figuren außer dir,
+  z. B. Fehlerkennungen. Wer wirklich da ist und sich bewegt, taucht gleich
+  wieder auf. Achtung: Eine Zone wie das Bett kann dadurch frei werden.
+
+Die Markierungen gelten, solange der Sensor die Figur verfolgt; nach dem
+Speichern im Panel sind sie weg.
+
 Raumzonen zeigt die neue Lage als grünen Punkt und sagt, wie genau sie ist
 (z. B. „± 6 cm“). „Übernehmen“ trägt sie ein, „Speichern“ behält sie. Die
 Zonen bleiben, wo sie im Raum sind.

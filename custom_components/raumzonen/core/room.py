@@ -62,6 +62,10 @@ ZONE_ARTEN = (
 )
 
 TAG_HUND = "hund"
+# Markierungen, die der Besitzer im Panel setzen kann.
+MARK_ICH = "ich"
+MARK_HUND = "hund"
+MARKIERUNGEN = (MARK_ICH, MARK_HUND)
 TAG_STOERUNG = "stoerung"
 TAG_ECHO = "echo"
 # Platzhalter für eine Figur, die vor einem Neustart in einer Schläferzone lag.
@@ -235,12 +239,54 @@ class Room:
 
     @property
     def figure_count(self) -> int:
-        """Figuren im Raum (ohne Störquellen und Platzhalter)."""
+        """Figuren im Raum (ohne Störquellen, Platzhalter, markierten Hund)."""
         return sum(
             1
             for t in self.tracker.tracks.values()
             if not t.tags & {TAG_STOERUNG, TAG_WIEDERHERGESTELLT}
+            and t.markierung != MARK_HUND
         )
+
+    def markieren(
+        self, track_id: int, markierung: str | None, now: float
+    ) -> list[ZoneEvent]:
+        """Figur als ``ich`` oder ``hund`` markieren (``None`` = Markierung weg).
+
+        ``ich`` gibt es je Raum nur einmal. Ein markierter Hund zählt in keiner
+        Zone außer auf dem Hundeplatz und nicht bei den Figuren.
+        """
+        if markierung is not None and markierung not in MARKIERUNGEN:
+            raise ValueError(f"Unbekannte Markierung {markierung!r}")
+        track = self.tracker.tracks.get(track_id)
+        if track is None:
+            raise KeyError(track_id)
+        if markierung == MARK_ICH:
+            for other in self.tracker.tracks.values():
+                if other.markierung == MARK_ICH:
+                    other.markierung = None
+        track.markierung = markierung
+        self._update_tags(track, 0.0, now)
+        return self._evaluate(now)
+
+    def aufraeumen(self, behalten: Iterable[int], now: float) -> list[ZoneEvent]:
+        """Alle Figuren außer ``behalten`` entfernen (Knopf „Aufräumen“).
+
+        Nur auf ausdrücklichen Wunsch des Besitzers: Von selbst löst sich eine
+        Figur nie auf. Meldet der Sensor ein entferntes Ziel weiter an
+        derselben Stelle, wird es ignoriert, bis es sich bewegt (wie ein Echo);
+        bewegt es sich, ist es wieder eine echte Figur.
+        """
+        keep = set(behalten)
+        for track in list(self.tracker.tracks.values()):
+            if track.track_id in keep:
+                continue
+            if track.sensor_id >= 0 and track.visible:
+                self._suppressed[track.sensor_id] = (track.raw_x, track.raw_y)
+            self.tracker.remove(track.track_id)
+            self._left_sleeper.pop(track.track_id, None)
+            for key in [k for k in self._inside if k[1] == track.track_id]:
+                del self._inside[key]
+        return self._evaluate(now)
 
     def tick(self, now: float) -> list[ZoneEvent]:
         """Zeit vergeht ohne Rahmen."""
@@ -269,6 +315,12 @@ class Room:
             track.tags.add(TAG_STOERUNG)
         else:
             track.tags.discard(TAG_STOERUNG)
+        if track.markierung == MARK_HUND:
+            track.tags.add(TAG_HUND)
+            return
+        if track.markierung == MARK_ICH:
+            track.tags.discard(TAG_HUND)
+            return
         on_dog_place = any(
             z.shape.contains(track.x, track.y)
             for z in self.zones.values()
@@ -397,6 +449,8 @@ class Room:
             if TAG_STOERUNG in track.tags and zone.art != ART_STOERQUELLE:
                 continue
             if zone.rule.hund_ignorieren and TAG_HUND in track.tags:
+                continue
+            if track.markierung == MARK_HUND and zone.art != ART_HUNDEPLATZ:
                 continue
             out.append(track)
         return out

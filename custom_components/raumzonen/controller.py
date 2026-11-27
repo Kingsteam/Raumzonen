@@ -380,6 +380,24 @@ class RoomController:
             self._notify()
 
     @callback
+    def markieren(self, track_id: int, markierung: str | None) -> None:
+        """Figur im Panel als ``ich``/``hund`` markieren (KeyError: weg)."""
+        t = dt_util.utcnow().timestamp()
+        events = self.room.advance(t)
+        events += self.room.markieren(track_id, markierung, t)
+        self._handle(events)
+
+    @callback
+    def aufraeumen(self, behalten: list[int]) -> int:
+        """Knopf „Aufräumen“: alle Figuren außer ``behalten`` entfernen."""
+        t = dt_util.utcnow().timestamp()
+        vorher = len(self.room.tracker.tracks)
+        events = self.room.advance(t)
+        events += self.room.aufraeumen(behalten, t)
+        self._handle(events)
+        return vorher - len(self.room.tracker.tracks)
+
+    @callback
     def add_listener(self, listener: Callable[[], None]) -> Callable[[], None]:
         """Benachrichtigung bei jeder Auswertung (Entitäten prüfen selbst)."""
         self._listeners.append(listener)
@@ -408,6 +426,7 @@ class RoomController:
                     "bewegt": track.moving(now, self.room.tracker.settings),
                     "art": track.type,
                     "tags": sorted(track.tags),
+                    "markierung": track.markierung,
                     "spur": [
                         [round(x, 1), round(y, 1)]
                         for t, x, y in track.history

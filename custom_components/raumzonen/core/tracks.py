@@ -105,6 +105,9 @@ class Track:
     # Für die Raumlogik (Hundehinweis, Störquelle, ...)
     tags: set[str] = field(default_factory=set)
     dog_score: float = 0.0
+    # Vom Besitzer im Panel gesetzt: ``ich`` (die eigene Figur) oder ``hund``.
+    # Lebt nur so lange wie die Spur (nach dem Neuladen ist sie weg).
+    markierung: str | None = None
     # Rohe Position vom Sensor (``x``/``y`` sind gefiltert, wenn der Filter an
     # ist). Fangbereich und Bewegungserkennung rechnen mit der rohen Position.
     raw_x: float = 0.0

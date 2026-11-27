@@ -38,6 +38,10 @@ Vertrag ``raumzonen/1`` (``vertrag.py``, ``api.py``):
   als Hintergrund. Nur Admins.
 * ``raumzonen/plan/bild/get``: Bild eines Grundrisses (alle).
 * ``raumzonen/plan/delete``: Grundriss löschen. Nur Admins.
+* ``raumzonen/figur/markieren``: Figur als ``ich`` oder ``hund`` markieren
+  (``null`` = Markierung weg); gilt, solange die Spur lebt. Nur Admins.
+* ``raumzonen/figuren/aufraeumen``: alle Figuren eines Raums außer
+  ``behalten`` entfernen (Fehlerkennungen). Nur Admins.
 """
 
 from __future__ import annotations
@@ -79,7 +83,7 @@ from .const import (
     RAUM_MELDER,
     RAUM_RADAR,
 )
-from .core.room import ZONE_ARTEN
+from .core.room import MARKIERUNGEN, ZONE_ARTEN
 from .discovery import converter_zones, find_fp400_entities, suggest_topic
 from .model import (
     REGEL_VORLAGEN,
@@ -148,6 +152,8 @@ def async_register(hass: HomeAssistant) -> None:
         ws_plan_import,
         ws_plan_bild_get,
         ws_plan_delete,
+        ws_figur_markieren,
+        ws_figuren_aufraeumen,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -1325,3 +1331,50 @@ async def ws_plan_delete(
     await hass.async_add_executor_job(plan_dateien.loeschen, hass, plan.datei)
     async_reload_keep_panel(hass, entry.entry_id)
     connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/figur/markieren",
+        vol.Required("raum_id"): str,
+        vol.Required("figur"): int,
+        vol.Required("markierung"): vol.Any(None, vol.In(MARKIERUNGEN)),
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_figur_markieren(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Figur als „ich“ oder „Hund“ markieren."""
+    controller = _controller(hass, msg["raum_id"])
+    if controller is None:
+        connection.send_error(msg["id"], "not_found", "Raum nicht gefunden")
+        return
+    try:
+        controller.markieren(msg["figur"], msg["markierung"])
+    except KeyError:
+        connection.send_error(msg["id"], "not_found", "Figur nicht mehr da")
+        return
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/figuren/aufraeumen",
+        vol.Required("raum_id"): str,
+        vol.Optional("behalten", default=[]): [int],
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_figuren_aufraeumen(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Fehlerkennungen entfernen: alle Figuren außer ``behalten``."""
+    controller = _controller(hass, msg["raum_id"])
+    if controller is None:
+        connection.send_error(msg["id"], "not_found", "Raum nicht gefunden")
+        return
+    entfernt = controller.aufraeumen(msg["behalten"])
+    connection.send_result(msg["id"], {"entfernt": entfernt})
