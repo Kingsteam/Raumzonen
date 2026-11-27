@@ -23,6 +23,9 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 
 - Die Reiter im Panel zeigen Symbol und kurzes Wort („Raum“ statt „Sensor
   und Raum“), damit vier Reiter Platz haben.
+- Die Seitenleiste rechts ist breiter (420 px) und lässt sich mit dem Pfeil
+  einklappen; dann bleibt eine schmale Leiste mit den Reitern als Symbole.
+  Der Browser merkt sich die Wahl.
 
 ## [0.25.1] - 2026-11-27
 

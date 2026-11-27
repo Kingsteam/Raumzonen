@@ -208,6 +208,13 @@ nichts, Raumzonen nutzt sie nicht für eigene Zonen. Raumzonen schreibt nur
 in einen leeren Platz und überschreibt nie eine andere Zone. Mit
 **„Zurücknehmen“** entfernt Raumzonen nur diese eine Zone wieder.
 
+### Seitenleiste einklappen
+
+Der Pfeil oben rechts in der Seitenleiste klappt sie ein, damit der Plan mehr
+Platz hat. Dann bleibt rechts eine schmale Leiste: der Pfeil klappt wieder
+aus, die Symbole öffnen direkt den jeweiligen Reiter. Der Browser merkt sich
+die Wahl.
+
 ### Verwendung: welche Automationen nutzen diesen Raum?
 
 Der Reiter **Verwendung** (nur Admins) listet alle Automationen und Skripte,

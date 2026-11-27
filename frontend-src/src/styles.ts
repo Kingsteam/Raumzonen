@@ -211,13 +211,43 @@ export const styles = css`
     touch-action: none;
   }
   .side {
-    width: 360px;
+    width: 420px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
     background: var(--card);
     border-left: 1px solid var(--line);
     min-height: 0;
+  }
+  /* Eingeklappt: schmale Leiste mit Symbolen */
+  .side.zu {
+    width: 52px;
+    align-items: center;
+    gap: 4px;
+    padding-top: 8px;
+  }
+  .side.zu .icon.active {
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+  .tabs .einklappen {
+    flex: none;
+    align-self: center;
+    margin: 0 4px;
+    color: var(--muted);
+  }
+  .seite-kopf {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .seite-kopf h3 {
+    margin-top: 12px;
+  }
+  @media (max-width: 1100px) {
+    .side:not(.zu) {
+      width: 360px;
+    }
   }
   :host([narrow]) .layout {
     flex-direction: column;

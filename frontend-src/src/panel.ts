@@ -213,6 +213,8 @@ export class RaumzonenPanel extends LitElement {
   @state() private selected = -1;
   @state() private sensorOpen = false;
   @state() private tab: Tab = "zonen";
+  /** Seitenleiste rechts eingeklappt (mehr Platz für den Plan; im Browser gemerkt). */
+  @state() private seiteZu = lesen("raumzonen.seite_zu", false);
   /** Reiter „Verwendung“: geladene Liste, Gruppierung. */
   @state() private verw?: Verwendung;
   @state() private verwGruppe: Gruppe = "kategorie";
@@ -3878,7 +3880,7 @@ export class RaumzonenPanel extends LitElement {
     };
     return html`<aside class="side">
       <div class="side-body">
-        <h3>Hausplan</h3>
+        <div class="seite-kopf"><h3>Hausplan</h3>${this.renderEinklappen()}</div>
         ${this.renderStockwerkWahl()}
         <p class="hint small">
           ${this.kannAendern
@@ -4692,7 +4694,46 @@ export class RaumzonenPanel extends LitElement {
         : html`<p class="hint">Keine Figuren in diesem Zeitraum.</p>`}`;
   }
 
+  private seiteUmschalten(zu: boolean): void {
+    this.seiteZu = zu;
+    merken("raumzonen.seite_zu", zu);
+  }
+
+  /** Eingeklappte Seitenleiste: schmale Leiste mit Knopf zum Ausklappen und den Reitern als Symbole. */
+  private renderSeiteZu(): TemplateResult {
+    const reiter: [Tab, string, string][] =
+      this.page === "haus"
+        ? []
+        : [
+            ["zonen", "mdi:shape-outline", "Zonen"],
+            ["raum", "mdi:floor-plan", this.istMelder ? "Melder und Raum" : "Sensor und Raum"],
+            ...(this.kannAendern
+              ? ([
+                  ["auswertung", "mdi:chart-bubble", "Auswertung"],
+                  ["verwendung", "mdi:robot-outline", "Verwendung"],
+                ] as [Tab, string, string][])
+              : []),
+          ];
+    return html`<aside class="side zu">
+      <button class="icon" title="Seitenleiste ausklappen" @click=${() => this.seiteUmschalten(false)}><ha-icon icon="mdi:chevron-left"></ha-icon></button>
+      ${reiter.map(
+        ([t, icon, name]) =>
+          html`<button class="icon ${this.tab === t ? "active" : ""}" title=${name} @click=${() => {
+            this.seiteUmschalten(false);
+            this.openTab(t);
+          }}><ha-icon icon=${icon}></ha-icon></button>`,
+      )}
+    </aside>`;
+  }
+
+  private renderEinklappen(): TemplateResult | typeof nothing {
+    return this.narrow
+      ? nothing
+      : html`<button class="icon einklappen" title="Seitenleiste einklappen (mehr Platz für den Plan)" @click=${() => this.seiteUmschalten(true)}><ha-icon icon="mdi:chevron-right"></ha-icon></button>`;
+  }
+
   private renderSide(): TemplateResult {
+    if (this.seiteZu && !this.narrow) return this.renderSeiteZu();
     if (this.page === "haus") return this.renderHausSide();
     return html`<aside class="side">
       <div class="tabs" role="tablist">
@@ -4702,6 +4743,7 @@ export class RaumzonenPanel extends LitElement {
           ? html`<button class=${this.tab === "auswertung" ? "active" : ""} role="tab" @click=${() => this.openTab("auswertung")}><ha-icon icon="mdi:chart-bubble"></ha-icon>Auswertung</button>
               <button class=${this.tab === "verwendung" ? "active" : ""} role="tab" title="Welche Automationen und Skripte nutzen diesen Raum?" @click=${() => this.openTab("verwendung")}><ha-icon icon="mdi:robot-outline"></ha-icon>Verwendung</button>`
           : nothing}
+        ${this.renderEinklappen()}
       </div>
       <div class="side-body">${this.tab === "zonen" ? this.renderZonesTab() : this.tab === "raum" ? this.renderRoomTab() : this.tab === "verwendung" ? this.renderVerwendungTab() : this.renderAuswertungTab()}</div>
     </aside>`;
