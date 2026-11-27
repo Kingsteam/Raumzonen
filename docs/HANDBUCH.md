@@ -146,7 +146,7 @@ und `genau`.
 **Kommen und Gehen, Treppen:** Tür-Zonen sind im Plan gestrichelt. Taucht
 jemand neu in einer Tür-Zone auf, meldet Raumzonen sofort **„betreten“**
 (gut, um beim Hereinkommen schon Licht zu machen); endet eine Figur in der
-Tür-Zone, ist sie hinausgegangen: **„verlassen“**. Im Plan steht dann kurz
+Tür-Zone, ist sie hinausgegangen: **„verlassen“**. Schon vorher, sobald jemand aus dem Raum in die Tür-Zone tritt, kommt **„unterwegs“**: früh genug, um im Nachbarraum Licht zu machen. Im Plan steht dann kurz
 „→ herein“ bzw. „← hinaus“. Eine Treppe im Raum (z. B. eine Wendeltreppe)
 zeichnest du als Zone und wählst die Rolle **„Treppe“**: Sie verhält sich wie
 eine Tür, bei „Führt zu“ den Raum im anderen Stockwerk wählen. Räume ohne
@@ -371,7 +371,7 @@ Je Raum ein Gerät mit:
 | `sensor.<raum>_<zone>_personen` | wie viele Figuren in der Zone zählen |
 | `binary_sensor.<raum>_sensor_verbunden` | Daten kommen an (Diagnose); Attribut `problem` |
 | `sensor.<raum>_figuren` | Figuren im ganzen Raum, auch gehaltene (Diagnose) |
-| `event.<raum>_kommen_und_gehen` | Ereignis `betreten` oder `verlassen`; Attribute `tuer` (Name der Tür- oder Treppen-Zone), `zone_id`, `fuehrt_zu`, `treppe` |
+| `event.<raum>_kommen_und_gehen` | Ereignis `betreten`, `unterwegs` oder `verlassen`; Attribute `tuer` (Name der Tür- oder Treppen-Zone), `zone_id`, `fuehrt_zu`, `treppe` |
 
 Fürs ganze Haus (Gerät „Raumzonen“): `event.raumzonen_raumwechsel` mit
 `von`, `nach`, `tuer` und `genau`, sobald jemand von einem Raum in einen

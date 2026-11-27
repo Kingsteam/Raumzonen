@@ -146,6 +146,7 @@ class DurchgangEvent:
     ``betreten``: Eine neue Figur taucht in der Tür-Zone auf (sofort, damit
     Automationen schon beim Hereinkommen reagieren können).
     ``verlassen``: Eine Figur endet in der Tür-Zone (sie ist hinausgegangen).
+    ``unterwegs``: Eine Figur, die schon im Raum war, tritt in die Tür-Zone.
     """
 
     t: float
@@ -156,6 +157,9 @@ class DurchgangEvent:
 
 BETRETEN = "betreten"
 VERLASSEN = "verlassen"
+# Eine Figur aus dem Raum tritt in eine Tür-Zone: sie ist auf dem Weg hinaus
+# (oder kehrt gleich um). Früh genug, um im Nachbarraum schon Licht zu machen.
+UNTERWEGS = "unterwegs"
 
 
 @dataclass(slots=True)
@@ -516,6 +520,16 @@ class Room:
                 was = self._inside.get(key, False)
                 now_in = self._membership(zone, track, now)
                 self._inside[key] = now_in
+                if (
+                    not was
+                    and now_in
+                    and zone.art == ART_AUSGANG
+                    and track.track_id in self._bekannt
+                    and track.state != HELD
+                ):
+                    self._durchgaenge.append(
+                        DurchgangEvent(now, zone.id, UNTERWEGS, track.track_id)
+                    )
                 if was and not now_in and zone.rule.schlaefer_halten:
                     self._left_sleeper[track.track_id] = (zone.id, now)
                     if before and track.track_id in before and track.visible:

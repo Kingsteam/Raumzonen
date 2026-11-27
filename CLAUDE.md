@@ -18,7 +18,7 @@ Zone, Spuren, die nicht plötzlich verschwinden. Konzept: `docs/KONZEPT.md`
 (allgemeine Fassung; die vollständige und die Auswertung der Aufnahmen
 liegen in `haus-privat/raumzonen/docs/`).
 
-Stand 0.23.0: **Phase 0 bis 4a, Hausplan, Türen in Wänden.** Rechenkern in reinem Python, getestet gegen
+Stand 0.24.0: **Phase 0 bis 4a, Hausplan, Türen in Wänden.** Rechenkern in reinem Python, getestet gegen
 anonymisierte Aufnahmen; Sensor-Anbindung (MQTT oder Entitäten, nur lesen),
 Entitäten je Zone und Raum, Ereignis `raumzonen_zone`, Einrichtung über den
 Options-Flow; Panel „Raumzonen“ (sehen alle, ändern nur Admins) mit
@@ -116,7 +116,7 @@ Nächstes: 4b (Herkunft, Einstufung, Sicherheit, `hinweis/1`); siehe
 | `plaene.py` | Grundriss-Bilder als Dateien unter `<config>/raumzonen/plaene/` (JPEG/PNG, geprüft, höchstens 8 MB); Lage im Haus in `PlanConfig` (`model.py`) |
 | `aufnahme.py` | eigene Aufnahme je Raum (`fp400-trace/2`, gzip je Tag, alle 10 s schreiben, alte Tage löschen, Abruf bis 24 h) |
 | `discovery.py` | Entitäten des FP400 über `unique_id` finden, Themen-Vorschlag, Software-Zonen des Konverters lesen |
-| `event.py` | Ereignis-Entitäten: je Raum „Kommen und Gehen“ (`betreten`/`verlassen` aus `Room.durchgaenge_holen()`, ohne Tür-Zonen aus „Anwesenheit“), fürs Haus „Raumwechsel“ (über `SIGNAL_WEG`); Bus-Ereignis `raumzonen_tuer` |
+| `event.py` | Ereignis-Entitäten: je Raum „Kommen und Gehen“ (`betreten`/`unterwegs`/`verlassen` aus `Room.durchgaenge_holen()`, ohne Tür-Zonen aus „Anwesenheit“), fürs Haus „Raumwechsel“ (über `SIGNAL_WEG`); Bus-Ereignis `raumzonen_tuer` |
 | `entity.py`, `binary_sensor.py`, `sensor.py` | je Zone „belegt“ (RestoreEntity) und „Personen“, je Raum „Sensor verbunden“ und „Figuren“; Zustand wird nur bei Änderung geschrieben (keine Positionen in Attributen, schont den Recorder) |
 | `const.py` | Konstanten und Grenzen (u. a. `MAX_AUFGESTANDEN_S`) |
 | `model.py` | Datenklassen Raum/Sensor/Zone/Regel/Öffnung, `validate()`, `build_room()`, `remove()`; Melder-Räume (`art` `melder`, `melder` = feste Kennungen im Entitätsregister, eine Zone `anwesenheit` aus `melder_zone()`, weitere Zonen mit `melder` je Zone, `melder_lagen` nur Anzeige); Radar-Räume mit Wänden bekommen `anwesenheit_zone()` (ganzer Raum, Vorlage „normal“) automatisch, eine eigene Zone gleicher Kennung geht vor; `PlanConfig` mit `winkel`, `zuschnitt`, `stockwerk` |

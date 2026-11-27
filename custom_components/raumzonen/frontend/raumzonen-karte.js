@@ -620,7 +620,7 @@ function te(i, t) {
   return e.length ? e[e.length - 1].richtung : null;
 }
 function ee(i, t) {
-  return t ? i === "betreten" ? "↓↑ kommt über die Treppe" : "↑↓ über die Treppe weg" : i === "betreten" ? "→ herein" : "← hinaus";
+  return i === "unterwegs" ? t ? "zur Treppe …" : "zur Tür …" : t ? i === "betreten" ? "↓↑ kommt über die Treppe" : "↑↓ über die Treppe weg" : i === "betreten" ? "→ herein" : "← hinaus";
 }
 function ut(i) {
   return i.art === "ausgang" ? i.treppe ? "treppe" : "tuer" : i.art === "hundeplatz" ? "hund" : i.art === "stelle" ? "stelle" : i.art === "durchgang" ? "durchgang" : i.art === "stoerquelle" ? "ignorieren" : i.regel.schlaefer_halten ? "bett" : "bereich";

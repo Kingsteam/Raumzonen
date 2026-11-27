@@ -224,14 +224,15 @@ export const ROLLEN: RolleInfo[] = [
 ];
 
 /** Ist gerade jemand durch diese Tür/Treppe gekommen oder gegangen (letzte 4 s)? */
-export function kommenGehen(live: Live | undefined | null, zoneId: string | undefined): "betreten" | "verlassen" | null {
+export function kommenGehen(live: Live | undefined | null, zoneId: string | undefined): "betreten" | "verlassen" | "unterwegs" | null {
   if (!live || !zoneId) return null;
   const k = (live.kommen_gehen ?? []).filter((x) => x.zone_id === zoneId && x.vor_s <= 4);
   return k.length ? k[k.length - 1].richtung : null;
 }
 
 /** Text zum Kommen und Gehen, z. B. „herein“ / „hinauf“. */
-export function kommenGehenText(richtung: "betreten" | "verlassen", treppe: boolean): string {
+export function kommenGehenText(richtung: "betreten" | "verlassen" | "unterwegs", treppe: boolean): string {
+  if (richtung === "unterwegs") return treppe ? "zur Treppe …" : "zur Tür …";
   if (treppe) return richtung === "betreten" ? "↓↑ kommt über die Treppe" : "↑↓ über die Treppe weg";
   return richtung === "betreten" ? "→ herein" : "← hinaus";
 }

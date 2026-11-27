@@ -4,6 +4,15 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.24.0] - 2026-11-27
+
+### Hinzugefügt
+
+- Kommen und Gehen meldet zusätzlich „unterwegs“: Eine Figur, die schon im
+  Raum war, tritt in eine Tür- oder Treppen-Zone. Das kommt vor
+  „verlassen“ und ist früh genug, um im Zielraum schon Licht zu machen und
+  den verlassenen Raum zügig abzudunkeln (fließende Lichtübergänge).
+
 ## [0.23.0] - 2026-11-27
 
 ### Hinzugefügt

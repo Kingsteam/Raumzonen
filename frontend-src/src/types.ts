@@ -163,7 +163,7 @@ export interface Live {
   ziele: [number, number, number][];
   zonen: Record<string, { belegt: boolean; personen: number; grund: string | null }>;
   /** Kommen und Gehen der letzten 10 s (Tür, Treppe oder ganzer Raum). */
-  kommen_gehen?: { zone_id: string; richtung: "betreten" | "verlassen"; vor_s: number }[];
+  kommen_gehen?: { zone_id: string; richtung: "betreten" | "verlassen" | "unterwegs"; vor_s: number }[];
 }
 
 export interface Heat {

@@ -19,7 +19,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from . import RaumzonenConfigEntry
 from .const import DOMAIN, SIGNAL_WEG
 from .controller import RoomController
-from .core.room import BETRETEN, VERLASSEN
+from .core.room import BETRETEN, UNTERWEGS, VERLASSEN
 from .entity import room_device_key
 
 
@@ -41,7 +41,7 @@ class KommenGehen(EventEntity):
 
     _attr_has_entity_name = True
     _attr_should_poll = False
-    _attr_event_types = [BETRETEN, VERLASSEN]  # noqa: RUF012
+    _attr_event_types = [BETRETEN, UNTERWEGS, VERLASSEN]  # noqa: RUF012
     _attr_name = "Kommen und Gehen"
     _attr_icon = "mdi:door-open"
 

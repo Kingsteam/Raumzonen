@@ -907,7 +907,7 @@ function wt(e, t) {
   return n.length ? n[n.length - 1].richtung : null;
 }
 function vt(e, t) {
-  return t ? e === "betreten" ? "↓↑ kommt über die Treppe" : "↑↓ über die Treppe weg" : e === "betreten" ? "→ herein" : "← hinaus";
+  return e === "unterwegs" ? t ? "zur Treppe …" : "zur Tür …" : t ? e === "betreten" ? "↓↑ kommt über die Treppe" : "↑↓ über die Treppe weg" : e === "betreten" ? "→ herein" : "← hinaus";
 }
 function Ae(e) {
   return Ge.find((t) => t.rolle === e) ?? Ge[1];

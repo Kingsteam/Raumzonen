@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from custom_components.raumzonen.core.room import BETRETEN, VERLASSEN
+from custom_components.raumzonen.core.room import BETRETEN, UNTERWEGS, VERLASSEN
 from custom_components.raumzonen.core.tracks import Target
 
 from .test_room import room, run
@@ -42,3 +42,16 @@ def test_kein_verlassen_ohne_tuer() -> None:
     run(r, [(2.0, [])])
     r.advance(30)
     assert r.durchgaenge_holen() == []
+
+
+def test_unterwegs_zur_tuer() -> None:
+    """Wer aus dem Raum in die Tür-Zone tritt, ist „unterwegs“ (vor „verlassen“)."""
+    r = room()
+    run(r, [(i * 0.3, [Target(0, 300 - i * 30, 250 - i * 25)]) for i in range(7)])
+    assert r.durchgaenge_holen() == []
+    run(r, [(3.0, [Target(0, 40, 30)])])
+    (ev,) = r.durchgaenge_holen()
+    assert (ev.zone_id, ev.richtung) == ("tuer", UNTERWEGS)
+    run(r, [(3.3, [])])
+    r.advance(6)
+    assert [e.richtung for e in r.durchgaenge_holen()] == [VERLASSEN]
