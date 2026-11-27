@@ -17,32 +17,7 @@
 
 import { LitElement, html, nothing, svg, type PropertyValues, type TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import {
-  History,
-  ROLLEN,
-  applyRolle,
-  clampOpenings,
-  dragRectCorner,
-  edgeMidpoints,
-  fuehrtZuText,
-  openingFromDrag,
-  openingPoints,
-  alongEdge,
-  rotateForm,
-  shiftOpenings,
-  insertVertex,
-  newZone,
-  paintCell,
-  rectFromDrag,
-  regelSatz,
-  removeVertex,
-  rolleInfo,
-  rolleOf,
-  setVertex,
-  zoneFromConverter,
-  zonesProblem,
-  type Rolle,
-} from "./editor";
+import { History, ROLLEN, applyRolle, clampOpenings, dragRectCorner, edgeMidpoints, fuehrtZuText, openingFromDrag, openingPoints, alongEdge, rotateForm, shiftOpenings, insertVertex, newZone, paintCell, rectFromDrag, regelSatz, removeVertex, rolleInfo, rolleOf, setVertex, zoneFromConverter, zonesProblem, type Rolle, kommenGehen, kommenGehenText } from "./editor";
 import {
   CELL_DEFAULT,
   cellOf,
@@ -2621,7 +2596,10 @@ export class RaumzonenPanel extends LitElement {
     const rolle = rolleOf(zone);
     const color = roleColor(rolle);
     const selected = index === this.selected;
-    const fill = occupied ? 0.5 : 0.2;
+    const kg = zone.art === "ausgang" ? kommenGehen(this.live, zone.id) : null;
+    const fill = kg ? 0.75 : occupied ? 0.5 : 0.2;
+    // Tür- und Treppen-Zonen gestrichelt: sie melden Kommen und Gehen.
+    const tuerStil = zone.art === "ausgang" ? "stroke-dasharray:6 4" : "";
     let shape: TemplateResult;
     if (zone.form.art === "zellen") {
       shape = svg`${cellRects(zone.form).map((r) => {
@@ -2644,7 +2622,11 @@ export class RaumzonenPanel extends LitElement {
               </mask>
               <polygon points=${pts} fill="none" stroke=${color} stroke-opacity="0.25" stroke-width=${band} stroke-linejoin="round" mask="url(#rz-band-${index})" />`
           : nothing}
-        <polygon class="zone-shape ${selected ? "selected" : ""}" points=${pts} fill=${color} fill-opacity=${fill} stroke=${color} />`;
+        <polygon class="zone-shape ${selected ? "selected" : ""}" points=${pts} fill=${color} fill-opacity=${fill} stroke=${color} style=${tuerStil} />`;
+    }
+    if (kg) {
+      const [mx, my] = this.toScreen(formCenter(zone.form));
+      shape = svg`${shape}<text class="label kg" x=${mx} y=${my - 18}>${kommenGehenText(kg, !!zone.treppe)}</text>`;
     }
     return svg`<g>${shape}</g>`;
   }
@@ -2803,7 +2785,12 @@ export class RaumzonenPanel extends LitElement {
         if (rolle === "ignorieren") continue;
         const occupied = (zone.id ? live?.zonen[zone.id]?.belegt : false) ?? false;
         const pts = formPoints(zone.form).map((p) => toHouse(p, lage));
-        rooms.push(svg`<polygon class="zone-shape" points=${this.screenPoints(pts)} fill=${roleColor(rolle)} fill-opacity=${occupied ? 0.5 : 0.18} stroke=${roleColor(rolle)} />`);
+        const kg = zone.art === "ausgang" ? kommenGehen(live, zone.id) : null;
+        rooms.push(svg`<polygon class="zone-shape" points=${this.screenPoints(pts)} fill=${roleColor(rolle)} fill-opacity=${kg ? 0.75 : occupied ? 0.5 : 0.18} stroke=${roleColor(rolle)} style=${zone.art === "ausgang" ? "stroke-dasharray:6 4" : ""} />`);
+        if (kg) {
+          const [kx, ky] = this.toScreen(toHouse(formCenter(zone.form), lage));
+          labels.push(svg`<text class="label kg" x=${kx} y=${ky - 12}>${kommenGehenText(kg, !!zone.treppe)}</text>`);
+        }
       }
       for (const tuer of tuerenVon(raum)) {
         // Wohin führt die Tür? Linie zur passenden Tür im anderen Raum.
@@ -3088,7 +3075,7 @@ export class RaumzonenPanel extends LitElement {
     if (!this.kannAendern) {
       return html`<div class="inspector">
         <p class="hint small">${rolleInfo(rolle).text}</p>
-        ${rolle === "tuer" ? html`<div class="summary">Führt ${fuehrtZuText(zone, andere)}.</div>` : nothing}
+        ${rolle === "tuer" || rolle === "treppe" ? html`<div class="summary">Führt ${fuehrtZuText(zone, andere)}.</div>` : nothing}
         ${rolle !== "ignorieren" ? html`<div class="summary">${regelSatz(zone)}</div>` : nothing}
       </div>`;
     }
@@ -3112,7 +3099,7 @@ export class RaumzonenPanel extends LitElement {
         )}
       </div>
       <p class="hint small">${rolleInfo(rolle).text}</p>
-      ${rolle === "tuer"
+      ${rolle === "tuer" || rolle === "treppe"
         ? html`<label class="field"
               >Wohin führt die Tür?<select
                 @change=${(e: Event) => {

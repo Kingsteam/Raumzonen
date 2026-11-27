@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   History,
+  applyRolle,
+  kommenGehen,
+  kommenGehenText,
+  rolleOf,
   newZone,
   paintCell,
   rectFromDrag,
@@ -12,7 +16,7 @@ import {
   zoneFromConverter,
   zonesProblem,
 } from "./editor";
-import type { Form, Regel } from "./types";
+import type { Form, Live, Regel, Zone } from "./types";
 
 const REGEL: Regel = {
   belegt_nach_s: 1,
@@ -174,5 +178,29 @@ describe("Bearbeiten 2", () => {
     const d = applyRolle(zone, "durchgang", VORLAGEN);
     expect(d.art).toBe("durchgang");
     expect(rolleOf(d)).toBe("durchgang");
+  });
+});
+
+describe("Treppe und Kommen/Gehen", () => {
+  const vorlagen = { ausgang: { belegt_nach_s: 0, frei_nach_s: 2, rand_cm: 10 }, normal: { belegt_nach_s: 1, frei_nach_s: 5, rand_cm: 20 } } as unknown as Record<string, Regel>;
+  const basis: Zone = { id: "t", name: "Treppe", art: "normal", form: { art: "vieleck", punkte: [[0, 0], [100, 0], [100, 100]] }, regel: vorlagen.normal };
+
+  it("Rolle Treppe ist eine Tür-Zone mit Merkmal", () => {
+    const z = applyRolle(basis, "treppe", vorlagen);
+    expect(z.art).toBe("ausgang");
+    expect(z.treppe).toBe(true);
+    expect(rolleOf(z)).toBe("treppe");
+    const t = applyRolle(z, "tuer", vorlagen);
+    expect(t.treppe).toBeUndefined();
+    expect(rolleOf(t)).toBe("tuer");
+  });
+
+  it("zeigt Kommen und Gehen nur kurz", () => {
+    const live = { kommen_gehen: [{ zone_id: "t", richtung: "betreten", vor_s: 1 }] } as unknown as Live;
+    expect(kommenGehen(live, "t")).toBe("betreten");
+    expect(kommenGehen(live, "x")).toBeNull();
+    const alt = { kommen_gehen: [{ zone_id: "t", richtung: "verlassen", vor_s: 6 }] } as unknown as Live;
+    expect(kommenGehen(alt, "t")).toBeNull();
+    expect(kommenGehenText("betreten", false)).toContain("herein");
   });
 });

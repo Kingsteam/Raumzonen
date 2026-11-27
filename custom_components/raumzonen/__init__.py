@@ -20,10 +20,11 @@ from homeassistant.helpers import (
     config_validation as cv,
     device_registry as dr,
 )
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.typing import ConfigType
 
 from .api import async_get_api
-from .const import DOMAIN, EVENT_WEG, LOGGER, NAME
+from .const import DOMAIN, EVENT_WEG, LOGGER, NAME, SIGNAL_WEG
 from .controller import RoomController
 from .core.wege import Weg, Wege
 from .entity import room_device_key
@@ -34,7 +35,7 @@ from .websocket_api import async_register as async_register_websocket
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
-PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR]
+PLATFORMS = [Platform.BINARY_SENSOR, Platform.EVENT, Platform.SENSOR]
 
 
 @dataclass(slots=True)
@@ -141,16 +142,15 @@ def _wege_einrichten(hass: HomeAssistant, model: RaumzonenModel) -> None:
 
     @callback
     def melden(weg: Weg) -> None:
-        hass.bus.async_fire(
-            EVENT_WEG,
-            {
-                "von_id": weg.von,
-                "von": namen.get(weg.von, weg.von),
-                "nach_id": weg.nach,
-                "nach": namen.get(weg.nach, weg.nach),
-                "tuer": knoten[weg.tuer].name if weg.tuer in knoten else "",
-                "genau": weg.genau,
-            },
-        )
+        daten = {
+            "von_id": weg.von,
+            "von": namen.get(weg.von, weg.von),
+            "nach_id": weg.nach,
+            "nach": namen.get(weg.nach, weg.nach),
+            "tuer": knoten[weg.tuer].name if weg.tuer in knoten else "",
+            "genau": weg.genau,
+        }
+        hass.bus.async_fire(EVENT_WEG, daten)
+        async_dispatcher_send(hass, SIGNAL_WEG, daten)
 
     wege.on_weg = melden

@@ -139,6 +139,25 @@ class ZoneEvent:
     reason: str = ""
 
 
+@dataclass(frozen=True, slots=True)
+class DurchgangEvent:
+    """Jemand kam durch eine Tür (oder Treppe) herein oder ging hinaus.
+
+    ``betreten``: Eine neue Figur taucht in der Tür-Zone auf (sofort, damit
+    Automationen schon beim Hereinkommen reagieren können).
+    ``verlassen``: Eine Figur endet in der Tür-Zone (sie ist hinausgegangen).
+    """
+
+    t: float
+    zone_id: str
+    richtung: str
+    track_id: int
+
+
+BETRETEN = "betreten"
+VERLASSEN = "verlassen"
+
+
 @dataclass(slots=True)
 class RoomSettings:
     """Einstellungen des Raums (zusätzlich zur Spurbildung)."""
@@ -192,6 +211,10 @@ class Room:
         self._verschwunden: deque[tuple[float, int, float, float]] = deque(maxlen=8)
         # Nach einem Tausch gehaltener Schläfer → (Spur mit dem Ziel, seit).
         self._tausch: dict[int, tuple[int, float]] = {}
+        # Kommen und Gehen an Tür-Zonen; der Abnehmer holt sie mit
+        # ``durchgaenge_holen()`` ab.
+        self._durchgaenge: list[DurchgangEvent] = []
+        self._bekannt: set[int] = set()
 
     # -- Hilfen für den Tracker -------------------------------------------
 
@@ -469,6 +492,17 @@ class Room:
         events: list[ZoneEvent] = []
         tracks = list(self.tracker.tracks.values())
         live = {t.track_id for t in tracks}
+        # Hinaus: Figuren, die in einer Tür-Zone geendet haben.
+        for ended in self.tracker.ended:
+            for zone in self.zones.values():
+                if zone.art == ART_AUSGANG and self._inside.get(
+                    (zone.id, ended.track_id)
+                ):
+                    self._durchgaenge.append(
+                        DurchgangEvent(now, zone.id, VERLASSEN, ended.track_id)
+                    )
+        self.tracker.ended = []
+        self._bekannt &= live
         for key in [k for k in self._inside if k[1] not in live]:
             del self._inside[key]
         for track_id in [k for k in self._left_sleeper if k not in live]:
@@ -539,9 +573,29 @@ class Room:
                 if self.zones[zone_id].rule.max_personen == 1:
                     self._drop_echoes(zone_id, track, now)
 
+        # Herein: neue Figur, die zuerst in einer Tür-Zone auftaucht.
+        for track in tracks:
+            if track.track_id in self._bekannt:
+                continue
+            self._bekannt.add(track.track_id)
+            if track.sensor_id < 0 or TAG_WIEDERHERGESTELLT in track.tags:
+                continue
+            for zone in self.zones.values():
+                if zone.art == ART_AUSGANG and self._inside.get(
+                    (zone.id, track.track_id)
+                ):
+                    self._durchgaenge.append(
+                        DurchgangEvent(now, zone.id, BETRETEN, track.track_id)
+                    )
+
         for zone in self.zones.values():
             events += self._zone_step(zone, now)
         return events
+
+    def durchgaenge_holen(self) -> list[DurchgangEvent]:
+        """Kommen und Gehen seit dem letzten Abholen."""
+        out, self._durchgaenge = self._durchgaenge, []
+        return out
 
     def _drop_echoes(self, zone_id: str, leaver: Track, now: float) -> None:
         for track in list(self.tracker.tracks.values()):

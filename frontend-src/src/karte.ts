@@ -15,9 +15,9 @@
  */
 
 import { LitElement, css, html, nothing, svg, type TemplateResult } from "lit";
-import { formPoints, toHouse } from "./geometry";
+import { formCenter, formPoints, toHouse } from "./geometry";
 import { lageVon, planZuHaus, rahmen, stockwerkeVon, umrissVon } from "./karte-geo";
-import { rolleOf } from "./editor";
+import { kommenGehen, kommenGehenText, rolleOf } from "./editor";
 import type { Hass, Live, Plan, Point, Raum, RoomsResult } from "./types";
 
 const DOMAIN = "raumzonen";
@@ -201,7 +201,12 @@ export class RaumzonenKarte extends LitElement {
       .map((z) => {
         const belegt = !!(z.id && live?.zonen[z.id]?.belegt);
         const farbe = `var(--rz-${rolleOf(z)})`;
-        return svg`<polygon class="zone" points=${pts(formPoints(z.form).map((q) => toHouse(q, lage)))} style=${`fill:${farbe};stroke:${farbe};fill-opacity:${belegt ? 0.55 : 0.15}`} />`;
+        const kg = z.art === "ausgang" ? kommenGehen(live, z.id) : null;
+        const tuer = z.art === "ausgang" ? ";stroke-dasharray:6 4" : "";
+        const poly = svg`<polygon class="zone" points=${pts(formPoints(z.form).map((q) => toHouse(q, lage)))} style=${`fill:${farbe};stroke:${farbe};fill-opacity:${kg ? 0.75 : belegt ? 0.55 : 0.15}${tuer}`} />`;
+        if (!kg) return poly;
+        const [kx, ky] = s(toHouse(formCenter(z.form), lage));
+        return svg`${poly}<text class="kg" x=${kx} y=${ky} style=${`font-size:${12 / skala}px`}>${kommenGehenText(kg, !!z.treppe)}</text>`;
       });
     const figuren =
       this._config?.figuren !== false && raum.art !== "melder"
@@ -250,6 +255,7 @@ export class RaumzonenKarte extends LitElement {
       --rz-bereich: var(--teal-color, #009688);
       --rz-durchgang: var(--cyan-color, #00bcd4);
       --rz-tuer: var(--green-color, #4caf50);
+      --rz-treppe: var(--green-color, #4caf50);
       --rz-stelle: var(--orange-color, #ff9800);
       --rz-hund: var(--amber-color, #ffc107);
       --rz-person: var(--teal-color, #009688);
@@ -299,6 +305,11 @@ export class RaumzonenKarte extends LitElement {
     }
     .name {
       font-weight: 600;
+    }
+    .kg {
+      fill: var(--rz-tuer);
+      font-weight: 700;
+      text-anchor: middle;
     }
     .stand {
       fill: var(--secondary-text-color, #727272);

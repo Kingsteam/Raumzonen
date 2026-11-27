@@ -18,6 +18,7 @@ Quellen der Rahmen:
 
 from __future__ import annotations
 
+from collections import deque
 from collections.abc import Callable
 from datetime import UTC, datetime
 import json
@@ -40,7 +41,14 @@ from homeassistant.helpers.event import (
 from homeassistant.util import dt as dt_util
 
 from .aufnahme import Aufnahme
-from .const import DOMAIN, EVENT_ZONE, LOGGER, MELDER_ZONE_ID, QUELLE_MQTT
+from .const import (
+    DOMAIN,
+    EVENT_TUER,
+    EVENT_ZONE,
+    LOGGER,
+    MELDER_ZONE_ID,
+    QUELLE_MQTT,
+)
 from .core.fp400 import (
     parse_availability,
     parse_payload,
@@ -50,7 +58,14 @@ from .core.fp400 import (
 )
 from .core.geometry import inner_point
 from .core.heat import HeatMap
-from .core.room import ART_AUSGANG, TAG_WIEDERHERGESTELLT, Room, ZoneEvent
+from .core.room import (
+    ART_AUSGANG,
+    BETRETEN,
+    TAG_WIEDERHERGESTELLT,
+    VERLASSEN,
+    Room,
+    ZoneEvent,
+)
 from .core.tracks import HELD, Target
 from .discovery import find_fp400_entities
 from .model import RaumConfig
@@ -70,6 +85,10 @@ class RoomController:
         self.problem: str | None = None
         self._last_stamp: str | None = None
         self._listeners: list[Callable[[], None]] = []
+        # Kommen und Gehen (für die Ereignis-Entität und das Panel).
+        self._kg_listeners: list[Callable[[dict[str, Any]], None]] = []
+        self.kommen_gehen: deque[dict[str, Any]] = deque(maxlen=20)
+        self._hat_tueren = any(z.art == ART_AUSGANG for z in room.zones.values())
         self._unsubs: list[CALLBACK_TYPE] = []
         self._timer: CALLBACK_TYPE | None = None
         # Für das Panel: letzte Rohziele und die Bewegungskarte (nur Speicher).
@@ -332,8 +351,45 @@ class RoomController:
         self._handle(self.room.advance(now.timestamp()))
 
     @callback
+    def add_kommen_gehen_listener(
+        self, listener: Callable[[dict[str, Any]], None]
+    ) -> Callable[[], None]:
+        """Benachrichtigung bei jedem Kommen und Gehen."""
+        self._kg_listeners.append(listener)
+
+        def _remove() -> None:
+            self._kg_listeners.remove(listener)
+
+        return _remove
+
+    @callback
+    def _kommen_gehen(
+        self, t: float, richtung: str, zone_id: str | None = None
+    ) -> None:
+        zone = self.room.zones.get(zone_id) if zone_id else None
+        cfg = next((z for z in self.raum.zonen if z.id == zone_id), None)
+        daten: dict[str, Any] = {
+            "raum_id": self.raum.id,
+            "raum": self.raum.name,
+            "richtung": richtung,
+            "zone_id": zone_id or "",
+            "tuer": zone.name if zone else "",
+            "fuehrt_zu": cfg.fuehrt_zu if cfg else "",
+            "treppe": bool(cfg.treppe) if cfg else False,
+        }
+        self.kommen_gehen.append({**daten, "t": t})
+        self.hass.bus.async_fire(EVENT_TUER, daten)
+        for listener in list(self._kg_listeners):
+            listener(daten)
+
+    @callback
     def _handle(self, events: list[ZoneEvent]) -> None:
+        for d in self.room.durchgaenge_holen():
+            self._kommen_gehen(d.t, d.richtung, d.zone_id)
         for event in events:
+            if event.zone_id == MELDER_ZONE_ID and not self._hat_tueren:
+                # Räume ohne Tür-Zonen (z. B. nur Melder): der ganze Raum.
+                self._kommen_gehen(event.t, BETRETEN if event.occupied else VERLASSEN)
             zone = self.room.zones[event.zone_id]
             self.last_reason[event.zone_id] = event.reason
             if event.occupied:
@@ -446,6 +502,15 @@ class RoomController:
             "figuren": tracks,
             "ziele": [
                 [t.id, round(t.x, 1), round(t.y, 1)] for t in self.last_targets or []
+            ],
+            "kommen_gehen": [
+                {
+                    "zone_id": k["zone_id"],
+                    "richtung": k["richtung"],
+                    "vor_s": round(now - k["t"], 1),
+                }
+                for k in self.kommen_gehen
+                if now - k["t"] <= 10
             ],
             "zonen": {
                 zone_id: {

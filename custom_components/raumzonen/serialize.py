@@ -61,6 +61,7 @@ def zone_from_dict(data: dict[str, Any]) -> ZoneConfig:
         fuehrt_zu=str(data.get("fuehrt_zu", "")),
         melder=[str(m) for m in data.get("melder", [])],
         gegenstueck=str(data.get("gegenstueck") or ""),
+        treppe=bool(data.get("treppe", False)),
     )
 
 
@@ -75,6 +76,7 @@ def zone_to_dict(zone: ZoneConfig) -> dict[str, Any]:
         "fuehrt_zu": zone.fuehrt_zu,
         "melder": list(zone.melder),
         "gegenstueck": zone.gegenstueck,
+        "treppe": zone.treppe,
     }
 
 

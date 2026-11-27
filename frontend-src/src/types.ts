@@ -32,6 +32,8 @@ export interface Zone {
   melder?: string[];
   /** Nur bei Türen: bestimmte Tür im anderen Raum. */
   gegenstueck?: string;
+  /** Nur bei Türen: die Zone ist eine Treppe (zu einem anderen Stockwerk). */
+  treppe?: boolean;
 }
 
 /** Wo ein Melder im Raum hängt (nur Anzeige). */
@@ -160,6 +162,8 @@ export interface Live {
   figuren: LiveFigur[];
   ziele: [number, number, number][];
   zonen: Record<string, { belegt: boolean; personen: number; grund: string | null }>;
+  /** Kommen und Gehen der letzten 10 s (Tür, Treppe oder ganzer Raum). */
+  kommen_gehen?: { zone_id: string; richtung: "betreten" | "verlassen"; vor_s: number }[];
 }
 
 export interface Heat {

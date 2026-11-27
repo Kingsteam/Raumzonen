@@ -30,6 +30,7 @@ export const styles = css`
     --rz-bereich: var(--teal-color, #009688);
     --rz-durchgang: var(--cyan-color, #00bcd4);
     --rz-tuer: var(--green-color, #4caf50);
+    --rz-treppe: var(--green-color, #4caf50);
     --rz-stelle: var(--orange-color, #ff9800);
     --rz-hund: var(--amber-color, #ffc107);
     --rz-ignorieren: var(--state-inactive-color, #b3aa9c);
@@ -995,6 +996,10 @@ export const styles = css`
     font-weight: 600;
     font-size: 13px;
     pointer-events: none;
+  }
+  .label.kg {
+    fill: var(--rz-tuer);
+    font-weight: 700;
   }
   .label .sub {
     font-weight: 400;

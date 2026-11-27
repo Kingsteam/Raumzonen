@@ -4,6 +4,23 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.23.0] - 2026-11-27
+
+### Hinzugefügt
+
+- Kommen und Gehen: Taucht jemand neu in einer Tür-Zone auf, meldet
+  Raumzonen sofort „betreten“; endet eine Figur in einer Tür-Zone,
+  „verlassen“. Räume ohne Tür-Zonen melden beides über „Anwesenheit“.
+  Neu je Raum die Ereignis-Entität „Kommen und Gehen“ (`betreten`,
+  `verlassen`, mit `tuer`, `zone_id`, `fuehrt_zu`, `treppe`), fürs Haus
+  „Raumwechsel“ (`von`, `nach`, `tuer`, `genau`) und das Ereignis
+  `raumzonen_tuer`. Für Automationen, die schon beim Hereinkommen reagieren.
+- Rolle „Treppe“ für Zonen: wie eine Tür, aber zu einem anderen Stockwerk
+  („Führt zu“), z. B. eine Wendeltreppe im Wohnzimmer.
+- Tür- und Treppen-Zonen sind im Raumplan, im Hausplan und in der
+  Dashboard-Karte gestrichelt; beim Kommen oder Gehen leuchten sie kurz auf
+  und zeigen „herein“/„hinaus“.
+
 ## [0.22.2] - 2026-11-27
 
 ### Behoben

@@ -114,6 +114,8 @@ class ZoneConfig:
     # Nur für Türen: die Tür auf der anderen Seite („<raum>/<zone>“ oder
     # „<raum>/#<öffnung>“), leer = keine bestimmte.
     gegenstueck: str = ""
+    # Nur für Türen: die Zone ist eine Treppe (Übergang zwischen Stockwerken).
+    treppe: bool = False
 
 
 @dataclass(slots=True)
@@ -353,6 +355,8 @@ class RaumzonenModel:
                     raise ValueError(f"Zone {zone.id}: Melder nur in Melder-Räumen")
                 if zone.art not in ZONE_ARTEN:
                     raise ValueError(f"Zone {zone.id}: unbekannte Art {zone.art!r}")
+                if zone.treppe and zone.art != ART_AUSGANG:
+                    raise ValueError(f"Zone {zone.id}: Treppe nur als Tür-Zone")
                 if zone.fuehrt_zu:
                     if zone.art != ART_AUSGANG:
                         raise ValueError(f"Zone {zone.id}: „führt zu“ nur bei Türen")

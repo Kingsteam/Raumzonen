@@ -65,6 +65,9 @@ MAX_AUFNAHME_TAGE: Final = 365
 EVENT_ZONE: Final = f"{DOMAIN}_zone"
 # Weg durchs Haus: jemand ging durch eine Tür von einem Raum in einen anderen.
 EVENT_WEG: Final = f"{DOMAIN}_weg"
+# Kommen und Gehen in einem Raum (Tür, Treppe oder ganzer Raum).
+EVENT_TUER: Final = f"{DOMAIN}_tuer"
+SIGNAL_WEG: Final = f"{DOMAIN}_weg_signal"
 
 # Ohne Rahmen so lange: Sensor gilt als still, nicht als weg. Nur Hinweis
 # im Diagnose-Sensor, ändert keine Zone.

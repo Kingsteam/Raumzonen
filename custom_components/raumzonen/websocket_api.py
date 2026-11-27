@@ -207,6 +207,8 @@ ZONE_SCHEMA = vol.Schema(
         vol.Optional("melder", default=[]): [str],
         # Nur bei Türen: bestimmte Tür im anderen Raum.
         vol.Optional("gegenstueck", default=""): vol.Any(None, str),
+        # Nur bei Türen: die Zone ist eine Treppe.
+        vol.Optional("treppe", default=False): bool,
     }
 )
 

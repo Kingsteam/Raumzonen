@@ -143,6 +143,16 @@ das ein Weg. Auf der Seite eines Melder-Raums zählt dessen „jemand da“
 Automationen gibt es das Ereignis `raumzonen_weg` mit `von`, `nach`, `tuer`
 und `genau`.
 
+**Kommen und Gehen, Treppen:** Tür-Zonen sind im Plan gestrichelt. Taucht
+jemand neu in einer Tür-Zone auf, meldet Raumzonen sofort **„betreten“**
+(gut, um beim Hereinkommen schon Licht zu machen); endet eine Figur in der
+Tür-Zone, ist sie hinausgegangen: **„verlassen“**. Im Plan steht dann kurz
+„→ herein“ bzw. „← hinaus“. Eine Treppe im Raum (z. B. eine Wendeltreppe)
+zeichnest du als Zone und wählst die Rolle **„Treppe“**: Sie verhält sich wie
+eine Tür, bei „Führt zu“ den Raum im anderen Stockwerk wählen. Räume ohne
+Tür-Zonen (z. B. nur mit Meldern) melden „betreten“/„verlassen“, wenn
+„Anwesenheit“ an- bzw. ausgeht.
+
 **Reichweite der Melder:** Bei einem platzierten Melder steht unter
 „Melder und Raum“ die **Reichweite laut Plan**, also wie weit der
 entfernteste Punkt des Raums vom Melder liegt. Hat der Melder eine
@@ -361,6 +371,12 @@ Je Raum ein Gerät mit:
 | `sensor.<raum>_<zone>_personen` | wie viele Figuren in der Zone zählen |
 | `binary_sensor.<raum>_sensor_verbunden` | Daten kommen an (Diagnose); Attribut `problem` |
 | `sensor.<raum>_figuren` | Figuren im ganzen Raum, auch gehaltene (Diagnose) |
+| `event.<raum>_kommen_und_gehen` | Ereignis `betreten` oder `verlassen`; Attribute `tuer` (Name der Tür- oder Treppen-Zone), `zone_id`, `fuehrt_zu`, `treppe` |
+
+Fürs ganze Haus (Gerät „Raumzonen“): `event.raumzonen_raumwechsel` mit
+`von`, `nach`, `tuer` und `genau`, sobald jemand von einem Raum in einen
+anderen gegangen ist. Dieselben Daten gibt es als Ereignisse `raumzonen_tuer`
+(Kommen und Gehen) und `raumzonen_weg` (Raumwechsel).
 
 Dazu das Ereignis **`raumzonen_zone`** bei jeder Änderung mit `raum_id`,
 `raum`, `zone_id`, `zone`, `belegt` (true/false) und `grund`.
@@ -376,7 +392,28 @@ Für andere Integrationen (z. B. das Homebrain) gibt es zusätzlich die
 Schnittstelle `raumzonen/1` mit Positionen und Spuren; beschrieben in
 `docs/homebrain/VERTRAG-raumzonen-1.md`.
 
-## 5. Beispiel: Licht nach dem Aufstehen
+## 5. Beispiel: Licht beim Hereinkommen
+
+```yaml
+triggers:
+  - trigger: state
+    entity_id: event.wohnzimmer_kommen_und_gehen
+    not_from: unavailable
+conditions:
+  - condition: state
+    entity_id: event.wohnzimmer_kommen_und_gehen
+    attribute: event_type
+    state: betreten
+actions:
+  - action: light.turn_on
+    target:
+      area_id: wohnzimmer
+```
+
+Der Zustand der Ereignis-Entität ist der Zeitpunkt des letzten Ereignisses;
+darum löst jedes Kommen aus, und die Bedingung wählt „betreten“.
+
+## 6. Beispiel: Licht nach dem Aufstehen
 
 Raumzonen schaltet selbst nichts. Eine eigene Automation, z. B.:
 

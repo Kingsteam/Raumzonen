@@ -8,7 +8,10 @@ from freezegun.api import FrozenDateTimeFactory
 from homeassistant.components import frontend
 from homeassistant.core import HomeAssistant
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_capture_events,
+)
 
 from custom_components.raumzonen.const import DOMAIN, NAME, STORAGE_KEY
 from custom_components.raumzonen.panel import PANEL_URL
@@ -443,3 +446,24 @@ async def test_figuren_markieren_und_aufraeumen(
     await sim.wait(0.5)
     await sim.frame((0, 0, 200), (1, 100, 300), (2, -100, 250))
     assert sorted(controller.room.tracker.tracks) == [ids[0]]
+
+
+async def test_kommen_und_gehen(
+    hass: HomeAssistant,
+    loaded: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Figur taucht in der Tür auf: Ereignis „betreten“, Entität und Live-Daten."""
+    events = async_capture_events(hass, f"{DOMAIN}_tuer")
+    sim = SimFp400(hass, freezer)
+    await sim.frame((0, 40, 30))
+    await hass.async_block_till_done()
+    assert [e.data["richtung"] for e in events] == ["betreten"]
+    assert events[0].data["tuer"] == "Tür"
+    state = hass.states.get("event.schlafzimmer_kommen_und_gehen")
+    assert state is not None
+    assert state.attributes["event_type"] == "betreten"
+    assert state.attributes["tuer"] == "Tür"
+    live = loaded.runtime_data.controllers["schlafzimmer"].live()
+    assert live["kommen_gehen"][0]["richtung"] == "betreten"
+    assert hass.states.get("event.raumzonen_raumwechsel") is not None

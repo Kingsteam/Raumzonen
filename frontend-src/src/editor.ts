@@ -1,7 +1,7 @@
 // Bearbeitungsschritte für Zonen, ohne Oberfläche (testbar mit vitest).
 
 import { cellOf, formProblem, headingTo, rotate, round1 } from "./geometry";
-import type { Form, Oeffnung, Point, Regel, Zone, ZonenArt } from "./types";
+import type { Form, Live, Oeffnung, Point, Regel, Zone, ZonenArt } from "./types";
 
 /** Welche Regel-Vorlage zu welcher Zonenart passt. */
 export const VORLAGE_FUER_ART: Record<ZonenArt, string> = {
@@ -145,7 +145,7 @@ export function zoneFromConverter(
 
 // -- Rollen: verständliche Namen statt Zonenart + Regel ---------------------
 
-export type Rolle = "bett" | "bereich" | "durchgang" | "tuer" | "stelle" | "hund" | "ignorieren";
+export type Rolle = "bett" | "bereich" | "durchgang" | "tuer" | "treppe" | "stelle" | "hund" | "ignorieren";
 
 export interface RolleInfo {
   rolle: Rolle;
@@ -187,7 +187,15 @@ export const ROLLEN: RolleInfo[] = [
     icon: "mdi:door-open",
     art: "ausgang",
     vorlage: "ausgang",
-    text: "Wer hierhin geht, verlässt den Raum. Hilft dem Bett, „aufgestanden“ schnell zu erkennen.",
+    text: "Wer hierhin geht, verlässt den Raum. Meldet „betreten“, sobald jemand hier auftaucht, und „verlassen“, wenn er hinausgeht. Hilft dem Bett, „aufgestanden“ schnell zu erkennen.",
+  },
+  {
+    rolle: "treppe",
+    name: "Treppe",
+    icon: "mdi:stairs",
+    art: "ausgang",
+    vorlage: "ausgang",
+    text: "Wie eine Tür, aber zu einem anderen Stockwerk: Wer hier auftaucht, kommt die Treppe herunter oder herauf („betreten“); wer hier verschwindet, ist hinauf- oder hinuntergegangen („verlassen“).",
   },
   {
     rolle: "stelle",
@@ -215,12 +223,25 @@ export const ROLLEN: RolleInfo[] = [
   },
 ];
 
+/** Ist gerade jemand durch diese Tür/Treppe gekommen oder gegangen (letzte 4 s)? */
+export function kommenGehen(live: Live | undefined | null, zoneId: string | undefined): "betreten" | "verlassen" | null {
+  if (!live || !zoneId) return null;
+  const k = (live.kommen_gehen ?? []).filter((x) => x.zone_id === zoneId && x.vor_s <= 4);
+  return k.length ? k[k.length - 1].richtung : null;
+}
+
+/** Text zum Kommen und Gehen, z. B. „herein“ / „hinauf“. */
+export function kommenGehenText(richtung: "betreten" | "verlassen", treppe: boolean): string {
+  if (treppe) return richtung === "betreten" ? "↓↑ kommt über die Treppe" : "↑↓ über die Treppe weg";
+  return richtung === "betreten" ? "→ herein" : "← hinaus";
+}
+
 export function rolleInfo(rolle: Rolle): RolleInfo {
   return ROLLEN.find((r) => r.rolle === rolle) ?? ROLLEN[1];
 }
 
 export function rolleOf(zone: Zone): Rolle {
-  if (zone.art === "ausgang") return "tuer";
+  if (zone.art === "ausgang") return zone.treppe ? "treppe" : "tuer";
   if (zone.art === "hundeplatz") return "hund";
   if (zone.art === "stelle") return "stelle";
   if (zone.art === "durchgang") return "durchgang";
@@ -232,8 +253,10 @@ export function rolleOf(zone: Zone): Rolle {
 export function applyRolle(zone: Zone, rolle: Rolle, vorlagen: Record<string, Regel>): Zone {
   const info = rolleInfo(rolle);
   const next: Zone = { ...zone, art: info.art, regel: { ...vorlagen[info.vorlage] } };
-  // „Führt zu“ gibt es nur bei Türen.
+  // „Führt zu“ gibt es nur bei Türen und Treppen.
   if (info.art !== "ausgang") delete next.fuehrt_zu;
+  if (rolle === "treppe") next.treppe = true;
+  else delete next.treppe;
   return next;
 }
 
