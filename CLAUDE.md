@@ -266,5 +266,6 @@ HACS-Prüfung (`.github/workflows/`).
   `docs/homebrain/beispiele/` mitziehen (`test_beispiele_passen`). Zeiten in
   Beispielen sind erfunden (2000-01-01).
 - HA 2026.11 baut neue Entitäts-IDs mit dem Bereich vorne (`event.schlafzimmer_schlafzimmer_…`); neue Entitäten nach dem ersten Laden auf `<raum>_…` umbenennen (eigene Entitäten, erlaubt).
+- Abnehmer im Haus: Die Automation „Lichtübergang zwischen Räumen“ nutzt `event.<raum>_kommen_und_gehen` (`event_type`, `fuehrt_zu`), `sensor.<raum>_anwesenheit_personen` und `binary_sensor.<raum>_anwesenheit`. Namen und Attribute nicht ändern, ohne die Sitzung „Automationen“ zu fragen.
 - `DeviceSelector` im Options-Flow filtert auf MQTT-Geräte; der Simulator
   der Test-Instanz wird darum von `start.py` über die REST-API angelegt.
