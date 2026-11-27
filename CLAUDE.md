@@ -44,6 +44,15 @@ Nächstes: 4b (Herkunft, Einstufung, Sicherheit, `hinweis/1`); siehe
    `projekte/postfach/an-haus.md` im Haus-Repo; weil dieses Repo hier nicht
    erreichbar ist, per send_message an „Lernendes Haus“ oder „Tablets“ mit
    der Bitte um Eintrag).
+   **Dauerfreigabe (Besitzer, 27.11.2026):** „Du kriegst von mir dauerhaft
+   Freigaben für die Installationsfunktionen am Home Assistant … Wenn du
+   etwas am Home Assistant installieren musst, für deine Extension, dann
+   hast du das Okay.“ Fertige Versionen von Raumzonen dürfen darum ohne
+   Rückfrage veröffentlicht und über den Marketplace eingespielt werden.
+   Bedingungen bleiben: alle Tests grün (auch mit den Aufnahmen, Regel 3),
+   kein Neustart durch mich (nur anmelden), jede Version dem Besitzer kurz
+   melden. Gilt nur fürs Installieren von Raumzonen, nicht für andere
+   Änderungen an der echten Installation.
 2. **Nichts im Haus schalten.** Diese Integration meldet Zustände; sie
    schaltet kein Licht und keine Geräte. Automationen macht der Besitzer.
    Ausnahme (Besitzer, 26.11.2026: „dass Raumzonen die Sensoren, die in
