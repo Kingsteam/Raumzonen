@@ -4,6 +4,18 @@ Alle wichtigen Änderungen an Raumzonen. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.25.0] - 2026-11-27
+
+### Hinzugefügt
+
+- Hinweis „Sensor schickt nur selten Positionen“: Hat der Zigbee-Treiber
+  eines FP400 keine Zone eingetragen, holt er die Positionen nicht laufend
+  ab (nur etwa eine pro Minute). Das Panel zeigt das unter „Sensor“ an; der
+  Knopf „Datenstrom einschalten“ (nur Admins) trägt beim Treiber die Zone
+  „Raumzonen Datenstrom“ ein, „Zurücknehmen“ entfernt nur diese wieder.
+  Raumzonen schreibt nur in einen leeren Platz. Neuer WebSocket-Befehl
+  `raumzonen/datenstrom/set`, `rooms/get` liefert `datenstrom` je Raum.
+
 ## [0.24.1] - 2026-11-27
 
 ### Geändert

@@ -49,7 +49,7 @@ import { fehlerText } from "./fehler";
 import { hatTuerZone, naechsteTuer, oeffnungMitte, oeffnungName, summeDauer, tuerenVon, tuerZone, vereinigen, wechsel, type Tuer } from "./haus";
 import { ankerStellen, besteDrei, einmessen, sensorStellenProblem, stelle, stellenProblem, type Anker, type Einmessung } from "./einmessen";
 import { bbox, erkenneGrundriss, jpegsAusPdf, uebernehmen, type Grundriss } from "./grundriss";
-import type { Auswertung, AuswertungFigur, Form, Hass, Heat, Kandidaten, MelderLage, Plan, Live, LiveFigur, Oeffnung, Point, Raum, Regel, RoomsResult, Zone } from "./types";
+import type { Auswertung, AuswertungFigur, Datenstrom, Form, Hass, Heat, Kandidaten, MelderLage, Plan, Live, LiveFigur, Oeffnung, Point, Raum, Regel, RoomsResult, Zone } from "./types";
 
 const DOMAIN = "raumzonen";
 const SNAP_CM = 5;
@@ -3425,7 +3425,47 @@ export class RaumzonenPanel extends LitElement {
             : nothing}
         </li>
       </ul>
+      ${this.renderDatenstrom()}
       ${this.kannAendern ? html`${this.renderWizard()} ${this.renderRoomEdit()}` : nothing}`;
+  }
+
+  /**
+   * Hinweis, wenn der Zigbee-Treiber keine Zone hat und darum kaum Positionen holt,
+   * mit Knopf (nur Admins). Raumzonen trägt nur auf Knopfdruck ein und nimmt nur die eigene Zone zurück.
+   */
+  private renderDatenstrom(): TemplateResult | typeof nothing {
+    const stand = this.data?.datenstrom?.[this.raumId];
+    if (!stand) return nothing;
+    if (stand.fehlt) {
+      return html`<div class="note warn">
+        Der Sensor schickt nur selten Positionen: Beim Zigbee-Treiber ist keine Zone eingetragen, und ohne Zone holt der Treiber
+        die Positionen nicht laufend ab.
+        ${this.kannAendern
+          ? html`Raumzonen kann dort eine Zone „Raumzonen Datenstrom“ über den ganzen Bereich eintragen. Sie schaltet nichts und
+              lässt sich jederzeit zurücknehmen.
+              <div class="actions"><span class="spacer"></span><button class="primary" @click=${() => this.datenstromSetzen(true)}><ha-icon icon="mdi:access-point"></ha-icon>Datenstrom einschalten</button></div>`
+          : html`Ein Admin kann das hier mit einem Knopf beheben.`}
+      </div>`;
+    }
+    if (stand.eigene && this.kannAendern) {
+      return html`<p class="hint small">
+        Beim Zigbee-Treiber steht die Zone „Raumzonen Datenstrom“, damit er laufend Positionen holt.
+        <button class="text small" @click=${() => this.datenstromSetzen(false)}>Zurücknehmen</button>
+      </p>`;
+    }
+    return nothing;
+  }
+
+  private async datenstromSetzen(an: boolean): Promise<void> {
+    if (!this._hass || !this.data) return;
+    if (!an && !confirm("Zone „Raumzonen Datenstrom“ beim Treiber entfernen? Ohne Zone schickt der Sensor wieder nur selten Positionen.")) return;
+    try {
+      const stand = await this._hass.callWS<Datenstrom>({ type: `${DOMAIN}/datenstrom/set`, raum_id: this.raumId, an });
+      this.data = { ...this.data, datenstrom: { ...this.data.datenstrom, [this.raumId]: stand } };
+      this.showToast(an ? "Datenstrom eingeschaltet." : "Zone beim Treiber entfernt.");
+    } catch (err) {
+      this.showToast(`Nicht geändert: ${fehlerText(err)}`);
+    }
   }
 
   private renderWizard(): TemplateResult {

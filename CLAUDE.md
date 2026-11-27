@@ -18,7 +18,7 @@ Zone, Spuren, die nicht plötzlich verschwinden. Konzept: `docs/KONZEPT.md`
 (allgemeine Fassung; die vollständige und die Auswertung der Aufnahmen
 liegen in `haus-privat/raumzonen/docs/`).
 
-Stand 0.24.1: **Phase 0 bis 4a, Hausplan, Türen in Wänden.** Rechenkern in reinem Python, getestet gegen
+Stand 0.25.0: **Phase 0 bis 4a, Hausplan, Türen in Wänden.** Rechenkern in reinem Python, getestet gegen
 anonymisierte Aufnahmen; Sensor-Anbindung (MQTT oder Entitäten, nur lesen),
 Entitäten je Zone und Raum, Ereignis `raumzonen_zone`, Einrichtung über den
 Options-Flow; Panel „Raumzonen“ (sehen alle, ändern nur Admins) mit
@@ -110,12 +110,12 @@ Nächstes: 4b (Herkunft, Einstufung, Sicherheit, `hinweis/1`); siehe
 | `options_flow.py` | Raum hinzufügen (Gerät, Quelle, MQTT-Thema), Zonen aus dem Konverter übernehmen (Rolle → Art + Regel-Vorlage), Zone einstellen/löschen, Raum löschen. Jede Aktion: Kopie, prüfen, speichern, neu laden |
 | `controller.py` | `RoomController`: Quelle verbinden (MQTT: Rahmen nur bei neuem `tracking_last_update`, `<thema>/availability`; Entitäten: Rahmen bei neuer Zeit in `tracking_last_update`; Melder: „an“ = Figur in jeder Zone dieses Melders, sonst in der Raummitte; alle nicht erreichbar = Ausfall), Rechenkern füttern, Zeitregeln mit `async_track_point_in_utc_time`, Ereignis `raumzonen_zone`, `restore_zone` |
 | `panel.py` | Panel `/raumzonen` (für alle Nutzer, `mdi:floor-plan`), statische Dateien unter `/raumzonen_static`, `?v=<sha256>`; eigenes Neuladen `async_reload_keep_panel`, damit das Panel beim Speichern offen bleibt |
-| `websocket_api.py` | Lesen für alle: `rooms/get` (mit `darf_aendern`, Stockwerke `stockwerke_ha` und Bereiche `bereiche_ha` aus Home Assistant), `live/subscribe` (gedrosselt 5/s), `heat/get`, `v1/schema`, `v1/snapshot`, `v1/subscribe`. Nur Admins: `room/save` (Zonen, Sensor-Lage, Umriss, Aufnahme; ganzes Modell prüfen, speichern, neu laden), `converter_zones/get`, `aufnahme/get`, `auswertung/get`, `haus/save` (Lage der Räume, Ziele der Türen: Zonen und Öffnungen), `kandidaten/get` (FP400, Melder, Bereiche als Vorschlag), `room/create`, `room/delete`, `plan/import` (Wände, Türen, Lage mehrerer Räume, Bild), `plan/delete`, `figur/markieren`, `figuren/aufraeumen`; für alle zusätzlich `plan/bild/get` |
+| `websocket_api.py` | Lesen für alle: `rooms/get` (mit `darf_aendern`, Stockwerke `stockwerke_ha` und Bereiche `bereiche_ha` aus Home Assistant), `live/subscribe` (gedrosselt 5/s), `heat/get`, `v1/schema`, `v1/snapshot`, `v1/subscribe`. Nur Admins: `room/save` (Zonen, Sensor-Lage, Umriss, Aufnahme; ganzes Modell prüfen, speichern, neu laden), `converter_zones/get`, `aufnahme/get`, `auswertung/get`, `haus/save` (Lage der Räume, Ziele der Türen: Zonen und Öffnungen), `kandidaten/get` (FP400, Melder, Bereiche als Vorschlag), `room/create`, `room/delete`, `plan/import` (Wände, Türen, Lage mehrerer Räume, Bild), `plan/delete`, `figur/markieren`, `figuren/aufraeumen`, `datenstrom/set` (Zone „Raumzonen Datenstrom“ beim Z2M-Treiber, nur in leeren Platz, nur eigene zurück); für alle zusätzlich `plan/bild/get` |
 | `vertrag.py` | baut die Daten des Vertrags `raumzonen/1` (Aufbau, Momentaufnahme, Zone, Sensor, Spur, Stelle) |
 | `api.py` | `get_api(hass)` für Abnehmer; Verteiler `RaumzonenApi` in `hass.data["raumzonen_api"]`: `seq` je Abo, `raeume()`, `momentaufnahme()`, `abonnieren()`; überlebt das Neuladen (`attach`/`detach`), Spuren höchstens 2/s und nur bei Änderung |
 | `plaene.py` | Grundriss-Bilder als Dateien unter `<config>/raumzonen/plaene/` (JPEG/PNG, geprüft, höchstens 8 MB); Lage im Haus in `PlanConfig` (`model.py`) |
 | `aufnahme.py` | eigene Aufnahme je Raum (`fp400-trace/2`, gzip je Tag, alle 10 s schreiben, alte Tage löschen, Abruf bis 24 h) |
-| `discovery.py` | Entitäten des FP400 über `unique_id` finden, Themen-Vorschlag, Software-Zonen des Konverters lesen |
+| `discovery.py` | Entitäten des FP400 über `unique_id` finden, Themen-Vorschlag, Software-Zonen des Konverters lesen; `datenstrom()`: ohne Software-Zone holt der Treiber keine laufenden Positionen |
 | `event.py` | Ereignis-Entitäten: je Raum „Kommen und Gehen“ (`betreten`/`unterwegs`/`verlassen` aus `Room.durchgaenge_holen()`, ohne Tür-Zonen aus „Anwesenheit“), fürs Haus „Raumwechsel“ (über `SIGNAL_WEG`); Bus-Ereignis `raumzonen_tuer` |
 | `entity.py`, `binary_sensor.py`, `sensor.py` | je Zone „belegt“ (RestoreEntity) und „Personen“, je Raum „Sensor verbunden“ und „Figuren“; Zustand wird nur bei Änderung geschrieben (keine Positionen in Attributen, schont den Recorder) |
 | `const.py` | Konstanten und Grenzen (u. a. `MAX_AUFGESTANDEN_S`) |
@@ -237,6 +237,9 @@ HACS-Prüfung (`.github/workflows/`).
 - Der FP400 schickt in Ruhe minutenlang nichts. Zeitregeln allein reichen im
   Bett nicht: ein Ausreißer bleibt bis zum nächsten Rahmen stehen. Darum
   „Schläfer halten“ mit Beweis (bewegte Rahmen, Abstand, Tür).
+- Der Z2M-Treiber des FP400 hält den Positions-Strom nur offen, solange bei
+  ihm mindestens eine Software-Zone steht; sonst kommt etwa eine Position je
+  Minute (`datenstrom` in `rooms/get`, Knopf im Panel).
 - Ember-Koordinatoren schneiden Rahmen mit 3+ Zielen ab; dann fehlen Ziele
   oder Rahmen für einige Sekunden.
 - Ruff: kein typografischer Gedankenstrich oder „×“ in Python-Strings.

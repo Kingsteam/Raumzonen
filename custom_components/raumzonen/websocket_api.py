@@ -42,6 +42,9 @@ Vertrag ``raumzonen/1`` (``vertrag.py``, ``api.py``):
   (``null`` = Markierung weg); gilt, solange die Spur lebt. Nur Admins.
 * ``raumzonen/figuren/aufraeumen``: alle Figuren eines Raums außer
   ``behalten`` entfernen (Fehlerkennungen). Nur Admins.
+* ``raumzonen/datenstrom/set``: beim Zigbee-Treiber des FP400 die Zone
+  „Raumzonen Datenstrom“ eintragen (``an``) oder nur diese wieder entfernen,
+  damit der Treiber laufend Positionen holt. Nur auf Knopfdruck. Nur Admins.
 """
 
 from __future__ import annotations
@@ -84,7 +87,14 @@ from .const import (
     RAUM_RADAR,
 )
 from .core.room import MARKIERUNGEN, ZONE_ARTEN
-from .discovery import converter_zones, find_fp400_entities, suggest_topic
+from .discovery import (
+    converter_zones,
+    datenstrom,
+    datenstrom_platz,
+    datenstrom_zone,
+    find_fp400_entities,
+    suggest_topic,
+)
 from .model import (
     REGEL_VORLAGEN,
     PlanConfig,
@@ -154,6 +164,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_plan_delete,
         ws_figur_markieren,
         ws_figuren_aufraeumen,
+        ws_datenstrom_set,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -172,6 +183,12 @@ def ws_rooms_get(
         msg["id"],
         {
             "raeume": [raum_to_dict(r) for r in entry.runtime_data.store.model.raeume],
+            # Je FP400-Raum: fehlt die Zone beim Treiber, die den Strom offen hält?
+            "datenstrom": {
+                r.id: datenstrom(hass, r.sensor.device_id)
+                for r in entry.runtime_data.store.model.raeume
+                if not r.ist_melder and r.sensor.device_id
+            },
             "plaene": [plan_to_dict(p) for p in entry.runtime_data.store.model.plaene],
             # Stockwerke und Bereiche aus Home Assistant (für die Auswahl im Plan).
             **_haus_struktur(hass),
@@ -1380,3 +1397,61 @@ def ws_figuren_aufraeumen(
         return
     entfernt = controller.aufraeumen(msg["behalten"])
     connection.send_result(msg["id"], {"entfernt": entfernt})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/datenstrom/set",
+        vol.Required("raum_id"): str,
+        vol.Required("an"): bool,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_datenstrom_set(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Zone beim Treiber eintragen oder wieder entfernen (nur die eigene).
+
+    Geschrieben wird nur in einen Platz, der „clear“ meldet; „aus“ leert
+    nur den Platz mit der Zone von Raumzonen. Der alte Wert ist damit
+    immer „clear“, „Zurück“ stellt ihn wieder her.
+    """
+    entry = _entry(hass)
+    raum = None
+    if entry is not None:
+        raum = next(
+            (
+                r
+                for r in entry.runtime_data.store.model.raeume
+                if r.id == msg["raum_id"]
+            ),
+            None,
+        )
+    if raum is None or raum.ist_melder or not raum.sensor.device_id:
+        connection.send_error(msg["id"], "not_found", "Raum mit FP400 nicht gefunden")
+        return
+    device_id = raum.sensor.device_id
+    stand = datenstrom(hass, device_id)
+    if msg["an"] == stand["eigene"]:
+        connection.send_result(msg["id"], stand)
+        return
+    entity_id = datenstrom_platz(hass, device_id, msg["an"])
+    if entity_id is None:
+        connection.send_error(
+            msg["id"],
+            "kein_platz",
+            "Beim Treiber ist kein freier Platz für die Zone"
+            if msg["an"]
+            else "Die Zone von Raumzonen ist beim Treiber nicht mehr da",
+        )
+        return
+    wert = datenstrom_zone() if msg["an"] else "clear"
+    await hass.services.async_call(
+        "text", "set_value", {"entity_id": entity_id, "value": wert}, blocking=True
+    )
+    # Der Treiber bestätigt den neuen Wert erst gleich; darum mit dem eben
+    # geschriebenen Wert rechnen.
+    connection.send_result(
+        msg["id"], datenstrom(hass, device_id, ersetzt={entity_id: wert})
+    )

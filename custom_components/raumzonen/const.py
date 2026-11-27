@@ -25,6 +25,12 @@ QUELLE_MQTT: Final = "mqtt"
 QUELLE_ENTITAET: Final = "entitaet"
 QUELLEN: Final = (QUELLE_MQTT, QUELLE_ENTITAET)
 DEFAULT_MQTT_BASIS: Final = "zigbee2mqtt"
+# Der Zigbee-Treiber des FP400 hält den Positions-Strom nur offen, solange
+# bei ihm mindestens eine Software-Zone eingetragen ist. Raumzonen trägt auf
+# Knopfdruck diese eine Zone ein (ganzer Bereich, schaltet nichts) und
+# entfernt nur sie wieder.
+DATENSTROM_ZONE_NAME: Final = "Raumzonen Datenstrom"
+DATENSTROM_ZONE_CM: Final = 1000
 
 # Abdeckung des FP400 zum Einzeichnen (Standard, änderbar; laut Datenblatt
 # des eigenen Geräts prüfen).

@@ -467,3 +467,99 @@ async def test_kommen_und_gehen(
     live = loaded.runtime_data.controllers["schlafzimmer"].live()
     assert live["kommen_gehen"][0]["richtung"] == "betreten"
     assert hass.states.get("event.raumzonen_raumwechsel") is not None
+
+
+async def test_datenstrom(
+    hass: HomeAssistant, loaded: MockConfigEntry, hass_ws_client: Any
+) -> None:
+    """Ohne Zone beim Treiber warnt das Panel.
+
+    Der Knopf trägt nur in einen leeren Platz ein, „Zurück“ leert nur die
+    eigene Zone.
+    """
+    from homeassistant.core import ServiceCall
+
+    geschrieben: list[dict[str, Any]] = []
+
+    async def set_value(call: ServiceCall) -> None:
+        geschrieben.append(dict(call.data))
+        hass.states.async_set(call.data["entity_id"], call.data["value"])
+
+    hass.services.async_register("text", "set_value", set_value)
+    client = await hass_ws_client(hass)
+
+    async def stand() -> dict[str, Any]:
+        await client.send_json_auto_id({"type": f"{DOMAIN}/rooms/get"})
+        return (await client.receive_json())["result"]["datenstrom"]["schlafzimmer"]
+
+    # Zone 1 ist eine fremde Zone (Bett): der Strom läuft, keine Warnung.
+    assert await stand() == {"fehlt": False, "eigene": False}
+
+    # Unklarer Zustand zählt nicht als leer.
+    hass.states.async_set("text.testsensor_software_zone_1_config", "unknown")
+    assert (await stand())["fehlt"] is False
+
+    hass.states.async_set("text.testsensor_software_zone_1_config", "clear")
+    assert await stand() == {"fehlt": True, "eigene": False}
+
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/datenstrom/set", "raum_id": "schlafzimmer", "an": True}
+    )
+    msg = await client.receive_json()
+    assert msg["result"] == {"fehlt": False, "eigene": True}
+    assert geschrieben[-1]["entity_id"] == "text.testsensor_software_zone_1_config"
+    assert '"name":"Raumzonen Datenstrom"' in geschrieben[-1]["value"]
+    assert await stand() == {"fehlt": False, "eigene": True}
+
+    # Zweimal an schreibt nichts neu.
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/datenstrom/set", "raum_id": "schlafzimmer", "an": True}
+    )
+    await client.receive_json()
+    assert len(geschrieben) == 1
+
+    # Eine fremde Zone in Platz 2 bleibt beim Zurücknehmen unberührt.
+    hass.states.async_set(
+        "text.testsensor_software_zone_2_config",
+        '{"name":"Fremd","x_min":0,"x_max":10,"y_min":0,"y_max":10}',
+    )
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/datenstrom/set", "raum_id": "schlafzimmer", "an": False}
+    )
+    msg = await client.receive_json()
+    assert msg["result"] == {"fehlt": False, "eigene": False}
+    assert geschrieben[-1] == {
+        "entity_id": "text.testsensor_software_zone_1_config",
+        "value": "clear",
+    }
+    assert hass.states.get("text.testsensor_software_zone_2_config").state.startswith(
+        '{"name":"Fremd"'
+    )
+
+
+async def test_datenstrom_kein_platz_und_nur_admin(
+    hass: HomeAssistant,
+    loaded: MockConfigEntry,
+    hass_ws_client: Any,
+    hass_read_only_access_token: str,
+) -> None:
+    """Belegte Plätze werden nie überschrieben; ändern dürfen nur Admins."""
+    hass.states.async_set(
+        "text.testsensor_software_zone_2_config",
+        '{"name":"Fremd","x_min":0,"x_max":10,"y_min":0,"y_max":10}',
+    )
+    client = await hass_ws_client(hass)
+    # Zone 1 (Bett) ist fremd und Platz 2 auch: „an“ ist schon nicht nötig,
+    # aber ohne eigene Zone wird ein Platz gesucht und keiner gefunden.
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/datenstrom/set", "raum_id": "schlafzimmer", "an": True}
+    )
+    msg = await client.receive_json()
+    assert msg["error"]["code"] == "kein_platz"
+
+    leser = await hass_ws_client(hass, hass_read_only_access_token)
+    await leser.send_json_auto_id(
+        {"type": f"{DOMAIN}/datenstrom/set", "raum_id": "schlafzimmer", "an": True}
+    )
+    msg = await leser.receive_json()
+    assert msg["error"]["code"] == "unauthorized"

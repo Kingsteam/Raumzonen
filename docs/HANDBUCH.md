@@ -186,6 +186,21 @@ Bild tippen, Länge der Strecke eingeben.
 Enden ziehen (Breite) oder die Öffnung selbst ziehen (verschieben).
 **Maße:** Lineal-Knopf links blendet die Länge jeder Wand ein.
 
+### Sensor schickt nur selten Positionen
+
+Der Zigbee-Treiber des FP400 holt die Positionen nur dann laufend ab, wenn
+bei ihm mindestens eine Zone eingetragen ist. Bei einem neu angelernten
+Sensor ist das oft nicht der Fall: Er schickt dann nur etwa einmal in der
+Minute eine Position, das Einmessen klappt nicht und Zonen schlagen zu spät
+an.
+
+Raumzonen erkennt das und zeigt unter **Sensor** einen roten Hinweis. Ein
+Admin tippt auf **„Datenstrom einschalten“**: Raumzonen trägt beim Treiber
+die Zone „Raumzonen Datenstrom“ über den ganzen Bereich ein. Sie schaltet
+nichts, Raumzonen nutzt sie nicht für eigene Zonen. Raumzonen schreibt nur
+in einen leeren Platz und überschreibt nie eine andere Zone. Mit
+**„Zurücknehmen“** entfernt Raumzonen nur diese eine Zone wieder.
+
 ### Sensor umsetzen oder einmessen
 
 Unter **Sensor und Raum → Sensor umsetzen** (nur Admins):

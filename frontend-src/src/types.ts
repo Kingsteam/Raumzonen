@@ -137,6 +137,15 @@ export interface RoomsResult {
   grenzen: Record<string, number>;
   /** Nur Admins dürfen ändern; alle anderen sehen nur zu. */
   darf_aendern: boolean;
+  /** Je FP400-Raum: fehlt beim Zigbee-Treiber die Zone, die den Positions-Strom offen hält? */
+  datenstrom?: Record<string, Datenstrom>;
+}
+
+export interface Datenstrom {
+  /** Beim Treiber ist keine Zone eingetragen: der Sensor schickt nur selten Positionen. */
+  fehlt: boolean;
+  /** Die Zone „Raumzonen Datenstrom“ ist eingetragen (nur sie lässt sich zurücknehmen). */
+  eigene: boolean;
 }
 
 export interface LiveFigur {
