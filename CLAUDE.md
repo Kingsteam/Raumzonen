@@ -265,5 +265,6 @@ HACS-Prüfung (`.github/workflows/`).
 - Ändert sich der Vertrag `raumzonen/1`, die Beispiele in
   `docs/homebrain/beispiele/` mitziehen (`test_beispiele_passen`). Zeiten in
   Beispielen sind erfunden (2000-01-01).
+- HA 2026.11 baut neue Entitäts-IDs mit dem Bereich vorne (`event.schlafzimmer_schlafzimmer_…`); neue Entitäten nach dem ersten Laden auf `<raum>_…` umbenennen (eigene Entitäten, erlaubt).
 - `DeviceSelector` im Options-Flow filtert auf MQTT-Geräte; der Simulator
   der Test-Instanz wird darum von `start.py` über die REST-API angelegt.
