@@ -66,6 +66,10 @@ Nächstes: 4b (Herkunft, Einstufung, Sicherheit, `hinweis/1`); siehe
    Sitzungen beachten, nicht nachts, wenn die Nachtlicht-Logik läuft).
    Weiter nur nach Rückfrage: grundlegende Änderungen, Löschen von
    Wichtigem, alles außerhalb von Raumzonen.
+   **Manifest 1.7 (28.11.2026):** Neustarts, Updates und andere Vorhaben mit
+   Wirkung aufs Gesamtsystem zusätzlich vorher kurz als Prüfbitte an die
+   Sitzung „Stabilität“ (`haus-privat/postfach/an-stabilitaet.md`), zusammen
+   mit der Ankündigung. Keine Antwort in der Wartezeit heißt ok.
 2. **Nichts im Haus schalten.** Diese Integration meldet Zustände; sie
    schaltet kein Licht und keine Geräte. Automationen macht der Besitzer.
    Ausnahme (Besitzer, 26.11.2026: „dass Raumzonen die Sensoren, die in
